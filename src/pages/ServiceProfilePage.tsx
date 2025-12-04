@@ -142,7 +142,7 @@ type ServiceListingRow = {
   description: string | null;
   category_id: CategoryId;
   subcategory_id: string | null;
-  location: string | null;
+  location: string[] | string | null;
   contact_email: string;
   phone: string | null;
   website: string | null;
@@ -267,8 +267,16 @@ const ServiceProfilePage: React.FC = () => {
         setSelectedCategory(data.category_id ?? "all");
         setSelectedSubcategory(data.subcategory_id ?? "");
 
-        const rawLocation = data.location ?? "";
-        if (rawLocation) {
+        const rawLocation = data.location;
+
+        if (Array.isArray(rawLocation) && rawLocation.length > 0) {
+          // DB is text[] → take the first element
+          setSelectedLocation(rawLocation[0] ?? "");
+        } else if (
+          typeof rawLocation === "string" &&
+          rawLocation.trim() !== ""
+        ) {
+          // If it's still a plain string (old data), keep previous behaviour
           const first = rawLocation.split(",")[0]?.trim() ?? "";
           setSelectedLocation(first);
         } else {
@@ -431,8 +439,10 @@ const ServiceProfilePage: React.FC = () => {
         description: description.trim() || null,
         category_id: selectedCategory,
         subcategory_id: selectedSubcategory || null,
-        // Save locations as "Cascais, Estoril, Parede"
-        location: selectedLocation || null,
+
+        // ✅ DB column is text[] → send a JS array
+        location: selectedLocation ? [selectedLocation] : null,
+
         contact_email: contactEmail.trim(),
         phone: dbPhone,
         website: website.trim() || null,
