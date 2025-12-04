@@ -16,8 +16,6 @@ import {
 // Type-only imports
 import type { CategoryId, Category, Subcategory } from "../data/categories";
 
-/* ---------- SHARED PILL STYLES ---------- */
-
 /* ---------- SHARED PILL STYLES (match HomePage) ---------- */
 
 const pillBase =
@@ -162,6 +160,25 @@ type ServiceListingRow = {
 
 /* ---------- HELPERS ---------- */
 
+// Build compact text like “Seg–Sex 09:00-18:00” or “Mo–Fr 09:00-18:00”
+const buildOpeningHoursText = (
+  openingHours: OpeningHour[],
+  isPT: boolean
+): string => {
+  const openDays = openingHours.filter((d) => !d.closed);
+  if (openDays.length === 0) return "";
+
+  const first = openDays[0];
+  const last = openDays[openDays.length - 1];
+
+  const shortLabel = (row: OpeningHour) =>
+    (isPT ? row.labelPt : row.labelEn).slice(0, 2);
+
+  return `${shortLabel(first)}–${shortLabel(last)} ${first.open}-${
+    first.close
+  }`;
+};
+
 // Take DB phone (maybe "+351 962...") and convert to just the 9 digits
 const phoneDbToInput = (dbPhone: string | null): string => {
   if (!dbPhone) return "";
@@ -239,6 +256,11 @@ const ServiceProfilePage: React.FC = () => {
 
   const descriptionLimit = 800;
   const descriptionLength = description.length;
+
+  const compactOpeningText = useMemo(
+    () => buildOpeningHoursText(openingHours, isPT),
+    [openingHours, isPT]
+  );
 
   /* ---------- LOAD EXISTING LISTING (ONE PER USER) ---------- */
 
@@ -320,6 +342,23 @@ const ServiceProfilePage: React.FC = () => {
   ) => {
     const value = e.target.value.slice(0, descriptionLimit);
     setDescription(value);
+  };
+
+  const handleOpeningHourChange = (
+    index: number,
+    field: "open" | "close" | "closed",
+    value: string | boolean
+  ) => {
+    setOpeningHours((prev) =>
+      prev.map((row, i) =>
+        i === index
+          ? {
+              ...row,
+              [field]: value,
+            }
+          : row
+      )
+    );
   };
 
   const toggleLanguage = (code: string) => {
@@ -554,7 +593,10 @@ const ServiceProfilePage: React.FC = () => {
             className="bg-white rounded-3xl shadow-md border border-slate-100 px-6 py-6 space-y-6"
           >
             {/* VISIBILITY TOGGLE */}
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+            <div
+              className="rounded-2xl border border-s
+late-200 bg-slate-50 px-4 py-3"
+            >
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div>
                   <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">
@@ -741,7 +783,7 @@ const ServiceProfilePage: React.FC = () => {
               />
             </div>
 
-            {/* LOCATION (new pills instead of free text) */}
+            {/* LOCATION (pills instead of free text) */}
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-1">
                 {isPT ? "Zona de atuação" : "Service area / location"}
@@ -958,9 +1000,95 @@ const ServiceProfilePage: React.FC = () => {
               </div>
             </div>
 
-            {/* OPENING HOURS */}
-            {/* (unchanged – left as in your original) */}
-            {/* ... your opening hours JSX here ... */}
+            {/* OPENING HOURS TABLE */}
+            <div>
+              <h3 className="text-sm font-semibold text-slate-700 mb-2">
+                {isPT ? "Horário de funcionamento" : "Opening hours"}
+              </h3>
+              <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                <table className="min-w-full text-xs">
+                  <thead className="bg-slate-50">
+                    <tr className="text-left text-[11px] text-slate-500">
+                      <th className="px-3 py-2 font-semibold">
+                        {isPT ? "Dia" : "Day"}
+                      </th>
+                      <th className="px-3 py-2 font-semibold">
+                        {isPT ? "Abre" : "Opens"}
+                      </th>
+                      <th className="px-3 py-2 font-semibold">
+                        {isPT ? "Fecha" : "Closes"}
+                      </th>
+                      <th className="px-3 py-2 font-semibold">
+                        {isPT ? "Fechado" : "Closed"}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {openingHours.map((row, index) => (
+                      <tr
+                        key={row.dayKey}
+                        className="border-t border-slate-100 bg-white"
+                      >
+                        <td className="px-3 py-2 whitespace-nowrap text-slate-700">
+                          {isPT ? row.labelPt : row.labelEn}
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="time"
+                            value={row.open}
+                            disabled={row.closed}
+                            onChange={(e) =>
+                              handleOpeningHourChange(
+                                index,
+                                "open",
+                                e.target.value
+                              )
+                            }
+                            className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:bg-slate-50"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="time"
+                            value={row.close}
+                            disabled={row.closed}
+                            onChange={(e) =>
+                              handleOpeningHourChange(
+                                index,
+                                "close",
+                                e.target.value
+                              )
+                            }
+                            className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-sky-500 disabled:bg-slate-50"
+                          />
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <input
+                            type="checkbox"
+                            checked={row.closed}
+                            onChange={(e) =>
+                              handleOpeningHourChange(
+                                index,
+                                "closed",
+                                e.target.checked
+                              )
+                            }
+                            className="rounded border-slate-300"
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {compactOpeningText && (
+                <p className="mt-2 text-[11px] text-slate-500">
+                  {isPT ? "Resumo: " : "Summary: "}
+                  {compactOpeningText}
+                </p>
+              )}
+            </div>
 
             {/* MESSAGES */}
             {errorMsg && (
