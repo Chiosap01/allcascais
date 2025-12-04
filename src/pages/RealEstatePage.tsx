@@ -23,7 +23,7 @@ interface Property {
 
 const PROPERTIES: Property[] = [
   {
-    id: 5,
+    id: 1,
     status: "active",
     title: "Moradia T4 com jardim em São Pedro do Estoril",
     description:
@@ -39,7 +39,7 @@ const PROPERTIES: Property[] = [
     image: "/properties/moradia-sp.jpeg",
   },
   {
-    id: 1,
+    id: 2,
     status: "active",
     title: "Contemporary Oceanfront Villa",
     description:
@@ -55,7 +55,7 @@ const PROPERTIES: Property[] = [
     image: "/properties/moradia-2.jpg",
   },
   {
-    id: 2,
+    id: 3,
     status: "active",
     title: "Beachfront Estate with Private Garden",
     description:
@@ -69,38 +69,6 @@ const PROPERTIES: Property[] = [
     bathrooms: 7,
     usableArea: 450,
     image: "/properties/moradia-3.jpg",
-  },
-  {
-    id: 3,
-    status: "active",
-    title: "Cozy House in Birre for Rent",
-    description:
-      "3-bedroom family house with garden in a quiet residential area of Birre.",
-    price: 3200,
-    currency: "EUR",
-    buyRent: "rent",
-    location: "Birre",
-    type: "house",
-    bedrooms: 3,
-    bathrooms: 3,
-    usableArea: 140,
-    image: "/properties/house-birre-rent.jpg",
-  },
-  {
-    id: 4,
-    status: "active",
-    title: "Studio near Cascais Marina",
-    description:
-      "Compact and fully furnished studio, perfect for weekend escapes.",
-    price: 950,
-    currency: "EUR",
-    buyRent: "rent",
-    location: "Cascais Marina",
-    type: "studio",
-    bedrooms: 1,
-    bathrooms: 1,
-    usableArea: 38,
-    image: "/properties/studio-cascais-marina.jpg",
   },
 ];
 

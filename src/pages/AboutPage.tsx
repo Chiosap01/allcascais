@@ -107,6 +107,10 @@ const AboutPage: React.FC = () => {
     navigate("/"); // Services / Home route
   };
 
+  const handleGoToCreateServices = () => {
+    navigate("/service-listing"); // Services / Home route
+  };
+
   const handleEmergencyClick = () => {
     const message = isPT
       ? "Números de emergência:\nPolícia: 112\nAmbulância: 112\nBombeiros: 112\n\nLigar 112 agora?"
@@ -200,10 +204,10 @@ const AboutPage: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={handleGoToServices}
+                  onClick={handleGoToCreateServices}
                   className="w-full max-w-xs inline-flex items-center justify-center rounded-full border border-white/70 bg-white/10 px-7 py-4 text-sm sm:text-base font-semibold text-white shadow-md backdrop-blur hover:bg-white/20 hover:-translate-y-0.5 transition"
                 >
-                  🤝 {isPT ? "Juntar-me à comunidade" : "Join Community"}
+                  🤝 {isPT ? "Meu Perfil" : "My Profile"}
                 </button>
 
                 <button
