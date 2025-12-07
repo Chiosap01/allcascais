@@ -82,104 +82,6 @@ type ServiceRatingRow = {
 
 /* ---------- STATIC DEMO SERVICES ---------- */
 
-const STATIC_SERVICES: Service[] = [
-  {
-    id: 1,
-    name: "Blue Waves Property Care",
-    quote:
-      "We care for your home as if it were our own. Reliable, multilingual and detail-oriented.",
-    categoryId: "real-estate",
-    subcategoryId: "property-management",
-    location: "Cascais Center",
-    phone: "+351 912 345 678",
-    email: "info@bluewaves-cascais.pt",
-    website: "www.bluewaves-cascais.pt",
-    openingHoursText: "Mo–Fr 09:00–18:00",
-    rating: 4.9,
-    ratingCount: 18,
-    languages: ["en", "pt", "es", "de"],
-  },
-  {
-    id: 2,
-    name: "Guincho Surf School",
-    quote:
-      "Small groups, patient instructors and all equipment included – just bring your smile.",
-    categoryId: "sports-outdoors",
-    subcategoryId: "surf-school",
-    location: "Praia do Guincho",
-    phone: "+351 965 111 222",
-    email: "hello@guinchosurf.pt",
-    website: "www.guinchosurf.pt",
-    openingHoursText: "Every day 08:00–19:00",
-    rating: 4.7,
-    ratingCount: 42,
-    languages: ["en", "pt", "fr", "es"],
-  },
-  {
-    id: 3,
-    name: "Cascais Healthy Smiles",
-    quote: "Gentle, modern dentistry with a focus on expats and families.",
-    categoryId: "medical",
-    subcategoryId: "dentist",
-    location: "Cascais Historic Center",
-    phone: "+351 214 000 555",
-    email: "clinic@healthysmiles.pt",
-    website: "www.healthysmiles.pt",
-    openingHoursText: "Mo–Sat 09:00–19:00",
-    rating: 4.5,
-    ratingCount: 27,
-    languages: ["en", "pt"],
-  },
-  {
-    id: 4,
-    name: "Casa Atlântica Cleaning",
-    quote:
-      "From turnover cleans to deep seasonal refresh – we keep your Cascais home guest-ready.",
-    categoryId: "home-services",
-    subcategoryId: "cleaning",
-    location: "Cascais & Carcavelos",
-    phone: "+351 937 000 444",
-    email: "contact@casaatlantica.pt",
-    website: "www.casaatlantica.pt",
-    openingHoursText: "Mo–Fr 08:00–17:00",
-    rating: 4.2,
-    ratingCount: 11,
-    languages: ["pt", "en"],
-  },
-  {
-    id: 5,
-    name: "Lisbon Coast Airport Transfers",
-    quote:
-      "On-time pickups, child seats on request and friendly English-speaking drivers.",
-    categoryId: "transportation",
-    subcategoryId: "airport-transfer",
-    location: "Cascais, Estoril, Carcavelos",
-    phone: "+351 933 987 123",
-    email: "bookings@lisboncoasttransfers.pt",
-    website: "www.lisboncoasttransfers.pt",
-    openingHoursText: "24/7",
-    rating: 4.8,
-    ratingCount: 36,
-    languages: ["en", "pt", "es"],
-  },
-  {
-    id: 6,
-    name: "Cascais Co-Work Hub",
-    quote:
-      "Sea views, fast Wi-Fi and a relaxed international community right next to the train station.",
-    categoryId: "professional",
-    subcategoryId: "coworking",
-    location: "Near Cascais train station",
-    phone: "+351 932 222 777",
-    email: "hello@cascaiscowork.pt",
-    website: "www.cascaiscowork.pt",
-    openingHoursText: "Mo–Fr 08:00–20:00",
-    rating: undefined,
-    ratingCount: 0,
-    languages: ["en", "pt"],
-  },
-];
-
 /* ---------- DB ROW TYPE & FORMATTER ---------- */
 
 type ServiceRow = {
@@ -874,7 +776,8 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
     (service.name && service.name.charAt(0).toUpperCase()) ||
     "?";
 
-  const isLongDescription = (service.quote || "").length > 220;
+  const normalizedQuote = (service.quote || "").replace(/\s+/g, " ").trim();
+  const isLongDescription = normalizedQuote.length > 140; // adjust threshold if needed
 
   return (
     <article className="bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition break-inside-avoid">
@@ -1171,10 +1074,7 @@ const HomePage: React.FC = () => {
           (c: Category) => c.id === "all" || c.id === selectedCategory
         );
 
-  const allServices = useMemo(
-    () => [...dbServices, ...STATIC_SERVICES],
-    [dbServices]
-  );
+  const allServices = useMemo(() => [...dbServices], [dbServices]);
 
   const filteredServices = useMemo(() => {
     let list = [...allServices];

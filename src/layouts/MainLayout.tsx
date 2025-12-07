@@ -5,7 +5,7 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const navLinkBase =
-  "px-3 py-2 text-sm rounded-full transition-colors whitespace-nowrap";
+  "px-3 py-1.5 text-xs sm:text-sm rounded-full transition-colors";
 
 type LanguageCode = "en" | "pt";
 
@@ -342,7 +342,7 @@ const MainLayout: FC<MainLayoutProps> = ({ children }) => {
           {/* Mobile nav row */}
           <div className="sm:hidden border-t border-slate-100">
             <nav
-              className="flex items-center gap-8 px-3 py-2 overflow-x-auto text-xs"
+              className="flex flex-wrap items-center gap-2 px-3 py-2 text-xs"
               aria-label="Main navigation"
             >
               <NavLink
