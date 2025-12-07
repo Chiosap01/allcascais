@@ -14,6 +14,7 @@ type WeatherMeta = {
 };
 
 const mapWeatherCode = (code: number, isPT: boolean): WeatherMeta => {
+  // Open-Meteo / WMO codes
   if (code === 0) {
     return {
       label: isPT ? "Céu limpo" : "Clear sky",
@@ -77,29 +78,7 @@ const AboutPage: React.FC = () => {
   const [weather, setWeather] = useState<WeatherState | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
 
-  // 🕒 NEW: Cascais time
-  const [cascaisTime, setCascaisTime] = useState("");
-
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      const formatter = new Intl.DateTimeFormat(
-        language === "pt" ? "pt-PT" : "en-GB",
-        {
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: "Europe/Lisbon",
-        }
-      );
-      setCascaisTime(formatter.format(now));
-    };
-
-    updateTime();
-    const interval = setInterval(updateTime, 30 * 1000);
-    return () => clearInterval(interval);
-  }, [language]);
-
-  // 🌤 Weather fetch
+  // Fetch live weather for Cascais (Open-Meteo, no API key)
   useEffect(() => {
     const fetchWeather = async () => {
       try {
@@ -124,13 +103,19 @@ const AboutPage: React.FC = () => {
     fetchWeather();
   }, []);
 
-  const handleGoToServices = () => navigate("/");
-  const handleGoToCreateServices = () => navigate("/service-listing");
+  const handleGoToServices = () => {
+    navigate("/"); // Services / Home route
+  };
+
+  const handleGoToCreateServices = () => {
+    navigate("/service-listing"); // Services / Home route
+  };
 
   const handleEmergencyClick = () => {
     const message = isPT
       ? "Números de emergência:\nPolícia: 112\nAmbulância: 112\nBombeiros: 112\n\nLigar 112 agora?"
       : "Emergency Numbers:\nPolice: 112\nAmbulance: 112\nFire Department: 112\n\nCall 112 now?";
+
     if (window.confirm(message)) {
       window.location.href = "tel:112";
     }
@@ -152,24 +137,30 @@ const AboutPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* HERO */}
+      {/* HERO + WEATHER */}
       <section className="relative">
+        {/* Background image */}
         <div
           className="h-[640px] sm:h-[700px] w-full bg-cover bg-center"
           style={{ backgroundImage: "url('/cascais-about.jpg')" }}
         />
 
+        {/* Dark gradient overlay */}
         <div className="absolute inset-0 bg-linear-to-b from-slate-900/15 via-slate-900/60 to-slate-900/85" />
 
+        {/* Content + weather card */}
         <div className="absolute inset-0">
           <div className="max-w-5xl mx-auto px-4 h-full flex flex-col justify-between py-10">
-            {/* TOP HERO CONTENT */}
+            {/* Top content */}
             <div className="text-center text-white">
-              <div className="inline-flex items-center rounded-full bg-teal-500/90 px-4 py-1.5 text-xs sm:text-sm font-medium shadow-md mb-6">
-                🌊{" "}
-                {isPT
-                  ? "Exclusivo para residentes e visitantes de Cascais"
-                  : "Exclusive for Cascais Residents & Visitors"}
+              {/* Top pill */}
+              <div className="inline-flex items-center justify-center rounded-full bg-teal-500/90 px-4 py-1.5 text-xs sm:text-sm font-medium shadow-md mb-4 sm:mb-6">
+                <span className="mr-2">🌊</span>
+                <span>
+                  {isPT
+                    ? "Exclusivo para residentes e visitantes de Cascais"
+                    : "Exclusive for Cascais Residents & Visitors"}
+                </span>
               </div>
 
               <h1 className="text-[26px] sm:text-4xl md:text-5xl font-extrabold leading-tight mb-3">
@@ -198,35 +189,40 @@ const AboutPage: React.FC = () => {
                   : "Connect with verified local service providers in Cascais – from handymen to luxury services – all vetted by your community."}
               </p>
 
-              {/* CTA BUTTONS */}
-              <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 px-2">
+              {/* CTA buttons */}
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 px-2 mb-4">
                 <button
+                  type="button"
                   onClick={handleGoToServices}
-                  className="w-full max-w-xs rounded-full bg-yellow-400/70 px-7 py-4 text-sm font-semibold text-slate-900 shadow-lg hover:bg-yellow-400 transition"
+                  className="w-full max-w-xs inline-flex items-center justify-center rounded-full border border-white/70 bg-yellow-400/70 px-7 py-4 text-sm sm:text-base font-semibold text-slate-900 shadow-lg hover:bg-yellow-400 hover:shadow-xl hover:-translate-y-0.5 transition"
                 >
-                  🔍 {isPT ? "Procurar serviços" : "Find Services"}
+                  <span className="mr-2">🔍</span>
+                  {isPT ? "Procurar serviços" : "Find Services"}
                 </button>
 
                 <button
+                  type="button"
                   onClick={handleGoToCreateServices}
-                  className="w-full max-w-xs rounded-full bg-white/10 px-7 py-4 text-sm font-semibold text-white shadow-md backdrop-blur hover:bg-white/20 transition"
+                  className="w-full max-w-xs inline-flex items-center justify-center rounded-full border border-white/70 bg-white/10 px-7 py-4 text-sm sm:text-base font-semibold text-white shadow-md backdrop-blur hover:bg-white/20 hover:-translate-y-0.5 transition"
                 >
                   🤝 {isPT ? "Meu Perfil" : "My Profile"}
                 </button>
 
                 <button
+                  type="button"
                   onClick={handleEmergencyClick}
-                  className="w-full max-w-xs rounded-full bg-red-500/70 px-7 py-4 text-sm font-semibold text-white shadow-lg hover:bg-red-600 transition"
+                  className="w-full max-w-xs inline-flex items-center justify-center rounded-full border border-white/70 bg-red-500/70 px-7 py-4 text-sm sm:text-base font-semibold text-white shadow-lg hover:bg-red-600 hover:-translate-y-0.5 transition"
                 >
                   🚨 {isPT ? "Emergência" : "Emergency"}
                 </button>
               </div>
             </div>
 
-            {/* WEATHER CARD */}
-            <div className="flex justify-center mt-6">
+            {/* Bottom weather card */}
+            <div className="flex justify-center">
               <div className="bg-white/80 rounded-2xl shadow-lg px-6 py-4 text-left text-slate-800 flex items-center gap-4 w-full max-w-md">
-                <div className="h-10 w-10 rounded-full flex items-center justify-center">
+                {/* circle with PNG icon */}
+                <div className="h-10 w-10 rounded-full bg-transparent flex items-center justify-center overflow-hidden">
                   <img
                     src={weatherMeta.iconPath}
                     alt={weatherMeta.label}
@@ -242,17 +238,9 @@ const AboutPage: React.FC = () => {
                       ? `${Math.round(weather.temperature)}°C`
                       : "N/A"}
                   </div>
-
                   <div className="text-xs text-slate-500 -mt-0.5">
                     {weatherMeta.label} · Cascais
                   </div>
-
-                  {/* 🕒 Cascais Hour */}
-                  <div className="text-xs text-slate-600">
-                    🕒 {isPT ? "Hora em Cascais:" : "Cascais Time:"}{" "}
-                    {cascaisTime}
-                  </div>
-
                   <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
                     <span>
                       {isPT ? "Sensação" : "Feels like"}{" "}
@@ -291,10 +279,9 @@ const AboutPage: React.FC = () => {
             <p className="text-sm text-slate-600">
               {isPT
                 ? "Cada prestador é verificado manualmente para garantir qualidade, fiabilidade e preços justos."
-                : "Every provider is manually checked to ensure quality, reliability, and fair pricing."}
+                : "Every provider is manually checked and reviewed to ensure quality, reliability, and fair pricing."}
             </p>
           </div>
-
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
             <img
               src="/icons/fair-play.png"
@@ -313,10 +300,9 @@ const AboutPage: React.FC = () => {
             <p className="text-sm text-slate-600">
               {isPT
                 ? "Sem taxas escondidas. Tem acesso a informação clara para escolher o serviço certo com confiança."
-                : "No hidden fees. You see clear info so you can choose the right service confidently."}
+                : "No hidden fees. You see clear information so you can choose the right service with confidence."}
             </p>
           </div>
-
           <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
             <img
               src="/icons/focused.png"
@@ -328,13 +314,13 @@ const AboutPage: React.FC = () => {
             </h3>
             <p className="text-sm text-slate-600">
               {isPT
-                ? "Do centro histórico ao Guincho — focamo-nos apenas em Cascais para manter tudo verdadeiramente local."
-                : "From the historic centre to Guincho — we focus only on Cascais to keep everything truly local."}
+                ? "Do centro histórico ao Guincho, focamo-nos apenas em Cascais e zonas próximas para manter tudo verdadeiramente local."
+                : "From the historic centre to Guincho, we focus only on Cascais and nearby areas to keep it truly local."}
             </p>
           </div>
         </div>
 
-        {/* ABOUT + HOW IT WORKS */}
+        {/* Two-column: What is + How it works */}
         <div className="grid md:grid-cols-2 gap-8 items-start mb-10">
           <div>
             <h2 className="text-xl md:text-2xl font-bold mb-3">
@@ -342,21 +328,21 @@ const AboutPage: React.FC = () => {
             </h2>
             <p className="text-sm md:text-base text-slate-600 mb-3">
               {isPT
-                ? "A AllCascais é um diretório selecionado de serviços locais de confiança — criado para facilitar a vida a residentes e visitantes."
-                : "AllCascais is a curated directory of trusted local services — created to make life easier for residents and visitors."}
+                ? "A AllCascais é um diretório selecionado de serviços locais de confiança. Nasceu com um objetivo simples: tornar mais fácil e seguro para residentes e visitantes encontrarem pessoas de confiança em Cascais – sem pesquisas intermináveis ou adivinhações."
+                : "AllCascais is a curated directory of trusted local services. It started with a simple goal: make it easy and safe for residents and visitors to find reliable people in Cascais – without endless searching or guessing."}
             </p>
             <p className="text-sm md:text-base text-slate-600">
               {isPT
-                ? "Combinamos recomendações da comunidade, verificação manual e categorias claras para encontrar rapidamente serviços locais."
-                : "We combine community recommendations, manual verification, and clear categories to help you quickly find local services."}
+                ? "Combinamos recomendações da comunidade, verificação manual e categorias claras para chegar rapidamente a empresas de limpeza, pequenos arranjos, explicadores, bem-estar, restaurantes e muito mais – tudo num só lugar."
+                : "We combine community recommendations, manual verification and clear categories so you can quickly reach cleaners, handymen, tutors, wellness professionals, restaurants and more – all in one place."}
             </p>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-3">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 space-y-3 text-sm md:text-base text-slate-600">
             <h3 className="font-semibold text-slate-800 mb-2">
               {isPT ? "Como funciona" : "How it works"}
             </h3>
-            <ol className="list-decimal list-inside space-y-2 text-sm md:text-base text-slate-600">
+            <ol className="list-decimal list-inside space-y-2">
               <li>
                 {isPT
                   ? "Navegue pelas categorias ou pesquise uma necessidade específica."
@@ -369,13 +355,13 @@ const AboutPage: React.FC = () => {
               </li>
               <li>
                 {isPT
-                  ? "Contacte diretamente os prestadores — sem comissões."
-                  : "Contact providers directly — no commissions."}
+                  ? "Contacte diretamente os prestadores – sem comissões extra."
+                  : "Contact providers directly – no extra commissions."}
               </li>
               <li>
                 {isPT
                   ? "Partilhe a sua experiência e ajude outros em Cascais."
-                  : "Share your experience to help others in Cascais."}
+                  : "Share your experience and help others in Cascais."}
               </li>
             </ol>
           </div>
@@ -389,7 +375,7 @@ const AboutPage: React.FC = () => {
         </h2>
 
         <div className="grid md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 text-left">
             <h3 className="font-semibold mb-2 text-slate-800">
               {isPT
                 ? "Como encontro um profissional de confiança em Cascais?"
@@ -397,12 +383,12 @@ const AboutPage: React.FC = () => {
             </h3>
             <p className="text-sm text-slate-600">
               {isPT
-                ? "Explore a secção de Serviços — todos os prestadores são verificados pela comunidade."
-                : "Explore the Services section — all providers are community-verified."}
+                ? "Explore a nossa secção de Serviços, onde todos os prestadores são verificados pela comunidade. Veja classificações e opiniões de vizinhos."
+                : "Browse our Services section where all providers are verified by community members. Check ratings and reviews from your neighbors."}
             </p>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 text-left">
             <h3 className="font-semibold mb-2 text-slate-800">
               {isPT
                 ? "A plataforma é gratuita para residentes?"
@@ -410,21 +396,21 @@ const AboutPage: React.FC = () => {
             </h3>
             <p className="text-sm text-slate-600">
               {isPT
-                ? "Sim! Encontrar serviços é totalmente gratuito."
-                : "Yes! Finding services is completely free."}
+                ? "Sim! Encontrar serviços é totalmente gratuito. Apoiamos os profissionais locais ligando-os diretamente aos residentes, sem taxas de intermediários."
+                : "Yes! Finding services is completely free. We support local workers by connecting them directly with residents without middleman fees."}
             </p>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 text-left">
             <h3 className="font-semibold mb-2 text-slate-800">
               {isPT
-                ? "Como evitar taxas do Airbnb?"
-                : "How can I avoid Airbnb fees?"}
+                ? "Como posso evitar taxas de plataformas como o Airbnb?"
+                : "How do I avoid Airbnb fees for rentals?"}
             </h3>
             <p className="text-sm text-slate-600">
               {isPT
-                ? "A nossa secção de Imobiliário liga-o diretamente a proprietários em Cascais."
-                : "Our Real Estate section connects you directly with property owners in Cascais."}
+                ? "A nossa secção de Imobiliário liga-o diretamente a proprietários em Cascais, evitando taxas de plataformas e complicações nas reservas."
+                : "Our Real Estate section connects you directly with property owners in Cascais, skipping platform fees and booking complications."}
             </p>
           </div>
         </div>
