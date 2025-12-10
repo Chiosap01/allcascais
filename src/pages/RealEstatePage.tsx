@@ -63,8 +63,6 @@ const BASE_LOCATIONS = [
   "São Domingos de Rana",
 ];
 
-const [showAgentEmail, setShowAgentEmail] = useState(false);
-
 const AREA_STEPS = [
   10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 175, 200, 225, 250, 275,
   300, 350,
@@ -86,6 +84,9 @@ const RealEstatePage: React.FC = () => {
   const [minArea, setMinArea] = useState<string>("any");
   const [maxArea, setMaxArea] = useState<string>("any");
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // 👇 MOVE IT HERE:
+  const [showAgentEmail, setShowAgentEmail] = useState(false);
 
   // Property detail modal
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
