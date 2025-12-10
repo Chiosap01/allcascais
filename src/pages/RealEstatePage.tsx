@@ -20,6 +20,11 @@ interface Property {
   usableArea: number; // m²
   image?: string;
   images?: string[];
+
+  // NEW – who represents this listing
+  agentName?: string;
+  agentPhone?: string;
+  agentEmail?: string;
 }
 
 const PROPERTIES: Property[] = [
@@ -37,13 +42,12 @@ const PROPERTIES: Property[] = [
     bedrooms: 4,
     bathrooms: 3,
     usableArea: 210,
-    image: "/properties/moradia-sp-1.jpeg",
-    images: [
-      "/properties/moradia-sp-1.jpeg",
-      "/properties/moradia-sp-2.jpeg",
-      "/properties/moradia-sp-3.jpeg",
-      "/properties/moradia-sp-4.jpeg",
-    ],
+    image: "/properties/moradia-sp.jpeg",
+    images: ["/properties/moradia-sp-1.jpeg"],
+    // NEW – this one is with Julius, but other listings can use other agents
+    agentName: "CHIOSS REAL ESTATE",
+    agentPhone: "+351 930630880",
+    agentEmail: "info@chioss.com",
   },
 ];
 
@@ -308,17 +312,17 @@ const RealEstatePage: React.FC = () => {
         {/* FILTER CARD */}
         <section className="mb-8">
           <div className="bg-white rounded-3xl shadow-md border border-slate-100 px-4 sm:px-6 py-4 sm:py-5">
-            {/* First row */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-3">
+            {/* First row – 2 per row on mobile */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
               {/* Buy/Rent */}
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 col-span-2 md:col-span-1">
                 <label className="text-xs font-semibold text-slate-600">
                   🏡 {isPT ? "Comprar / Arrendar" : "Buy / Rent"}
                 </label>
                 <select
                   value={buyRent}
                   onChange={(e) => setBuyRent(e.target.value as BuyRent)}
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 w-full"
                 >
                   <option value="all">{isPT ? "Todos" : "All"}</option>
                   <option value="buy">{isPT ? "Comprar" : "Buy"}</option>
@@ -337,7 +341,7 @@ const RealEstatePage: React.FC = () => {
                   className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400"
                 >
                   <option value="all">
-                    {isPT ? "🌍 Todas as localizações" : "🌍 All Locations"}
+                    {isPT ? "🌍 Todas" : "🌍 All locations"}
                   </option>
                   {locations.map((loc) => (
                     <option key={loc} value={loc}>
@@ -406,8 +410,8 @@ const RealEstatePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Second row */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-center">
+            {/* Second row – 2 per row on mobile */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-center">
               {/* Sort by Price */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-600">
@@ -494,19 +498,19 @@ const RealEstatePage: React.FC = () => {
               </div>
 
               {/* Advanced Filters button */}
-              <div className="flex justify-start md:justify-end mt-1">
+              <div className="flex justify-start md:justify-end mt-1 col-span-2 md:col-span-1">
                 <button
                   type="button"
                   onClick={() => setShowAdvanced((v) => !v)}
-                  className="inline-flex items-center justify-center rounded-full bg-slate-100 px-4 py-2 text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-200 transition"
+                  className="inline-flex items-center justify-center rounded-full bg-slate-100 px-4 py-2 text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-200 transition w-full md:w-auto"
                 >
                   {showAdvanced
                     ? isPT
                       ? "▲ Ocultar filtros avançados"
-                      : "▲ Hide Advanced Filters"
+                      : "▲ Hide advanced filters"
                     : isPT
                     ? "▼ Filtros avançados"
-                    : "▼ Advanced Filters"}
+                    : "▼ Advanced filters"}
                 </button>
               </div>
             </div>
@@ -545,9 +549,7 @@ const RealEstatePage: React.FC = () => {
             <span role="img" aria-hidden="true" className="mr-1.5">
               ✨
             </span>
-            {isPT
-              ? "Deixe-nos encontrar o seu imóvel"
-              : "Let us find your Cascais home"}
+            {isPT ? "Encontrar imóvel para mim" : "Help me find a property"}
           </button>
         </section>
 
@@ -558,7 +560,13 @@ const RealEstatePage: React.FC = () => {
             return (
               <article
                 key={property.id}
-                className="bg-white rounded-2xl shadow-md border border-slate-100 p-4 flex flex-col gap-2 hover:-translate-y-0.5 hover:shadow-lg transition"
+                role="button"
+                tabIndex={0}
+                onClick={() => openPropertyModal(property)}
+                onKeyDown={(e) =>
+                  e.key === "Enter" && openPropertyModal(property)
+                }
+                className="cursor-pointer bg-white rounded-2xl shadow-md border border-slate-100 p-4 flex flex-col gap-2 hover:-translate-y-0.5 hover:shadow-lg transition"
               >
                 {coverImage && (
                   <img
@@ -614,13 +622,6 @@ const RealEstatePage: React.FC = () => {
                         : "sale price"}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => openPropertyModal(property)}
-                    className="text-xs font-semibold text-sky-600 hover:text-sky-700"
-                  >
-                    {isPT ? "Ver detalhes →" : "View details →"}
-                  </button>
                 </div>
               </article>
             );
@@ -641,49 +642,30 @@ const RealEstatePage: React.FC = () => {
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm px-2 sm:px-4">
           <div className="bg-white rounded-3xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="flex items-center justify-between px-5 sm:px-7 py-3 border-b border-slate-100">
+            <div className="flex items-center justify-between px-5 sm:px-7 py-3 border-b border-slate-100 bg-slate-50/80">
               <div>
-                <h2 className="text-sm sm:text-base font-semibold text-slate-900">
+                <p className="text-[11px] font-medium text-sky-600 mb-0.5">
+                  {formatBuyRentLabel(selectedProperty)} ·{" "}
+                  {selectedProperty.location}
+                </p>
+                <h2 className="text-sm sm:text-lg font-semibold text-slate-900">
                   {selectedProperty.title}
                 </h2>
-                <p className="text-[11px] text-slate-500 flex items-center gap-2">
-                  <span>📍 {selectedProperty.location}</span>
-                  <span className="hidden sm:inline-block">•</span>
-                  <span className="hidden sm:inline-block">
-                    {formatBuyRentLabel(selectedProperty)}
-                  </span>
-                </p>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  className="hidden sm:inline-flex items-center justify-center w-8 h-8 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 text-xs"
-                  title={isPT ? "Partilhar" : "Share"}
-                >
-                  ↗
-                </button>
-                <button
-                  type="button"
-                  className="hidden sm:inline-flex items-center justify-center w-8 h-8 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 text-xs"
-                  title={isPT ? "Guardar" : "Save"}
-                >
-                  ❤
-                </button>
-                <button
-                  type="button"
-                  onClick={closePropertyModal}
-                  className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
-                  aria-label={isPT ? "Fechar" : "Close"}
-                >
-                  ✕
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={closePropertyModal}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
+                aria-label={isPT ? "Fechar" : "Close"}
+              >
+                ✕
+              </button>
             </div>
 
             {/* Body */}
             <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
               {/* Left: gallery */}
-              <div className="md:w-1/2 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col bg-slate-950/3">
+              <div className="md:w-1/2 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col bg-slate-900/3">
                 <div className="relative flex-1 bg-slate-900/5">
                   {selectedImages.length > 0 ? (
                     <img
@@ -702,14 +684,14 @@ const RealEstatePage: React.FC = () => {
                       <button
                         type="button"
                         onClick={handlePrevImage}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 shadow flex items-center justify-center hover:bg-white text-slate-700"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 shadow flex items-center justify-center hover:bg:white text-slate-700"
                       >
                         ‹
                       </button>
                       <button
                         type="button"
                         onClick={handleNextImage}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 shadow flex items-center justify-center hover:bg-white text-slate-700"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 shadow flex items-center justify-center hover:bg:white text-slate-700"
                       >
                         ›
                       </button>
@@ -723,7 +705,7 @@ const RealEstatePage: React.FC = () => {
                   )}
 
                   <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-emerald-500 text-white text-[11px] font-semibold shadow">
-                    {formatBuyRentLabel(selectedProperty)}
+                    {formatStatus(selectedProperty.status)}
                   </div>
                 </div>
 
@@ -754,60 +736,93 @@ const RealEstatePage: React.FC = () => {
               </div>
 
               {/* Right: info */}
-              <div className="md:w-1/2 flex flex-col p-5 sm:p-6 overflow-y-auto">
-                <div className="mb-4">
-                  <div className="text-2xl font-bold text-slate-900">
-                    €{selectedProperty.price.toLocaleString("en-US")}
-                  </div>
-                  <div className="text-[11px] text-slate-500 mt-1">
-                    {selectedProperty.buyRent === "rent"
-                      ? isPT
-                        ? "Arrendamento mensal"
-                        : "Monthly rent"
-                      : isPT
-                      ? "Preço de venda"
-                      : "Sale price"}
+              <div className="md:w-1/2 flex flex-col p-5 sm:p-6 overflow-y-auto bg-slate-50/40">
+                {/* Price & key facts */}
+                <div className="mb-5 space-y-3">
+                  <div>
+                    <div className="text-2xl font-bold text-slate-900">
+                      €{selectedProperty.price.toLocaleString("en-US")}
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-1">
+                      {selectedProperty.buyRent === "rent"
+                        ? isPT
+                          ? "Arrendamento mensal"
+                          : "Monthly rent"
+                        : isPT
+                        ? "Preço de venda"
+                        : "Sale price"}
+                    </div>
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-600">
-                    <span className="inline-flex items-center gap-1">
+                  <div className="flex flex-wrap gap-2 text-[11px]">
+                    <span className="inline-flex items-center rounded-full bg-white px-3 py-1 border border-slate-200 text-slate-700">
                       🛏 {selectedProperty.bedrooms}{" "}
                       {isPT ? "quartos" : "bedrooms"}
                     </span>
-                    <span className="inline-flex items-center gap-1">
+                    <span className="inline-flex items-center rounded-full bg-white px-3 py-1 border border-slate-200 text-slate-700">
                       🛁 {selectedProperty.bathrooms}{" "}
                       {isPT ? "casas de banho" : "bathrooms"}
                     </span>
-                    <span className="inline-flex items-center gap-1">
+                    <span className="inline-flex items-center rounded-full bg-white px-3 py-1 border border-slate-200 text-slate-700">
                       📏 {selectedProperty.usableArea} m²
                     </span>
-                    <span className="inline-flex items-center gap-1">
-                      📌 {formatStatus(selectedProperty.status)}
+                    <span className="inline-flex items-center rounded-full bg-white px-3 py-1 border border-slate-200 text-slate-700">
+                      📍 {selectedProperty.location}
                     </span>
                   </div>
                 </div>
 
-                <div className="mb-4">
+                {/* Description */}
+                <div className="mb-5">
                   <h3 className="text-sm font-semibold text-slate-900 mb-1.5">
-                    {isPT ? "Descrição" : "Description"}
+                    {isPT ? "Sobre este imóvel" : "About this property"}
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-600 whitespace-pre-line leading-relaxed">
                     {selectedProperty.description}
                   </p>
                 </div>
 
-                <div className="mt-auto pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                {/* Agent CTA */}
+                <div className="mt-auto pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="text-[11px] sm:text-xs text-slate-500">
-                    {isPT
-                      ? "Interessado neste imóvel? Contacte diretamente o agente ou proprietário para mais detalhes."
-                      : "Interested in this property? Reach out directly to the agent or owner for more details."}
+                    {selectedProperty.agentName ? (
+                      isPT ? (
+                        <>Representado por {selectedProperty.agentName}.</>
+                      ) : (
+                        <>Represented by {selectedProperty.agentName}.</>
+                      )
+                    ) : isPT ? (
+                      "Representado por agente local."
+                    ) : (
+                      "Represented by a local agent."
+                    )}
                   </div>
-                  <button
-                    type="button"
-                    className="inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-xs sm:text-sm font-semibold px-5 py-2 shadow hover:bg-sky-700"
-                  >
-                    {isPT ? "Pedir mais informações" : "Request more info"}
-                  </button>
+
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    {selectedProperty.agentPhone && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.location.href = `tel:${selectedProperty.agentPhone}`;
+                        }}
+                        className="inline-flex items-center justify-center rounded-full bg-emerald-600 text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow hover:bg-emerald-700"
+                      >
+                        📞 {isPT ? "Ligar agora" : "Call now"}
+                      </button>
+                    )}
+
+                    {selectedProperty.agentEmail && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          window.location.href = `mailto:${selectedProperty.agentEmail}?subject=Property%20enquiry%20Cascais`;
+                        }}
+                        className="inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow hover:bg-sky-700"
+                      >
+                        ✉️ {isPT ? "Enviar e-mail" : "Send email"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -822,15 +837,15 @@ const RealEstatePage: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between px-5 sm:px-6 py-3 border-b border-slate-100">
               <div>
-                <h2 className="text-sm sm:text-base font-semibold text-slate-900">
+                <h2 className="text-xs sm:text-sm font-semibold text-slate-900 leading-snug">
                   {isPT
-                    ? "Vamos ajudar a encontrar o imóvel ideal"
-                    : "Let us find your dream property"}
+                    ? "Pedido de procura de imóvel"
+                    : "Property search request"}
                 </h2>
                 <p className="text-[11px] text-slate-500">
                   {isPT
-                    ? "Preencha alguns detalhes e entraremos em contacto com opções em Cascais."
-                    : "Share a few details and we’ll get back to you with options in Cascais."}
+                    ? "Partilhe alguns detalhes e enviaremos opções em Cascais."
+                    : "Share a few details and we’ll send you options in Cascais."}
                 </p>
               </div>
               <button
@@ -931,31 +946,33 @@ const RealEstatePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Dates */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="block text-[11px] text-slate-600">
-                    {isPT ? "Desde" : "From"}
-                  </label>
-                  <input
-                    type="date"
-                    value={requestFrom}
-                    onChange={(e) => setRequestFrom(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
-                  />
+              {/* Dates – only for Rent */}
+              {requestType === "rent" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] text-slate-600">
+                      {isPT ? "Desde" : "From"}
+                    </label>
+                    <input
+                      type="date"
+                      value={requestFrom}
+                      onChange={(e) => setRequestFrom(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] text-slate-600">
+                      {isPT ? "Até" : "To"}
+                    </label>
+                    <input
+                      type="date"
+                      value={requestTo}
+                      onChange={(e) => setRequestTo(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="block text-[11px] text-slate-600">
-                    {isPT ? "Até" : "To"}
-                  </label>
-                  <input
-                    type="date"
-                    value={requestTo}
-                    onChange={(e) => setRequestTo(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
-                  />
-                </div>
-              </div>
+              )}
 
               {/* Size */}
               <div className="space-y-1.5">

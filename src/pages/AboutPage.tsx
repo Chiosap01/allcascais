@@ -264,7 +264,7 @@ const AboutPage: React.FC = () => {
       </section>
 
       {/* ABOUT CONTENT */}
-      <section className="max-w-5xl mx-auto px-4 pb-10 md:pb-14">
+      <section className="max-w-5xl mx-auto px-4 pb-10 md:pb-14 mt-6 sm:mt-8">
         {/* Section intro */}
         <div className="text-center mb-10 md:mb-12">
           <div className="inline-flex items-center rounded-full bg-teal-50 px-3 py-1 text-[11px] font-medium text-teal-700 border border-teal-100 mb-3">
@@ -576,9 +576,7 @@ const AboutPage: React.FC = () => {
               <span className="inline-flex items-center rounded-full bg-slate-900 text-white px-3 py-1.5 text-[11px] font-medium shadow-sm">
                 ✉️{" "}
                 <span className="ml-1.5">
-                  {isPT
-                    ? "Fale connosco a partir do seu perfil"
-                    : "Reach out from your profile"}
+                  {isPT ? "info@allcascais.com" : "info@allcascais.com"}
                 </span>
               </span>
             </div>
