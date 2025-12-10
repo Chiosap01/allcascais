@@ -33,7 +33,7 @@ const PROPERTIES: Property[] = [
     status: "active",
     title: "Moradia T4 com jardim em São Pedro do Estoril",
     description:
-      "Spacious 4-bedroom family house with a private garden in the prestigious São Pedro do Estoril area, just a short walk from the sea.",
+      "Localizada no prestigiado bairro de São Pedro do Estoril, esta moradia T4 oferece uma combinação única de conforto, localização e potencial de valorização. Com 190 m² de área útil e terreno de 230 m², a propriedade encontra-se em bom estado de conservação e dispõe de amplos espaços interiores e exteriores. A sala de 44 m² tem ligação direta ao jardim virado a sul, perfeita para quem privilegia luminosidade e privacidade. A cozinha de 20 m², também com acesso ao jardim, proporciona um ambiente funcional e moderno para o dia a dia. A moradia conta com um quarto principal de 20 m², três quartos adicionais — sendo que um pode facilmente ser convertido em suite — e três casas de banho, incluindo uma com cerca de 13 m² que pode ser dividida em duas, permitindo criar mais uma suite. No piso superior encontra-se uma suite exclusiva com vista mar, 16 m² e um terraço privativo de 12 m². O jardim tardoz, com aproximadamente 60 m², é virado a sul, garantindo ótima exposição solar. A propriedade inclui ainda um jardim de inverno coberto de 12 m², ideal para relaxar durante todo o ano. Situada a apenas 1 minuto da estação da CP de São Pedro e a 3 minutos a pé da praia, esta é uma oportunidade rara numa das zonas mais desejadas da linha de Cascais.",
     price: 1195000,
     currency: "EUR",
     buyRent: "buy",
@@ -43,13 +43,26 @@ const PROPERTIES: Property[] = [
     bathrooms: 3,
     usableArea: 210,
     image: "/properties/moradia-sp.jpeg",
-    images: ["/properties/moradia-sp-1.jpeg"],
-    // NEW – this one is with Julius, but other listings can use other agents
+    images: ["/properties/moradia-sp.jpeg", "/properties/sp-2.jpg"],
     agentName: "CHIOSS REAL ESTATE",
     agentPhone: "+351 930630880",
     agentEmail: "info@chioss.com",
   },
 ];
+
+const BASE_LOCATIONS = [
+  "Cascais",
+  "Estoril",
+  "Monte Estoril",
+  "São João do Estoril",
+  "São Pedro do Estoril",
+  "Carcavelos",
+  "Parede",
+  "Alcabideche",
+  "São Domingos de Rana",
+];
+
+const HOME_SEARCH_EMAIL = "info@allcascais.com"; // 👈 change this
 
 const AREA_STEPS = [
   10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 175, 200, 225, 250, 275,
@@ -155,7 +168,10 @@ const RealEstatePage: React.FC = () => {
     sortBy,
   ]);
 
-  const locations = Array.from(new Set(PROPERTIES.map((p) => p.location)));
+  // distinct locations from base list + properties
+  const locations = Array.from(
+    new Set([...BASE_LOCATIONS, ...PROPERTIES.map((p) => p.location)])
+  );
 
   const formatStatus = (status: Property["status"]) => {
     if (!isPT)
@@ -225,7 +241,44 @@ const RealEstatePage: React.FC = () => {
 
   const handleSubmitRequest = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: send to backend / email
+
+    const typeLabel =
+      requestType === "rent"
+        ? isPT
+          ? "Arrendar (estadia)"
+          : "Rent (stay)"
+        : isPT
+        ? "Comprar"
+        : "Buy";
+
+    const subject = encodeURIComponent(
+      isPT
+        ? "Novo pedido de procura de imóvel em Cascais"
+        : "New Cascais property search request"
+    );
+
+    const bodyLines = [
+      `Tipo de pedido / Request type: ${typeLabel}`,
+      "",
+      `Nome / Name: ${requestName}`,
+      `E-mail: ${requestEmail}`,
+      `Telefone / Phone: ${requestPhone || "-"}`,
+      "",
+      `Desde / From: ${requestFrom || "-"}`,
+      `Até / To: ${requestTo || "-"}`,
+      "",
+      `Tamanho mínimo (m²) / Min size: ${requestSize || "-"}`,
+      "",
+      "Notas / Notes:",
+      requestNotes || "-",
+    ];
+
+    const body = encodeURIComponent(bodyLines.join("\n"));
+
+    // Open user's email client with all data prefilled
+    window.location.href = `mailto:${HOME_SEARCH_EMAIL}?subject=${subject}&body=${body}`;
+
+    // Optional: still log it for debugging
     console.log("Property request:", {
       requestType,
       requestName,
@@ -236,11 +289,7 @@ const RealEstatePage: React.FC = () => {
       requestSize,
       requestNotes,
     });
-    alert(
-      isPT
-        ? "Obrigado! Vamos analisar o seu pedido e entraremos em contacto em breve."
-        : "Thank you! We’ll review your request and get back to you soon."
-    );
+
     closeRequestForm();
   };
 
@@ -815,7 +864,17 @@ const RealEstatePage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          window.location.href = `mailto:${selectedProperty.agentEmail}?subject=Property%20enquiry%20Cascais`;
+                          const subject = encodeURIComponent(
+                            (isPT
+                              ? "Pedido de informação: "
+                              : "Property enquiry: ") + selectedProperty.title
+                          );
+                          const body = encodeURIComponent(
+                            isPT
+                              ? "Olá,\n\nEstou interessado neste imóvel em Cascais.\n\nObrigado."
+                              : "Hi,\n\nI’m interested in this property in Cascais.\n\nThank you."
+                          );
+                          window.location.href = `mailto:${selectedProperty.agentEmail}?subject=${subject}&body=${body}`;
                         }}
                         className="inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow hover:bg-sky-700"
                       >
