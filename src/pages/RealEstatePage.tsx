@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useLanguage } from "../layouts/MainLayout";
+import { supabase } from "../supabase";
 
 type BuyRent = "all" | "buy" | "rent";
 
@@ -62,7 +63,7 @@ const BASE_LOCATIONS = [
   "São Domingos de Rana",
 ];
 
-const HOME_SEARCH_EMAIL = "info@allcascais.com"; // 👈 change this
+const [showAgentEmail, setShowAgentEmail] = useState(false);
 
 const AREA_STEPS = [
   10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 175, 200, 225, 250, 275,
@@ -195,16 +196,17 @@ const RealEstatePage: React.FC = () => {
     return isPT ? "Imóvel" : "Property";
   };
 
-  // Property modal helpers
   const openPropertyModal = (property: Property) => {
     setSelectedProperty(property);
     setActiveImageIndex(0);
+    setShowAgentEmail(false); // 👈 reset
     document.body.style.overflow = "hidden";
   };
 
   const closePropertyModal = () => {
     setSelectedProperty(null);
     setActiveImageIndex(0);
+    setShowAgentEmail(false); // 👈 reset
     document.body.style.overflow = "";
   };
 
@@ -239,56 +241,37 @@ const RealEstatePage: React.FC = () => {
     document.body.style.overflow = "";
   };
 
-  const handleSubmitRequest = (e: React.FormEvent) => {
+  const handleSubmitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const typeLabel =
-      requestType === "rent"
-        ? isPT
-          ? "Arrendar (estadia)"
-          : "Rent (stay)"
-        : isPT
-        ? "Comprar"
-        : "Buy";
-
-    const subject = encodeURIComponent(
-      isPT
-        ? "Novo pedido de procura de imóvel em Cascais"
-        : "New Cascais property search request"
-    );
-
-    const bodyLines = [
-      `Tipo de pedido / Request type: ${typeLabel}`,
-      "",
-      `Nome / Name: ${requestName}`,
-      `E-mail: ${requestEmail}`,
-      `Telefone / Phone: ${requestPhone || "-"}`,
-      "",
-      `Desde / From: ${requestFrom || "-"}`,
-      `Até / To: ${requestTo || "-"}`,
-      "",
-      `Tamanho mínimo (m²) / Min size: ${requestSize || "-"}`,
-      "",
-      "Notas / Notes:",
-      requestNotes || "-",
-    ];
-
-    const body = encodeURIComponent(bodyLines.join("\n"));
-
-    // Open user's email client with all data prefilled
-    window.location.href = `mailto:${HOME_SEARCH_EMAIL}?subject=${subject}&body=${body}`;
-
-    // Optional: still log it for debugging
-    console.log("Property request:", {
-      requestType,
-      requestName,
-      requestEmail,
-      requestPhone,
-      requestFrom,
-      requestTo,
-      requestSize,
-      requestNotes,
+    const { error } = await supabase.from("property_search_requests").insert({
+      type: requestType, // "rent" | "buy"
+      name: requestName,
+      email: requestEmail,
+      phone: requestPhone || null,
+      from_date: requestType === "rent" && requestFrom ? requestFrom : null,
+      to_date: requestType === "rent" && requestTo ? requestTo : null,
+      min_size: requestSize ? Number(requestSize) : null,
+      notes: requestNotes || null,
+      language: isPT ? "pt" : "en",
+      source_page: "real-estate",
     });
+
+    if (error) {
+      console.error("Supabase insert error:", error);
+      alert(
+        isPT
+          ? "Ocorreu um erro ao enviar o pedido. Tente novamente mais tarde."
+          : "There was an error sending your request. Please try again later."
+      );
+      return;
+    }
+
+    alert(
+      isPT
+        ? "Obrigado! Recebemos o seu pedido e entraremos em contacto em breve."
+        : "Thank you! We’ve received your request and will get back to you soon."
+    );
 
     closeRequestForm();
   };
@@ -832,56 +815,60 @@ const RealEstatePage: React.FC = () => {
                 </div>
 
                 {/* Agent CTA */}
-                <div className="mt-auto pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="text-[11px] sm:text-xs text-slate-500">
-                    {selectedProperty.agentName ? (
-                      isPT ? (
-                        <>Representado por {selectedProperty.agentName}.</>
+                <div className="mt-auto pt-4 border-t border-slate-200 flex flex-col gap-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <div className="text-[11px] sm:text-xs text-slate-500">
+                      {selectedProperty.agentName ? (
+                        isPT ? (
+                          <>Representado por {selectedProperty.agentName}.</>
+                        ) : (
+                          <>Represented by {selectedProperty.agentName}.</>
+                        )
+                      ) : isPT ? (
+                        "Representado por agente local."
                       ) : (
-                        <>Represented by {selectedProperty.agentName}.</>
-                      )
-                    ) : isPT ? (
-                      "Representado por agente local."
-                    ) : (
-                      "Represented by a local agent."
-                    )}
+                        "Represented by a local agent."
+                      )}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      {selectedProperty.agentPhone && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            window.location.href = `tel:${selectedProperty.agentPhone}`;
+                          }}
+                          className="inline-flex items-center justify-center rounded-full bg-emerald-600 text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow hover:bg-emerald-700"
+                        >
+                          📞 {isPT ? "Ligar agora" : "Call now"}
+                        </button>
+                      )}
+
+                      {selectedProperty.agentEmail && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAgentEmail(true)}
+                          className="inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow hover:bg-sky-700"
+                        >
+                          ✉️{" "}
+                          {showAgentEmail
+                            ? selectedProperty.agentEmail
+                            : isPT
+                            ? "Ver e-mail"
+                            : "See e-mail"}
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    {selectedProperty.agentPhone && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          window.location.href = `tel:${selectedProperty.agentPhone}`;
-                        }}
-                        className="inline-flex items-center justify-center rounded-full bg-emerald-600 text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow hover:bg-emerald-700"
-                      >
-                        📞 {isPT ? "Ligar agora" : "Call now"}
-                      </button>
-                    )}
-
-                    {selectedProperty.agentEmail && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const subject = encodeURIComponent(
-                            (isPT
-                              ? "Pedido de informação: "
-                              : "Property enquiry: ") + selectedProperty.title
-                          );
-                          const body = encodeURIComponent(
-                            isPT
-                              ? "Olá,\n\nEstou interessado neste imóvel em Cascais.\n\nObrigado."
-                              : "Hi,\n\nI’m interested in this property in Cascais.\n\nThank you."
-                          );
-                          window.location.href = `mailto:${selectedProperty.agentEmail}?subject=${subject}&body=${body}`;
-                        }}
-                        className="inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow hover:bg-sky-700"
-                      >
-                        ✉️ {isPT ? "Enviar e-mail" : "Send email"}
-                      </button>
-                    )}
-                  </div>
+                  {showAgentEmail && selectedProperty.agentEmail && (
+                    <div className="text-[11px] sm:text-xs text-slate-600 mt-1 break-all">
+                      {isPT ? "Contacto:" : "Contact:"}{" "}
+                      <span className="font-medium">
+                        {selectedProperty.agentEmail}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
