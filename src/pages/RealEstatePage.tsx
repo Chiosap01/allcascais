@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useLanguage } from "../layouts/MainLayout"; // ajuste o path se necessário
+import { useLanguage } from "../layouts/MainLayout";
 
 type BuyRent = "all" | "buy" | "rent";
 
@@ -19,6 +19,7 @@ interface Property {
   bathrooms: number;
   usableArea: number; // m²
   image?: string;
+  images?: string[];
 }
 
 const PROPERTIES: Property[] = [
@@ -36,39 +37,13 @@ const PROPERTIES: Property[] = [
     bedrooms: 4,
     bathrooms: 3,
     usableArea: 210,
-    image: "/properties/moradia-sp.jpeg",
-  },
-  {
-    id: 2,
-    status: "active",
-    title: "Contemporary Oceanfront Villa",
-    description:
-      "Stunning contemporary villa with panoramic ocean views and infinity pool",
-    price: 3950000,
-    currency: "EUR",
-    buyRent: "buy",
-    location: "Cascais Center",
-    type: "apartment",
-    bedrooms: 5,
-    bathrooms: 6,
-    usableArea: 320,
-    image: "/properties/moradia-2.jpg",
-  },
-  {
-    id: 3,
-    status: "active",
-    title: "Beachfront Estate with Private Garden",
-    description:
-      "Magnificent estate steps from the beach with lush private gardens",
-    price: 4200000,
-    currency: "EUR",
-    buyRent: "buy",
-    location: "Guincho",
-    type: "villa",
-    bedrooms: 6,
-    bathrooms: 7,
-    usableArea: 450,
-    image: "/properties/moradia-3.jpg",
+    image: "/properties/moradia-sp-1.jpeg",
+    images: [
+      "/properties/moradia-sp-1.jpeg",
+      "/properties/moradia-sp-2.jpeg",
+      "/properties/moradia-sp-3.jpeg",
+      "/properties/moradia-sp-4.jpeg",
+    ],
   },
 ];
 
@@ -93,6 +68,23 @@ const RealEstatePage: React.FC = () => {
   const [minArea, setMinArea] = useState<string>("any");
   const [maxArea, setMaxArea] = useState<string>("any");
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Property detail modal
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(
+    null
+  );
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  // Concierge / request form modal
+  const [showRequestForm, setShowRequestForm] = useState(false);
+  const [requestType, setRequestType] = useState<"rent" | "buy">("rent");
+  const [requestName, setRequestName] = useState("");
+  const [requestEmail, setRequestEmail] = useState("");
+  const [requestPhone, setRequestPhone] = useState("");
+  const [requestFrom, setRequestFrom] = useState("");
+  const [requestTo, setRequestTo] = useState("");
+  const [requestSize, setRequestSize] = useState("");
+  const [requestNotes, setRequestNotes] = useState("");
 
   const filteredProperties = useMemo(() => {
     let list = [...PROPERTIES];
@@ -159,7 +151,6 @@ const RealEstatePage: React.FC = () => {
     sortBy,
   ]);
 
-  // distinct locations from the mock data
   const locations = Array.from(new Set(PROPERTIES.map((p) => p.location)));
 
   const formatStatus = (status: Property["status"]) => {
@@ -174,6 +165,81 @@ const RealEstatePage: React.FC = () => {
     return "Arrendado";
   };
 
+  const formatBuyRentLabel = (p: { buyRent: BuyRent }) => {
+    if (p.buyRent === "rent") {
+      return isPT ? "Para arrendar" : "For rent";
+    }
+    if (p.buyRent === "buy") {
+      return isPT ? "Para venda" : "For sale";
+    }
+    return isPT ? "Imóvel" : "Property";
+  };
+
+  // Property modal helpers
+  const openPropertyModal = (property: Property) => {
+    setSelectedProperty(property);
+    setActiveImageIndex(0);
+    document.body.style.overflow = "hidden";
+  };
+
+  const closePropertyModal = () => {
+    setSelectedProperty(null);
+    setActiveImageIndex(0);
+    document.body.style.overflow = "";
+  };
+
+  const handleNextImage = () => {
+    if (!selectedProperty?.images || selectedProperty.images.length <= 1)
+      return;
+    setActiveImageIndex((prev) =>
+      prev + 1 >= selectedProperty.images!.length ? 0 : prev + 1
+    );
+  };
+
+  const handlePrevImage = () => {
+    if (!selectedProperty?.images || selectedProperty.images.length <= 1)
+      return;
+    setActiveImageIndex((prev) =>
+      prev - 1 < 0 ? selectedProperty.images!.length - 1 : prev - 1
+    );
+  };
+
+  const selectedImages =
+    selectedProperty?.images ??
+    (selectedProperty?.image ? [selectedProperty.image] : []);
+
+  // Request form helpers
+  const openRequestForm = () => {
+    setShowRequestForm(true);
+    document.body.style.overflow = "hidden";
+  };
+
+  const closeRequestForm = () => {
+    setShowRequestForm(false);
+    document.body.style.overflow = "";
+  };
+
+  const handleSubmitRequest = (e: React.FormEvent) => {
+    e.preventDefault();
+    // TODO: send to backend / email
+    console.log("Property request:", {
+      requestType,
+      requestName,
+      requestEmail,
+      requestPhone,
+      requestFrom,
+      requestTo,
+      requestSize,
+      requestNotes,
+    });
+    alert(
+      isPT
+        ? "Obrigado! Vamos analisar o seu pedido e entraremos em contacto em breve."
+        : "Thank you! We’ll review your request and get back to you soon."
+    );
+    closeRequestForm();
+  };
+
   return (
     <div className="min-h-screen bg-linear-to-b from-sky-50 to-slate-50">
       <div className="max-w-6xl mx-auto px-4 py-8 md:py-10">
@@ -185,12 +251,8 @@ const RealEstatePage: React.FC = () => {
               backgroundImage: "url('/cascais-coast.png')",
             }}
           >
-            {/* Dark overlay for readability */}
             <div className="absolute inset-0 bg-black/45 group-hover:bg-black/55 transition-colors" />
-
-            {/* Content */}
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between w-full gap-5">
-              {/* Left text */}
               <div className="text-left drop-shadow-xl">
                 <div className="text-[10px] sm:text-xs font-semibold tracking-[0.25em] uppercase mb-1 opacity-90">
                   {isPT ? "Parceiro em Destaque" : "Featured Partner"}
@@ -219,7 +281,6 @@ const RealEstatePage: React.FC = () => {
                 </p>
               </div>
 
-              {/* Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                 <button
                   type="button"
@@ -244,7 +305,7 @@ const RealEstatePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Filter card */}
+        {/* FILTER CARD */}
         <section className="mb-8">
           <div className="bg-white rounded-3xl shadow-md border border-slate-100 px-4 sm:px-6 py-4 sm:py-5">
             {/* First row */}
@@ -384,7 +445,6 @@ const RealEstatePage: React.FC = () => {
                   <option value="any">
                     {isPT ? "Sem limite" : "No limit"}
                   </option>
-                  {/* Some reasonable steps for both rent & buy */}
                   <option value="1000">€1.000</option>
                   <option value="2000">€2.000</option>
                   <option value="3000">€3.000</option>
@@ -462,90 +522,109 @@ const RealEstatePage: React.FC = () => {
           </div>
         </section>
 
-        {/* Results summary */}
-        <section className="mb-4">
-          <p className="text-sm font-semibold text-slate-700">
-            {filteredProperties.length}{" "}
-            {isPT ? "imóveis encontrados" : "properties found"}
-          </p>
-          <h2 className="mt-1 text-lg font-bold text-slate-800 flex items-center gap-2">
-            <span role="img" aria-hidden="true">
-              🏡
+        {/* RESULTS SUMMARY + CONCIERGE BUTTON */}
+        <section className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-slate-700">
+              {filteredProperties.length}{" "}
+              {isPT ? "imóveis encontrados" : "properties found"}
+            </p>
+            <h2 className="mt-1 text-lg font-bold text-slate-800 flex items-center gap-2">
+              <span role="img" aria-hidden="true">
+                🏡
+              </span>
+              <span>{isPT ? "Todos os imóveis" : "All Properties"}</span>
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            onClick={openRequestForm}
+            className="inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-xs sm:text-sm font-semibold px-4 sm:px-5 py-2 shadow hover:bg-sky-700 transition"
+          >
+            <span role="img" aria-hidden="true" className="mr-1.5">
+              ✨
             </span>
-            <span>{isPT ? "Todos os imóveis" : "All Properties"}</span>
-          </h2>
+            {isPT
+              ? "Deixe-nos encontrar o seu imóvel"
+              : "Let us find your Cascais home"}
+          </button>
         </section>
 
-        {/* Property cards */}
+        {/* PROPERTY CARDS */}
         <section className="grid md:grid-cols-2 gap-5 pb-10">
-          {filteredProperties.map((property) => (
-            <article
-              key={property.id}
-              className="bg-white rounded-2xl shadow-md border border-slate-100 p-4 flex flex-col gap-2 hover:-translate-y-0.5 hover:shadow-lg transition"
-            >
-              {property.image && (
-                <img
-                  src={property.image}
-                  alt={property.title}
-                  className="w-full h-48 object-cover rounded-xl mb-2"
-                />
-              )}
+          {filteredProperties.map((property) => {
+            const coverImage = property.images?.[0] ?? property.image;
+            return (
+              <article
+                key={property.id}
+                className="bg-white rounded-2xl shadow-md border border-slate-100 p-4 flex flex-col gap-2 hover:-translate-y-0.5 hover:shadow-lg transition"
+              >
+                {coverImage && (
+                  <img
+                    src={coverImage}
+                    alt={property.title}
+                    className="w-full h-48 object-cover rounded-xl mb-2"
+                  />
+                )}
 
-              <div className="flex items-center justify-between gap-3">
-                <span className="inline-flex items-center rounded-full bg-emerald-500 text-white text-xs font-semibold px-3 py-1">
-                  {formatStatus(property.status)}
-                </span>
-                <span className="text-[11px] text-slate-400">
-                  {property.location}
-                </span>
-              </div>
-
-              <h3 className="text-sm sm:text-base font-semibold text-slate-900 mt-1">
-                {property.title}
-              </h3>
-
-              <p className="text-xs sm:text-sm text-slate-600 line-clamp-3">
-                {property.description}
-              </p>
-
-              <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-slate-500">
-                <span>
-                  🛏 {property.bedrooms} {isPT ? "quartos" : "bedrooms"}
-                </span>
-                <span>
-                  🛁 {property.bathrooms}{" "}
-                  {isPT ? "casas de banho" : "bathrooms"}
-                </span>
-                <span>
-                  📏 {property.usableArea} m²{" "}
-                  {isPT ? "área útil" : "usable area"}
-                </span>
-              </div>
-
-              <div className="mt-3 flex items-end justify-between">
-                <div>
-                  <div className="text-lg font-bold text-sky-600">
-                    €{property.price.toLocaleString("en-US")}
-                  </div>
-                  <div className="text-[11px] text-slate-500">
-                    {property.buyRent === "rent"
-                      ? isPT
-                        ? "por mês"
-                        : "per month"
-                      : isPT
-                      ? "preço de venda"
-                      : "sale price"}
-                  </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="inline-flex items-center rounded-full bg-emerald-500 text-white text-xs font-semibold px-3 py-1">
+                    {formatStatus(property.status)}
+                  </span>
+                  <span className="text-[11px] text-slate-400">
+                    {property.location}
+                  </span>
                 </div>
-                <button
-                  type="button"
-                  className="text-xs font-semibold text-sky-600 hover:text-sky-700"
-                >
-                  {isPT ? "Ver detalhes →" : "View details →"}
-                </button>
-              </div>
-            </article>
-          ))}
+
+                <h3 className="text-sm sm:text-base font-semibold text-slate-900 mt-1">
+                  {property.title}
+                </h3>
+
+                <p className="text-xs sm:text-sm text-slate-600 line-clamp-3">
+                  {property.description}
+                </p>
+
+                <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-slate-500">
+                  <span>
+                    🛏 {property.bedrooms} {isPT ? "quartos" : "bedrooms"}
+                  </span>
+                  <span>
+                    🛁 {property.bathrooms}{" "}
+                    {isPT ? "casas de banho" : "bathrooms"}
+                  </span>
+                  <span>
+                    📏 {property.usableArea} m²{" "}
+                    {isPT ? "área útil" : "usable area"}
+                  </span>
+                </div>
+
+                <div className="mt-3 flex items-end justify-between">
+                  <div>
+                    <div className="text-lg font-bold text-sky-600">
+                      €{property.price.toLocaleString("en-US")}
+                    </div>
+                    <div className="text-[11px] text-slate-500">
+                      {property.buyRent === "rent"
+                        ? isPT
+                          ? "por mês"
+                          : "per month"
+                        : isPT
+                        ? "preço de venda"
+                        : "sale price"}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openPropertyModal(property)}
+                    className="text-xs font-semibold text-sky-600 hover:text-sky-700"
+                  >
+                    {isPT ? "Ver detalhes →" : "View details →"}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
 
           {filteredProperties.length === 0 && (
             <div className="col-span-full text-sm text-slate-500 bg-white rounded-2xl border border-dashed border-slate-200 p-6 text-center">
@@ -556,6 +635,376 @@ const RealEstatePage: React.FC = () => {
           )}
         </section>
       </div>
+
+      {/* PROPERTY DETAIL MODAL */}
+      {selectedProperty && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm px-2 sm:px-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 sm:px-7 py-3 border-b border-slate-100">
+              <div>
+                <h2 className="text-sm sm:text-base font-semibold text-slate-900">
+                  {selectedProperty.title}
+                </h2>
+                <p className="text-[11px] text-slate-500 flex items-center gap-2">
+                  <span>📍 {selectedProperty.location}</span>
+                  <span className="hidden sm:inline-block">•</span>
+                  <span className="hidden sm:inline-block">
+                    {formatBuyRentLabel(selectedProperty)}
+                  </span>
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  className="hidden sm:inline-flex items-center justify-center w-8 h-8 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 text-xs"
+                  title={isPT ? "Partilhar" : "Share"}
+                >
+                  ↗
+                </button>
+                <button
+                  type="button"
+                  className="hidden sm:inline-flex items-center justify-center w-8 h-8 rounded-full border border-slate-200 text-slate-500 hover:bg-slate-50 text-xs"
+                  title={isPT ? "Guardar" : "Save"}
+                >
+                  ❤
+                </button>
+                <button
+                  type="button"
+                  onClick={closePropertyModal}
+                  className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  aria-label={isPT ? "Fechar" : "Close"}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+              {/* Left: gallery */}
+              <div className="md:w-1/2 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col bg-slate-950/3">
+                <div className="relative flex-1 bg-slate-900/5">
+                  {selectedImages.length > 0 ? (
+                    <img
+                      src={selectedImages[activeImageIndex]}
+                      alt={selectedProperty.title}
+                      className="w-full h-full max-h-80 md:max-h-none object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">
+                      {isPT ? "Sem imagens disponíveis" : "No images available"}
+                    </div>
+                  )}
+
+                  {selectedImages.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handlePrevImage}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 shadow flex items-center justify-center hover:bg-white text-slate-700"
+                      >
+                        ‹
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleNextImage}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 shadow flex items-center justify-center hover:bg-white text-slate-700"
+                      >
+                        ›
+                      </button>
+                    </>
+                  )}
+
+                  {selectedImages.length > 0 && (
+                    <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-full bg-black/50 text-white text-[11px]">
+                      {activeImageIndex + 1} / {selectedImages.length}
+                    </div>
+                  )}
+
+                  <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-emerald-500 text-white text-[11px] font-semibold shadow">
+                    {formatBuyRentLabel(selectedProperty)}
+                  </div>
+                </div>
+
+                {selectedImages.length > 1 && (
+                  <div className="px-3 sm:px-4 py-2 border-t border-slate-100 bg-slate-900/2">
+                    <div className="flex gap-2 overflow-x-auto">
+                      {selectedImages.map((src, idx) => (
+                        <button
+                          key={src + idx}
+                          type="button"
+                          onClick={() => setActiveImageIndex(idx)}
+                          className={`h-16 w-20 rounded-xl overflow-hidden border transition shrink-0 ${
+                            idx === activeImageIndex
+                              ? "border-sky-500"
+                              : "border-transparent opacity-80 hover:opacity-100"
+                          }`}
+                        >
+                          <img
+                            src={src}
+                            alt={`${selectedProperty.title} ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Right: info */}
+              <div className="md:w-1/2 flex flex-col p-5 sm:p-6 overflow-y-auto">
+                <div className="mb-4">
+                  <div className="text-2xl font-bold text-slate-900">
+                    €{selectedProperty.price.toLocaleString("en-US")}
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-1">
+                    {selectedProperty.buyRent === "rent"
+                      ? isPT
+                        ? "Arrendamento mensal"
+                        : "Monthly rent"
+                      : isPT
+                      ? "Preço de venda"
+                      : "Sale price"}
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-600">
+                    <span className="inline-flex items-center gap-1">
+                      🛏 {selectedProperty.bedrooms}{" "}
+                      {isPT ? "quartos" : "bedrooms"}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      🛁 {selectedProperty.bathrooms}{" "}
+                      {isPT ? "casas de banho" : "bathrooms"}
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      📏 {selectedProperty.usableArea} m²
+                    </span>
+                    <span className="inline-flex items-center gap-1">
+                      📌 {formatStatus(selectedProperty.status)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold text-slate-900 mb-1.5">
+                    {isPT ? "Descrição" : "Description"}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-600 whitespace-pre-line leading-relaxed">
+                    {selectedProperty.description}
+                  </p>
+                </div>
+
+                <div className="mt-auto pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="text-[11px] sm:text-xs text-slate-500">
+                    {isPT
+                      ? "Interessado neste imóvel? Contacte diretamente o agente ou proprietário para mais detalhes."
+                      : "Interested in this property? Reach out directly to the agent or owner for more details."}
+                  </div>
+                  <button
+                    type="button"
+                    className="inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-xs sm:text-sm font-semibold px-5 py-2 shadow hover:bg-sky-700"
+                  >
+                    {isPT ? "Pedir mais informações" : "Request more info"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CONCIERGE REQUEST FORM MODAL */}
+      {showRequestForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-2 sm:px-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 sm:px-6 py-3 border-b border-slate-100">
+              <div>
+                <h2 className="text-sm sm:text-base font-semibold text-slate-900">
+                  {isPT
+                    ? "Vamos ajudar a encontrar o imóvel ideal"
+                    : "Let us find your dream property"}
+                </h2>
+                <p className="text-[11px] text-slate-500">
+                  {isPT
+                    ? "Preencha alguns detalhes e entraremos em contacto com opções em Cascais."
+                    : "Share a few details and we’ll get back to you with options in Cascais."}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeRequestForm}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
+                aria-label={isPT ? "Fechar" : "Close"}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Form body */}
+            <form
+              onSubmit={handleSubmitRequest}
+              className="flex-1 overflow-y-auto px-5 sm:px-6 py-4 space-y-4"
+            >
+              {/* Contact info block */}
+              <div className="rounded-2xl bg-sky-50 border border-sky-100 px-4 py-4 space-y-3">
+                <h3 className="text-xs sm:text-sm font-semibold text-slate-800">
+                  {isPT
+                    ? "Os seus dados de contacto"
+                    : "Your Contact Information"}
+                </h3>
+
+                <div className="space-y-2">
+                  <label className="block text-[11px] text-slate-600">
+                    {isPT ? "Nome" : "Name"}
+                  </label>
+                  <input
+                    type="text"
+                    value={requestName}
+                    onChange={(e) => setRequestName(e.target.value)}
+                    required
+                    placeholder={isPT ? "O seu nome" : "Your name"}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-[11px] text-slate-600">
+                    E-mail
+                  </label>
+                  <input
+                    type="email"
+                    value={requestEmail}
+                    onChange={(e) => setRequestEmail(e.target.value)}
+                    required
+                    placeholder="you@email.com"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-[11px] text-slate-600">
+                    {isPT ? "Telefone (opcional)" : "Phone (optional)"}
+                  </label>
+                  <input
+                    type="tel"
+                    value={requestPhone}
+                    onChange={(e) => setRequestPhone(e.target.value)}
+                    placeholder="+351 xxx xxx xxx"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+                  />
+                </div>
+              </div>
+
+              {/* Looking for */}
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-slate-700">
+                  {isPT
+                    ? "O que procura em Cascais?"
+                    : "What are you looking for in Cascais?"}
+                </label>
+                <div className="inline-flex rounded-full bg-slate-100 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setRequestType("rent")}
+                    className={`px-4 py-1.5 text-xs sm:text-sm rounded-full font-semibold transition ${
+                      requestType === "rent"
+                        ? "bg-sky-600 text-white shadow"
+                        : "text-slate-600"
+                    }`}
+                  >
+                    {isPT ? "Arrendar (estadia)" : "Rent (stay)"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRequestType("buy")}
+                    className={`px-4 py-1.5 text-xs sm:text-sm rounded-full font-semibold transition ${
+                      requestType === "buy"
+                        ? "bg-sky-600 text-white shadow"
+                        : "text-slate-600"
+                    }`}
+                  >
+                    {isPT ? "Comprar" : "Buy"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Dates */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] text-slate-600">
+                    {isPT ? "Desde" : "From"}
+                  </label>
+                  <input
+                    type="date"
+                    value={requestFrom}
+                    onChange={(e) => setRequestFrom(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] text-slate-600">
+                    {isPT ? "Até" : "To"}
+                  </label>
+                  <input
+                    type="date"
+                    value={requestTo}
+                    onChange={(e) => setRequestTo(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+                  />
+                </div>
+              </div>
+
+              {/* Size */}
+              <div className="space-y-1.5">
+                <label className="block text-[11px] text-slate-600">
+                  {isPT ? "Tamanho mínimo (m²)" : "Size (m²)"}
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={requestSize}
+                  onChange={(e) => setRequestSize(e.target.value)}
+                  placeholder={isPT ? "ex.: a partir de 80" : "e.g. from 80"}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+                />
+              </div>
+
+              {/* Special requests */}
+              <div className="space-y-1.5">
+                <label className="block text-[11px] text-slate-600">
+                  {isPT ? "Pedidos especiais" : "Special requests"}
+                </label>
+                <textarea
+                  rows={3}
+                  value={requestNotes}
+                  onChange={(e) => setRequestNotes(e.target.value)}
+                  placeholder={
+                    isPT
+                      ? "Piscina, vista mar, permite animais, garagem, orçamento aproximado..."
+                      : "Pool, ocean view, pets allowed, parking, approximate budget..."
+                  }
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none"
+                />
+              </div>
+
+              {/* Submit */}
+              <div className="pt-2 pb-1 flex justify-end">
+                <button
+                  type="submit"
+                  className="inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-xs sm:text-sm font-semibold px-5 py-2.5 shadow hover:bg-sky-700 transition"
+                >
+                  {isPT
+                    ? "Enviar pedido de procura"
+                    : "Send home-search request"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

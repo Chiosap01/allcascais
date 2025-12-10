@@ -342,7 +342,7 @@ const MainLayout: FC<MainLayoutProps> = ({ children }) => {
           {/* Mobile nav row */}
           <div className="sm:hidden border-t border-slate-100">
             <nav
-              className="flex flex-wrap items-center gap-2 px-3 py-2 text-xs"
+              className="flex flex-wrap items-center justify-center gap-2 px-3 py-2 text-xs"
               aria-label="Main navigation"
             >
               <NavLink
