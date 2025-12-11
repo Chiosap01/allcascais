@@ -83,10 +83,10 @@ const RealEstatePage: React.FC = () => {
   );
   const [minArea, setMinArea] = useState<string>("any");
   const [maxArea, setMaxArea] = useState<string>("any");
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // 👇 MOVE IT HERE:
   const [showAgentEmail, setShowAgentEmail] = useState(false);
+  const [hasCopiedEmail, setHasCopiedEmail] = useState(false);
 
   // Property detail modal
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
@@ -200,14 +200,16 @@ const RealEstatePage: React.FC = () => {
   const openPropertyModal = (property: Property) => {
     setSelectedProperty(property);
     setActiveImageIndex(0);
-    setShowAgentEmail(false); // 👈 reset
+    setShowAgentEmail(false);
+    setHasCopiedEmail(false);
     document.body.style.overflow = "hidden";
   };
 
   const closePropertyModal = () => {
     setSelectedProperty(null);
     setActiveImageIndex(0);
-    setShowAgentEmail(false); // 👈 reset
+    setShowAgentEmail(false);
+    setHasCopiedEmail(false);
     document.body.style.overflow = "";
   };
 
@@ -242,6 +244,25 @@ const RealEstatePage: React.FC = () => {
     document.body.style.overflow = "";
   };
 
+  const handleCopyAgentEmail = async () => {
+    if (!selectedProperty?.agentEmail) return;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(selectedProperty.agentEmail);
+        setHasCopiedEmail(true);
+        setShowAgentEmail(true);
+        setTimeout(() => setHasCopiedEmail(false), 2000);
+      } else {
+        // Fallback: just reveal it if clipboard is not available
+        setShowAgentEmail(true);
+      }
+    } catch (err) {
+      console.error("Failed to copy email:", err);
+      setShowAgentEmail(true);
+    }
+  };
+
   const handleSubmitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -254,8 +275,6 @@ const RealEstatePage: React.FC = () => {
       to_date: requestType === "rent" && requestTo ? requestTo : null,
       min_size: requestSize ? Number(requestSize) : null,
       notes: requestNotes || null,
-      language: isPT ? "pt" : "en",
-      source_page: "real-estate",
     });
 
     if (error) {
@@ -529,33 +548,7 @@ const RealEstatePage: React.FC = () => {
                   </select>
                 </div>
               </div>
-
-              {/* Advanced Filters button */}
-              <div className="flex justify-start md:justify-end mt-1 col-span-2 md:col-span-1">
-                <button
-                  type="button"
-                  onClick={() => setShowAdvanced((v) => !v)}
-                  className="inline-flex items-center justify-center rounded-full bg-slate-100 px-4 py-2 text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-200 transition w-full md:w-auto"
-                >
-                  {showAdvanced
-                    ? isPT
-                      ? "▲ Ocultar filtros avançados"
-                      : "▲ Hide advanced filters"
-                    : isPT
-                    ? "▼ Filtros avançados"
-                    : "▼ Advanced filters"}
-                </button>
-              </div>
             </div>
-
-            {/* Advanced filters content */}
-            {showAdvanced && (
-              <div className="mt-4 rounded-2xl border border-dashed border-slate-200 px-4 py-3 text-xs text-slate-500">
-                {isPT
-                  ? "Em breve mais filtros — preço por m², ano de construção, estacionamento e muito mais."
-                  : "More filters coming soon – price per m², year built, parking, and more."}
-              </div>
-            )}
           </div>
         </section>
 
@@ -848,28 +841,30 @@ const RealEstatePage: React.FC = () => {
                       {selectedProperty.agentEmail && (
                         <button
                           type="button"
-                          onClick={() => setShowAgentEmail(true)}
+                          onClick={handleCopyAgentEmail}
                           className="inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow hover:bg-sky-700"
                         >
                           ✉️{" "}
-                          {showAgentEmail
-                            ? selectedProperty.agentEmail
+                          {hasCopiedEmail
+                            ? isPT
+                              ? "Copiado!"
+                              : "Copied!"
                             : isPT
                             ? "Ver e-mail"
                             : "See e-mail"}
                         </button>
                       )}
+                      {showAgentEmail && selectedProperty.agentEmail && (
+                        <div className="text-[11px] sm:text-xs text-slate-600 mt-1 break-all">
+                          {hasCopiedEmail && (
+                            <span className="ml-1 text-emerald-600">
+                              {isPT ? "(copiado)" : "(copied)"}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
-
-                  {showAgentEmail && selectedProperty.agentEmail && (
-                    <div className="text-[11px] sm:text-xs text-slate-600 mt-1 break-all">
-                      {isPT ? "Contacto:" : "Contact:"}{" "}
-                      <span className="font-medium">
-                        {selectedProperty.agentEmail}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>

@@ -69,6 +69,8 @@ type Service = {
   punctuality?: number;
   ratingComment?: string;
   ratingCreatedAt?: string;
+
+  createdAt: string;
 };
 
 type ServiceRatingRow = {
@@ -249,6 +251,8 @@ const mapRowToService = (row: ServiceRow, isPT: boolean): Service => {
     punctuality: row.punctuality ?? undefined,
     ratingComment: row.comment ?? undefined,
     ratingCreatedAt: row.rating_created_at ?? undefined,
+
+    createdAt: row.created_at,
   };
 };
 
@@ -764,6 +768,11 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
     }
   };
 
+  const createdAtDate = service.createdAt ? new Date(service.createdAt) : null;
+  const isNew =
+    createdAtDate !== null &&
+    Date.now() - createdAtDate.getTime() < 48 * 60 * 60 * 1000; // 48h
+
   const instagramUrl = socialUrl("instagram", service.instagram);
   const facebookUrl = socialUrl("facebook", service.facebook);
   const tiktokUrl = socialUrl("tiktok", service.tiktok);
@@ -798,9 +807,17 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-slate-900 truncate">
-                {service.name}
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-slate-900 truncate">
+                  {service.name}
+                </h3>
+
+                {isNew && (
+                  <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                    {isPT ? "Novo" : "New"}
+                  </span>
+                )}
+              </div>
 
               <div className="mt-1 flex flex-wrap items-center gap-2">
                 <span className="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold text-slate-700 border border-slate-200">
@@ -1187,6 +1204,16 @@ const HomePage: React.FC = () => {
           ratingCreatedAt: stats.lastCreatedAt ?? undefined,
         };
       });
+
+      // 5) Sort services by createdAt descending (newest first)
+      mapped = mapped.sort((a, b) => {
+        const aTime = new Date(a.createdAt).getTime();
+        const bTime = new Date(b.createdAt).getTime();
+        return bTime - aTime;
+      });
+
+      setDbServices(mapped);
+      setLoadingServices(false);
 
       setDbServices(mapped);
       setLoadingServices(false);

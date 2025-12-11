@@ -289,10 +289,10 @@ const OfferCard: React.FC<OfferCardProps> = ({
             <img
               src={offer.imageUrl}
               alt={offer.title}
-              className="w-full h-52 md:h-full object-cover"
+              className="w-full h-52 md:h-56 lg:h-64 object-cover"
             />
           ) : (
-            <div className="w-full h-52 md:h-full flex flex-col items-center justify-center text-slate-400 text-xs gap-1">
+            <div className="w-full h-52 md:h-56 lg:h-64 flex flex-col items-center justify-center text-slate-400 text-xs gap-1">
               <div className="w-14 h-14 rounded-2xl bg-slate-200 flex items-center justify-center text-lg font-semibold text-slate-600">
                 {initials}
               </div>
