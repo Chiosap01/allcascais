@@ -247,25 +247,22 @@ const RealEstatePage: React.FC = () => {
   const handleCopyAgentEmail = async () => {
     if (!selectedProperty?.agentEmail) return;
 
-    // 1st click → just reveal email, no copy
+    // First click → reveal email
     if (!showAgentEmail) {
       setShowAgentEmail(true);
       return;
     }
 
-    // Next clicks → copy & show "Copied!"
+    // Next clicks → copy to clipboard
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(selectedProperty.agentEmail);
-        setHasCopiedEmail(true);
-        setTimeout(() => setHasCopiedEmail(false), 2000);
-      } else {
-        // Fallback: email is already visible, do nothing special
-        console.warn("Clipboard API not available");
-      }
+      await navigator.clipboard.writeText(selectedProperty.agentEmail);
+      setHasCopiedEmail(true);
+
+      setTimeout(() => {
+        setHasCopiedEmail(false);
+      }, 2000);
     } catch (err) {
-      console.error("Failed to copy email:", err);
-      // email is already visible, so we don't hide anything
+      console.error("Failed to copy:", err);
     }
   };
 
@@ -863,23 +860,19 @@ const RealEstatePage: React.FC = () => {
                         <button
                           type="button"
                           onClick={handleCopyAgentEmail}
-                          className="inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow hover:bg-sky-700"
+                          className="inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow hover:bg-sky-700 transition"
                         >
                           ✉️{" "}
                           {hasCopiedEmail
                             ? isPT
                               ? "Copiado!"
                               : "Copied!"
+                            : showAgentEmail
+                            ? selectedProperty.agentEmail
                             : isPT
                             ? "Ver e-mail"
                             : "See e-mail"}
                         </button>
-                      )}
-
-                      {showAgentEmail && selectedProperty.agentEmail && (
-                        <div className="text-[11px] sm:text-xs text-slate-600 mt-1 break-all">
-                          {selectedProperty.agentEmail}
-                        </div>
                       )}
                     </div>
                   </div>
