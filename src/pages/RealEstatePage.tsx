@@ -247,19 +247,25 @@ const RealEstatePage: React.FC = () => {
   const handleCopyAgentEmail = async () => {
     if (!selectedProperty?.agentEmail) return;
 
+    // 1st click → just reveal email, no copy
+    if (!showAgentEmail) {
+      setShowAgentEmail(true);
+      return;
+    }
+
+    // Next clicks → copy & show "Copied!"
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(selectedProperty.agentEmail);
         setHasCopiedEmail(true);
-        setShowAgentEmail(true);
         setTimeout(() => setHasCopiedEmail(false), 2000);
       } else {
-        // Fallback: just reveal it if clipboard is not available
-        setShowAgentEmail(true);
+        // Fallback: email is already visible, do nothing special
+        console.warn("Clipboard API not available");
       }
     } catch (err) {
       console.error("Failed to copy email:", err);
-      setShowAgentEmail(true);
+      // email is already visible, so we don't hide anything
     }
   };
 
@@ -572,9 +578,24 @@ const RealEstatePage: React.FC = () => {
             onClick={openRequestForm}
             className="inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-xs sm:text-sm font-semibold px-4 sm:px-5 py-2 shadow hover:bg-sky-700 transition"
           >
-            <span role="img" aria-hidden="true" className="mr-1.5">
-              ✨
-            </span>
+            <svg
+              className="mr-1.5 w-4 h-4"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              {/* Roof */}
+              <path d="M3 10.5L12 3l9 7.5" />
+              {/* Walls */}
+              <path d="M5 10.5V21h14V10.5" />
+              {/* Door */}
+              <path d="M10 21v-6h4v6" />
+            </svg>
+
             {isPT ? "Encontrar imóvel para mim" : "Help me find a property"}
           </button>
         </section>
@@ -854,13 +875,10 @@ const RealEstatePage: React.FC = () => {
                             : "See e-mail"}
                         </button>
                       )}
+
                       {showAgentEmail && selectedProperty.agentEmail && (
                         <div className="text-[11px] sm:text-xs text-slate-600 mt-1 break-all">
-                          {hasCopiedEmail && (
-                            <span className="ml-1 text-emerald-600">
-                              {isPT ? "(copiado)" : "(copied)"}
-                            </span>
-                          )}
+                          {selectedProperty.agentEmail}
                         </div>
                       )}
                     </div>

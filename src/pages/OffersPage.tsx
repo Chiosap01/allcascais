@@ -284,25 +284,27 @@ const OfferCard: React.FC<OfferCardProps> = ({
     <article className="bg-white rounded-3xl shadow-md border border-slate-100 overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition">
       <div className="flex flex-col md:flex-row">
         {/* IMAGE / LEFT SIDE */}
-        <div className="md:w-2/5 lg:w-1/3 relative bg-slate-100">
-          {offer.imageUrl ? (
-            <img
-              src={offer.imageUrl}
-              alt={offer.title}
-              className="w-full h-52 md:h-56 lg:h-64 object-cover"
-            />
-          ) : (
-            <div className="w-full h-52 md:h-56 lg:h-64 flex flex-col items-center justify-center text-slate-400 text-xs gap-1">
-              <div className="w-14 h-14 rounded-2xl bg-slate-200 flex items-center justify-center text-lg font-semibold text-slate-600">
-                {initials}
+        <div className="md:w-2/5 lg:w-1/3 self-start">
+          <div className="relative bg-slate-100">
+            {offer.imageUrl ? (
+              <img
+                src={offer.imageUrl}
+                alt={offer.title}
+                className="w-full h-52 md:h-60 lg:h-64 object-cover"
+              />
+            ) : (
+              <div className="w-full h-52 md:h-60 lg:h-64 flex flex-col items-center justify-center text-slate-400 text-xs gap-1">
+                <div className="w-14 h-14 rounded-2xl bg-slate-200 flex items-center justify-center text-lg font-semibold text-slate-600">
+                  {initials}
+                </div>
+                <span>
+                  {isPT
+                    ? "Adicione uma imagem da oferta"
+                    : "Add a photo of your offer"}
+                </span>
               </div>
-              <span>
-                {isPT
-                  ? "Adicione uma imagem da oferta"
-                  : "Add a photo of your offer"}
-              </span>
-            </div>
-          )}
+            )}
+          </div>
 
           {offer.highlight && (
             <div className="absolute top-3 left-3 inline-flex items-center rounded-full bg-amber-50/95 text-amber-700 text-[11px] font-semibold px-3 py-1 shadow-sm">
