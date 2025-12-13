@@ -983,7 +983,7 @@ const CreateOffersPage: React.FC = () => {
                 value={instagram}
                 onChange={(e) => setInstagram(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                placeholder="@yourinstagram or URL"
+                placeholder="Instagram URL"
               />
             </div>
             <div>
@@ -995,7 +995,7 @@ const CreateOffersPage: React.FC = () => {
                 value={facebook}
                 onChange={(e) => setFacebook(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                placeholder="Page name or URL"
+                placeholder="Page URL"
               />
             </div>
             <div>
@@ -1007,7 +1007,7 @@ const CreateOffersPage: React.FC = () => {
                 value={tiktok}
                 onChange={(e) => setTiktok(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                placeholder="@yourtiktok or URL"
+                placeholder="@Tiktok URL"
               />
             </div>
             <div>

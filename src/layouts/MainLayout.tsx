@@ -286,6 +286,18 @@ const MainLayout: FC<MainLayoutProps> = ({ children }) => {
                           {isPT ? "Criar nova oferta" : "Create new offer"}
                         </button>
 
+                        {/* List a property */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigate("/properties/new");
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full text-left px-4 py-2 hover:bg-slate-50 text-slate-700"
+                        >
+                          {isPT ? "Anunciar imóvel" : "List a property"}
+                        </button>
+
                         <hr className="my-1 border-slate-100" />
 
                         {/* Logout */}

@@ -1,13 +1,25 @@
-import React, { useMemo, useState } from "react";
+// src/pages/RealEstatePage.tsx
+import React, { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "../layouts/MainLayout";
 import { supabase } from "../supabase";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 type BuyRent = "all" | "buy" | "rent";
 
-type PropertyType = "all" | "apartment" | "house" | "villa" | "studio" | "land";
+type PropertyType =
+  | "all"
+  | "apartment"
+  | "house"
+  | "villa"
+  | "studio"
+  | "land"
+  | "commercial"
+  | "warehouse"
+  | "garage";
 
 interface Property {
-  id: number;
+  id: string;
   status: "active" | "sold" | "rented";
   title: string;
   description: string;
@@ -19,37 +31,157 @@ interface Property {
   bedrooms: number;
   bathrooms: number;
   usableArea: number; // m²
+
+  // ✅ extra listing details
+  grossArea?: number | null;
+  landArea?: number | null;
+  condition?: string | null;
+  furnished?: "yes" | "no" | "partial" | null;
+  energyCertificate?: string | null;
+  divisions?: number | null;
+
   image?: string;
   images?: string[];
+  isPriceNegotiable?: boolean;
 
-  // NEW – who represents this listing
+  // who represents this listing (for your user listings, this is contact details)
   agentName?: string;
   agentPhone?: string;
   agentEmail?: string;
+
+  // owner
+  ownerId?: string;
 }
 
-const PROPERTIES: Property[] = [
-  {
-    id: 1,
-    status: "active",
-    title: "Moradia T4 com jardim em São Pedro do Estoril",
-    description:
-      "Localizada no prestigiado bairro de São Pedro do Estoril, esta moradia T4 oferece uma combinação única de conforto, localização e potencial de valorização. Com 190 m² de área útil e terreno de 230 m², a propriedade encontra-se em bom estado de conservação e dispõe de amplos espaços interiores e exteriores. A sala de 44 m² tem ligação direta ao jardim virado a sul, perfeita para quem privilegia luminosidade e privacidade. A cozinha de 20 m², também com acesso ao jardim, proporciona um ambiente funcional e moderno para o dia a dia. A moradia conta com um quarto principal de 20 m², três quartos adicionais — sendo que um pode facilmente ser convertido em suite — e três casas de banho, incluindo uma com cerca de 13 m² que pode ser dividida em duas, permitindo criar mais uma suite. No piso superior encontra-se uma suite exclusiva com vista mar, 16 m² e um terraço privativo de 12 m². O jardim tardoz, com aproximadamente 60 m², é virado a sul, garantindo ótima exposição solar. A propriedade inclui ainda um jardim de inverno coberto de 12 m², ideal para relaxar durante todo o ano. Situada a apenas 1 minuto da estação da CP de São Pedro e a 3 minutos a pé da praia, esta é uma oportunidade rara numa das zonas mais desejadas da linha de Cascais.",
-    price: 1195000,
-    currency: "EUR",
-    buyRent: "buy",
-    location: "São Pedro do Estoril",
-    type: "house",
-    bedrooms: 4,
-    bathrooms: 3,
-    usableArea: 210,
-    image: "/properties/moradia-sp.jpeg",
-    images: ["/properties/moradia-sp.jpeg", "/properties/sp-2.jpg"],
-    agentName: "CHIOSS REAL ESTATE",
-    agentPhone: "+351 930630880",
-    agentEmail: "info@chioss.com",
-  },
-];
+// Shape of a row in Supabase "property_listings" table
+type PropertyRow = {
+  id: string | number;
+  user_id: string;
+
+  status: "active" | "sold" | "rented" | null;
+
+  title: string;
+  description: string | null;
+  price: number;
+  currency: string | null;
+
+  buy_rent: "buy" | "rent";
+  location: string;
+
+  property_type:
+    | "apartment"
+    | "house"
+    | "villa"
+    | "studio"
+    | "land"
+    | "commercial"
+    | "warehouse"
+    | "garage";
+
+  bedrooms: number | null;
+  bathrooms: number | null;
+
+  usable_area: number | null;
+  gross_area: number | null;
+  land_area: number | null;
+
+  condition: string | null;
+  furnished: "yes" | "no" | "partial" | null;
+  divisions: number | null;
+  energy_certificate: string | null;
+
+  images: string[] | null;
+  is_price_negotiable: boolean | null;
+
+  contact_name: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+};
+
+// Map DB row → UI Property
+const mapRowToProperty = (row: PropertyRow): Property => ({
+  id: String(row.id),
+  status: (row.status ?? "active") as Property["status"],
+
+  title: row.title,
+  description: row.description ?? "",
+  price: row.price,
+  currency: "EUR",
+
+  buyRent: row.buy_rent as BuyRent,
+  location: row.location,
+  type: row.property_type as PropertyType,
+
+  bedrooms: row.bedrooms ?? 0,
+  bathrooms: row.bathrooms ?? 0,
+  usableArea: row.usable_area ?? 0,
+
+  grossArea: row.gross_area,
+  landArea: row.land_area,
+  condition: row.condition,
+  furnished: row.furnished,
+  divisions: row.divisions,
+  energyCertificate: row.energy_certificate,
+
+  images: row.images ?? undefined,
+  ownerId: row.user_id,
+
+  isPriceNegotiable: !!row.is_price_negotiable,
+
+  // ✅ show represented-by + call + email for user-created listings
+  agentName: row.contact_name ?? undefined,
+  agentEmail: row.contact_email ?? undefined,
+  agentPhone: row.contact_phone ?? undefined,
+});
+
+// -------- helpers --------
+
+const formatTypeLabel = (t: PropertyType, isPT: boolean) => {
+  const map: Record<PropertyType, { pt: string; en: string }> = {
+    all: { pt: "Todos", en: "All" },
+    apartment: { pt: "Apartamento", en: "Apartment" },
+    house: { pt: "Moradia", en: "House" },
+    villa: { pt: "Villa", en: "Villa" },
+    studio: { pt: "Estúdio", en: "Studio" },
+    land: { pt: "Terreno", en: "Land" },
+    commercial: { pt: "Comercial", en: "Commercial" },
+    warehouse: { pt: "Armazém", en: "Warehouse" },
+    garage: { pt: "Garagem", en: "Garage" },
+  };
+  return (map[t] ?? map.all)[isPT ? "pt" : "en"];
+};
+
+const formatConditionLabel = (v?: string | null, isPT?: boolean) => {
+  if (!v) return null;
+  const map: Record<string, { pt: string; en: string }> = {
+    usado: { pt: "Usado", en: "Used" },
+    renovado: { pt: "Renovado", en: "Renovated" },
+    novo: { pt: "Novo", en: "New" },
+    para_recuperar: { pt: "Para recuperar", en: "To restore" },
+    em_construcao: { pt: "Em construção", en: "Under construction" },
+    ruina: { pt: "Ruína", en: "Ruins" },
+  };
+  return (map[v] ?? { pt: v, en: v })[isPT ? "pt" : "en"];
+};
+
+const formatFurnishedLabel = (
+  v?: "yes" | "no" | "partial" | null,
+  isPT?: boolean
+) => {
+  if (!v) return null;
+  const map = {
+    yes: { pt: "Sim", en: "Yes" },
+    no: { pt: "Não", en: "No" },
+    partial: { pt: "Parcial", en: "Partial" },
+  };
+  return map[v][isPT ? "pt" : "en"];
+};
+
+const calcPricePerSqm = (p: Property) => {
+  const area = p.type === "land" ? p.landArea ?? 0 : p.usableArea ?? 0;
+  if (!p.price || !area || area <= 0) return null;
+  return Math.round((p.price / area) * 100) / 100;
+};
 
 const BASE_LOCATIONS = [
   "Cascais",
@@ -72,6 +204,10 @@ const RealEstatePage: React.FC = () => {
   const { language } = useLanguage();
   const isPT = language === "pt";
 
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Filters
   const [buyRent, setBuyRent] = useState<BuyRent>("all");
   const [location, setLocation] = useState<string>("all");
   const [propertyType, setPropertyType] = useState<PropertyType>("all");
@@ -84,9 +220,14 @@ const RealEstatePage: React.FC = () => {
   const [minArea, setMinArea] = useState<string>("any");
   const [maxArea, setMaxArea] = useState<string>("any");
 
-  // 👇 MOVE IT HERE:
+  // Agent email reveal/copy
   const [showAgentEmail, setShowAgentEmail] = useState(false);
   const [hasCopiedEmail, setHasCopiedEmail] = useState(false);
+
+  // Properties from DB + static demo
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loadingProperties, setLoadingProperties] = useState(true);
+  const [propertiesError, setPropertiesError] = useState<string | null>(null);
 
   // Property detail modal
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
@@ -105,20 +246,76 @@ const RealEstatePage: React.FC = () => {
   const [requestSize, setRequestSize] = useState("");
   const [requestNotes, setRequestNotes] = useState("");
 
+  // Load properties from Supabase
+  useEffect(() => {
+    const loadProperties = async () => {
+      try {
+        setPropertiesError(null);
+        setLoadingProperties(true);
+
+        const { data, error } = await supabase
+          .from("property_listings")
+          .select(
+            `
+            id,
+            user_id,
+            status,
+            buy_rent,
+            property_type,
+            title,
+            description,
+            price,
+            currency,
+            location,
+            bedrooms,
+            bathrooms,
+            usable_area,
+            gross_area,
+            land_area,
+            condition,
+            furnished,
+            divisions,
+            energy_certificate,
+            images,
+            is_price_negotiable,
+            contact_name,
+            contact_email,
+            contact_phone
+          `
+          )
+          .eq("status", "active");
+
+        if (error) {
+          console.error("Error loading properties from Supabase:", error);
+          setPropertiesError("Failed to load properties.");
+          setProperties([]); // no fallback
+          return;
+        }
+
+        const dbProps = (data as PropertyRow[]).map(mapRowToProperty);
+        setProperties(dbProps);
+      } finally {
+        setLoadingProperties(false);
+      }
+    };
+
+    loadProperties();
+  }, []);
+
+  const formatPricePerSqm = (p: Property) => {
+    const area = p.usableArea ?? 0; // if you want land to use land_area, we can extend this
+    if (!area || area <= 0) return null;
+    const perSqm = Math.round((p.price / area) * 100) / 100;
+    return perSqm;
+  };
+
   const filteredProperties = useMemo(() => {
-    let list = [...PROPERTIES];
+    let list = [...properties];
 
-    if (buyRent !== "all") {
-      list = list.filter((p) => p.buyRent === buyRent);
-    }
-
-    if (location !== "all") {
-      list = list.filter((p) => p.location === location);
-    }
-
-    if (propertyType !== "all") {
+    if (buyRent !== "all") list = list.filter((p) => p.buyRent === buyRent);
+    if (location !== "all") list = list.filter((p) => p.location === location);
+    if (propertyType !== "all")
       list = list.filter((p) => p.type === propertyType);
-    }
 
     if (bedrooms !== "any") {
       const n = Number(bedrooms);
@@ -132,33 +329,25 @@ const RealEstatePage: React.FC = () => {
 
     if (maxPrice !== "any") {
       const n = Number(maxPrice);
-      if (!Number.isNaN(n)) {
-        list = list.filter((p) => p.price <= n);
-      }
+      if (!Number.isNaN(n)) list = list.filter((p) => p.price <= n);
     }
 
     if (minArea !== "any") {
       const n = Number(minArea);
-      if (!Number.isNaN(n)) {
-        list = list.filter((p) => p.usableArea >= n);
-      }
+      if (!Number.isNaN(n)) list = list.filter((p) => p.usableArea >= n);
     }
 
     if (maxArea !== "any") {
       const n = Number(maxArea);
-      if (!Number.isNaN(n)) {
-        list = list.filter((p) => p.usableArea <= n);
-      }
+      if (!Number.isNaN(n)) list = list.filter((p) => p.usableArea <= n);
     }
 
-    if (sortBy === "price-asc") {
-      list.sort((a, b) => a.price - b.price);
-    } else if (sortBy === "price-desc") {
-      list.sort((a, b) => b.price - a.price);
-    }
+    if (sortBy === "price-asc") list.sort((a, b) => a.price - b.price);
+    else if (sortBy === "price-desc") list.sort((a, b) => b.price - a.price);
 
     return list;
   }, [
+    properties,
     buyRent,
     location,
     propertyType,
@@ -170,30 +359,18 @@ const RealEstatePage: React.FC = () => {
     sortBy,
   ]);
 
-  // distinct locations from base list + properties
-  const locations = Array.from(
-    new Set([...BASE_LOCATIONS, ...PROPERTIES.map((p) => p.location)])
-  );
-
-  const formatStatus = (status: Property["status"]) => {
-    if (!isPT)
-      return status === "active"
-        ? "Active"
-        : status === "sold"
-        ? "Sold"
-        : "Rented";
-    if (status === "active") return "Ativo";
-    if (status === "sold") return "Vendido";
-    return "Arrendado";
+  const handleListPropertyClick = () => {
+    if (user) navigate("/properties/new");
+    else navigate("/auth", { state: { from: "/properties/new" } });
   };
 
+  const locations = Array.from(
+    new Set([...BASE_LOCATIONS, ...properties.map((p) => p.location)])
+  );
+
   const formatBuyRentLabel = (p: { buyRent: BuyRent }) => {
-    if (p.buyRent === "rent") {
-      return isPT ? "Para arrendar" : "For rent";
-    }
-    if (p.buyRent === "buy") {
-      return isPT ? "Para venda" : "For sale";
-    }
+    if (p.buyRent === "rent") return isPT ? "Para arrendar" : "For rent";
+    if (p.buyRent === "buy") return isPT ? "Para venda" : "For sale";
     return isPT ? "Imóvel" : "Property";
   };
 
@@ -253,14 +430,10 @@ const RealEstatePage: React.FC = () => {
       return;
     }
 
-    // Next clicks → copy to clipboard
     try {
       await navigator.clipboard.writeText(selectedProperty.agentEmail);
       setHasCopiedEmail(true);
-
-      setTimeout(() => {
-        setHasCopiedEmail(false);
-      }, 2000);
+      setTimeout(() => setHasCopiedEmail(false), 2000);
     } catch (err) {
       console.error("Failed to copy:", err);
     }
@@ -270,7 +443,7 @@ const RealEstatePage: React.FC = () => {
     e.preventDefault();
 
     const { error } = await supabase.from("property_search_requests").insert({
-      type: requestType, // "rent" | "buy"
+      type: requestType,
       name: requestName,
       email: requestEmail,
       phone: requestPhone || null,
@@ -299,6 +472,56 @@ const RealEstatePage: React.FC = () => {
     closeRequestForm();
   };
 
+  // OWNER ACTIONS (edit + delete)
+  const isOwner =
+    !!user && !!selectedProperty && selectedProperty.ownerId === user.id;
+
+  const handleEditListing = () => {
+    if (!selectedProperty || !user) return;
+    closePropertyModal();
+    navigate(`/properties/${selectedProperty.id}/edit`);
+  };
+
+  const handleDeleteListing = async () => {
+    if (!selectedProperty || !user) return;
+
+    const confirmText = isPT
+      ? "Tem a certeza que quer remover este anúncio? Esta ação é permanente."
+      : "Are you sure you want to remove this listing? This action is permanent.";
+
+    const confirmed = window.confirm(confirmText);
+    if (!confirmed) return;
+
+    const { error } = await supabase
+      .from("property_listings")
+      .delete()
+      .eq("id", selectedProperty.id)
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Error deleting listing:", error);
+      alert(
+        isPT
+          ? "Ocorreu um erro ao remover o anúncio."
+          : "Something went wrong while removing the listing."
+      );
+      return;
+    }
+
+    setProperties((prev) => prev.filter((p) => p.id !== selectedProperty.id));
+    closePropertyModal();
+  };
+
+  if (loadingProperties) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-slate-500 text-sm">
+          {isPT ? "A carregar imóveis..." : "Loading properties..."}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-linear-to-b from-sky-50 to-slate-50">
       <div className="max-w-6xl mx-auto px-4 py-8 md:py-10">
@@ -306,9 +529,7 @@ const RealEstatePage: React.FC = () => {
         <div className="mb-8">
           <div
             className="relative group rounded-2xl bg-cover bg-center bg-no-repeat border border-slate-200 shadow-md px-5 py-6 flex flex-col md:flex-row items-center justify-between gap-5 text-white overflow-hidden transform transition duration-200 ease-out hover:-translate-y-1 hover:shadow-2xl hover:scale-[1.01]"
-            style={{
-              backgroundImage: "url('/cascais-coast.png')",
-            }}
+            style={{ backgroundImage: "url('/cascais-coast.png')" }}
           >
             <div className="absolute inset-0 bg-black/45 group-hover:bg-black/55 transition-colors" />
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between w-full gap-5">
@@ -367,9 +588,7 @@ const RealEstatePage: React.FC = () => {
         {/* FILTER CARD */}
         <section className="mb-8">
           <div className="bg-white rounded-3xl shadow-md border border-slate-100 px-4 sm:px-6 py-4 sm:py-5">
-            {/* First row – 2 per row on mobile */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
-              {/* Buy/Rent */}
               <div className="flex flex-col gap-1 col-span-2 md:col-span-1">
                 <label className="text-xs font-semibold text-slate-600">
                   🏡 {isPT ? "Comprar / Arrendar" : "Buy / Rent"}
@@ -385,7 +604,6 @@ const RealEstatePage: React.FC = () => {
                 </select>
               </div>
 
-              {/* Location */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-600">
                   📍 {isPT ? "Localização" : "Location"}
@@ -406,7 +624,6 @@ const RealEstatePage: React.FC = () => {
                 </select>
               </div>
 
-              {/* Property Type */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-600">
                   🏘️ {isPT ? "Tipo de imóvel" : "Property Type"}
@@ -423,13 +640,17 @@ const RealEstatePage: React.FC = () => {
                     {isPT ? "Apartamento" : "Apartment"}
                   </option>
                   <option value="house">{isPT ? "Moradia" : "House"}</option>
-                  <option value="villa">Villa</option>
-                  <option value="studio">{isPT ? "Estúdio" : "Studio"}</option>
                   <option value="land">{isPT ? "Terreno" : "Land"}</option>
+                  <option value="commercial">
+                    {isPT ? "Espaço Comercial" : "Commercial Space"}
+                  </option>
+                  <option value="warehouse">
+                    {isPT ? "Armazém" : "Warehouse"}
+                  </option>
+                  <option value="garage">{isPT ? "Garagem" : "Garage"}</option>
                 </select>
               </div>
 
-              {/* Bedrooms */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-600">
                   🛏 {isPT ? "Quartos" : "Bedrooms"}
@@ -447,7 +668,6 @@ const RealEstatePage: React.FC = () => {
                 </select>
               </div>
 
-              {/* Bathrooms */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-600">
                   🛁 {isPT ? "Casas de banho" : "Bathrooms"}
@@ -465,9 +685,7 @@ const RealEstatePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Second row – 2 per row on mobile */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 items-center">
-              {/* Sort by Price */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-600">
                   💶 {isPT ? "Ordenar por preço" : "Sort by Price"}
@@ -491,7 +709,6 @@ const RealEstatePage: React.FC = () => {
                 </select>
               </div>
 
-              {/* Max Price */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-600">
                   💰 {isPT ? "Preço máximo" : "Max price"}
@@ -514,7 +731,6 @@ const RealEstatePage: React.FC = () => {
                 </select>
               </div>
 
-              {/* Usable area (min/max) */}
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold text-slate-600">
                   📏 {isPT ? "Área útil (m²)" : "Usable area (m²)"}
@@ -552,6 +768,14 @@ const RealEstatePage: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {propertiesError && (
+              <p className="mt-3 text-[11px] text-red-500">
+                {isPT
+                  ? "Não foi possível carregar todos os imóveis neste momento."
+                  : "Some properties could not be loaded right now."}
+              </p>
+            )}
           </div>
         </section>
 
@@ -570,37 +794,61 @@ const RealEstatePage: React.FC = () => {
             </h2>
           </div>
 
-          <button
-            type="button"
-            onClick={openRequestForm}
-            className="inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-xs sm:text-sm font-semibold px-4 sm:px-5 py-2 shadow hover:bg-sky-700 transition"
-          >
-            <svg
-              className="mr-1.5 w-4 h-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              type="button"
+              onClick={openRequestForm}
+              className="inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-xs sm:text-sm font-semibold px-4 sm:px-5 py-2 shadow hover:bg-sky-700 transition"
             >
-              {/* Roof */}
-              <path d="M3 10.5L12 3l9 7.5" />
-              {/* Walls */}
-              <path d="M5 10.5V21h14V10.5" />
-              {/* Door */}
-              <path d="M10 21v-6h4v6" />
-            </svg>
+              <svg
+                className="mr-1.5 w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3 10.5L12 3l9 7.5" />
+                <path d="M5 10.5V21h14V10.5" />
+                <path d="M10 21v-6h4v6" />
+              </svg>
+              {isPT ? "Encontrar imóvel para mim" : "Help me find a property"}
+            </button>
 
-            {isPT ? "Encontrar imóvel para mim" : "Help me find a property"}
-          </button>
+            <button
+              type="button"
+              onClick={handleListPropertyClick}
+              className="inline-flex items-center justify-center rounded-full border border-sky-600 bg-white text-sky-700 text-xs sm:text-sm font-semibold px-4 sm:px-5 py-2 shadow-sm hover:bg-sky-50 transition"
+            >
+              <svg
+                className="mr-1.5 w-4 h-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3 11L12 4l9 7" />
+                <path d="M5 11v9h14v-9" />
+                <path d="M10 20v-5h4v5" />
+                <path d="M18 3v4" />
+                <path d="M16 5h4" />
+              </svg>
+              {isPT ? "Anunciar o meu imóvel" : "List my property"}
+            </button>
+          </div>
         </section>
 
         {/* PROPERTY CARDS */}
-        <section className="grid md:grid-cols-2 gap-5 pb-10">
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-10">
           {filteredProperties.map((property) => {
             const coverImage = property.images?.[0] ?? property.image;
+            const ppsm = calcPricePerSqm(property);
+
             return (
               <article
                 key={property.id}
@@ -610,30 +858,37 @@ const RealEstatePage: React.FC = () => {
                 onKeyDown={(e) =>
                   e.key === "Enter" && openPropertyModal(property)
                 }
-                className="cursor-pointer bg-white rounded-2xl shadow-md border border-slate-100 p-4 flex flex-col gap-2 hover:-translate-y-0.5 hover:shadow-lg transition"
+                className="cursor-pointer bg-white rounded-2xl shadow-sm border border-slate-100 p-3 flex flex-col gap-1.5 hover:-translate-y-0.5 hover:shadow-md transition"
               >
                 {coverImage && (
-                  <img
-                    src={coverImage}
-                    alt={property.title}
-                    className="w-full h-48 object-cover rounded-xl mb-2"
-                  />
+                  <div className="w-full aspect-4/3 rounded-xl overflow-hidden bg-slate-100 mb-2">
+                    <img
+                      src={coverImage}
+                      alt={property.title}
+                      className="w-full h-full object-cover object-center"
+                      loading="lazy"
+                    />
+                  </div>
                 )}
 
                 <div className="flex items-center justify-between gap-3">
-                  <span className="inline-flex items-center rounded-full bg-emerald-500 text-white text-xs font-semibold px-3 py-1">
-                    {formatStatus(property.status)}
-                  </span>
+                  {property.isPriceNegotiable ? (
+                    <span className="inline-flex items-center rounded-full bg-emerald-500 text-white text-xs font-semibold px-3 py-1">
+                      {isPT ? "Preço negociável" : "Price negotiable"}
+                    </span>
+                  ) : (
+                    <span />
+                  )}
                   <span className="text-[11px] text-slate-400">
                     {property.location}
                   </span>
                 </div>
 
-                <h3 className="text-sm sm:text-base font-semibold text-slate-900 mt-1">
+                <h3 className="text-sm font-semibold text-slate-900 leading-snug mt-1">
                   {property.title}
                 </h3>
 
-                <p className="text-xs sm:text-sm text-slate-600 line-clamp-3">
+                <p className="text-xs text-slate-600 line-clamp-2">
                   {property.description}
                 </p>
 
@@ -651,11 +906,41 @@ const RealEstatePage: React.FC = () => {
                   </span>
                 </div>
 
+                {/* extra compact chips */}
+                <div className="mt-1 text-[11px] text-slate-500 flex flex-wrap gap-2">
+                  <span className="rounded-full bg-slate-50 border border-slate-200 px-2 py-0.5">
+                    {formatTypeLabel(property.type, isPT)}
+                  </span>
+
+                  {ppsm != null && (
+                    <span className="rounded-full bg-slate-50 border border-slate-200 px-2 py-0.5">
+                      €{ppsm.toLocaleString(isPT ? "pt-PT" : "en-US")}/m²
+                    </span>
+                  )}
+
+                  {property.energyCertificate && (
+                    <span className="rounded-full bg-slate-50 border border-slate-200 px-2 py-0.5">
+                      {isPT ? "CE" : "EC"}: {property.energyCertificate}
+                    </span>
+                  )}
+                </div>
+
                 <div className="mt-3 flex items-end justify-between">
-                  <div>
-                    <div className="text-lg font-bold text-sky-600">
-                      €{property.price.toLocaleString("en-US")}
+                  <div className="flex flex-col">
+                    <div className="flex items-baseline gap-2">
+                      <div className="text-lg font-bold text-sky-600">
+                        €{property.price.toLocaleString("en-US")}
+                      </div>
+
+                      {formatPricePerSqm(property) != null && (
+                        <div className="text-[11px] font-semibold text-slate-500">
+                          (€
+                          {formatPricePerSqm(property)!.toLocaleString("en-US")}
+                          /m²)
+                        </div>
+                      )}
                     </div>
+
                     <div className="text-[11px] text-slate-500">
                       {property.buyRent === "rent"
                         ? isPT
@@ -710,46 +995,67 @@ const RealEstatePage: React.FC = () => {
             <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
               {/* Left: gallery */}
               <div className="md:w-1/2 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col bg-slate-900/3">
-                <div className="relative flex-1 bg-slate-900/5">
-                  {selectedImages.length > 0 ? (
-                    <img
-                      src={selectedImages[activeImageIndex]}
-                      alt={selectedProperty.title}
-                      className="w-full h-full max-h-80 md:max-h-none object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-400 text-xs">
-                      {isPT ? "Sem imagens disponíveis" : "No images available"}
-                    </div>
-                  )}
+                <div className="relative w-full bg-slate-900/5">
+                  {/* Fixed aspect ratio so it never looks weird on laptop */}
+                  <div className="relative w-full aspect-16/10 md:aspect-16/11 overflow-hidden">
+                    {selectedImages.length > 0 ? (
+                      <>
+                        {/* Blurred "cover" background (nice look even with contain) */}
+                        <img
+                          src={selectedImages[activeImageIndex]}
+                          alt=""
+                          aria-hidden="true"
+                          className="absolute inset-0 w-full h-full object-cover blur-2xl scale-110 opacity-40"
+                        />
 
-                  {selectedImages.length > 1 && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={handlePrevImage}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 shadow flex items-center justify-center hover:bg:white text-slate-700"
-                      >
-                        ‹
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleNextImage}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/80 shadow flex items-center justify-center hover:bg:white text-slate-700"
-                      >
-                        ›
-                      </button>
-                    </>
-                  )}
+                        {/* Actual image (no distortion, no weird crop) */}
+                        <img
+                          src={selectedImages[activeImageIndex]}
+                          alt={selectedProperty.title}
+                          className="absolute inset-0 w-full h-full object-contain"
+                        />
+                      </>
+                    ) : (
+                      <div className="absolute inset-0 w-full h-full flex items-center justify-center text-slate-400 text-xs">
+                        {isPT
+                          ? "Sem imagens disponíveis"
+                          : "No images available"}
+                      </div>
+                    )}
 
-                  {selectedImages.length > 0 && (
-                    <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-full bg-black/50 text-white text-[11px]">
-                      {activeImageIndex + 1} / {selectedImages.length}
-                    </div>
-                  )}
+                    {/* Controls */}
+                    {selectedImages.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handlePrevImage}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/85 shadow flex items-center justify-center hover:bg-white text-slate-700"
+                          aria-label="Previous image"
+                        >
+                          ‹
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleNextImage}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/85 shadow flex items-center justify-center hover:bg-white text-slate-700"
+                          aria-label="Next image"
+                        >
+                          ›
+                        </button>
+                      </>
+                    )}
 
-                  <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-emerald-500 text-white text-[11px] font-semibold shadow">
-                    {formatStatus(selectedProperty.status)}
+                    {selectedImages.length > 0 && (
+                      <div className="absolute bottom-3 right-3 px-2.5 py-1 rounded-full bg-black/50 text-white text-[11px]">
+                        {activeImageIndex + 1} / {selectedImages.length}
+                      </div>
+                    )}
+
+                    {selectedProperty.isPriceNegotiable && (
+                      <div className="absolute top-3 left-3 px-3 py-1 rounded-full bg-emerald-500 text-white text-[11px] font-semibold shadow">
+                        {isPT ? "Preço negociável" : "Price negotiable"}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -761,7 +1067,7 @@ const RealEstatePage: React.FC = () => {
                           key={src + idx}
                           type="button"
                           onClick={() => setActiveImageIndex(idx)}
-                          className={`h-16 w-20 rounded-xl overflow-hidden border transition shrink-0 ${
+                          className={`w-20 aspect-4/3 rounded-xl overflow-hidden border transition shrink-0 ${
                             idx === activeImageIndex
                               ? "border-sky-500"
                               : "border-transparent opacity-80 hover:opacity-100"
@@ -781,38 +1087,170 @@ const RealEstatePage: React.FC = () => {
 
               {/* Right: info */}
               <div className="md:w-1/2 flex flex-col p-5 sm:p-6 overflow-y-auto bg-slate-50/40">
-                {/* Price & key facts */}
-                <div className="mb-5 space-y-3">
-                  <div>
-                    <div className="text-2xl font-bold text-slate-900">
-                      €{selectedProperty.price.toLocaleString("en-US")}
+                {/* Price & summary */}
+                <div className="mb-4">
+                  <div className="flex items-end justify-between gap-3">
+                    <div>
+                      <div className="text-2xl font-bold text-slate-900">
+                        €{selectedProperty.price.toLocaleString("en-US")}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-1">
+                        {selectedProperty.buyRent === "rent"
+                          ? isPT
+                            ? "Arrendamento mensal"
+                            : "Monthly rent"
+                          : isPT
+                          ? "Preço de venda"
+                          : "Sale price"}
+                      </div>
                     </div>
-                    <div className="text-[11px] text-slate-500 mt-1">
-                      {selectedProperty.buyRent === "rent"
-                        ? isPT
-                          ? "Arrendamento mensal"
-                          : "Monthly rent"
-                        : isPT
-                        ? "Preço de venda"
-                        : "Sale price"}
-                    </div>
+
+                    {(() => {
+                      const ppsm = calcPricePerSqm(selectedProperty);
+                      return ppsm != null ? (
+                        <div className="text-right">
+                          <div className="text-xs font-semibold text-slate-700">
+                            {isPT ? "Preço por m²" : "Price per m²"}
+                          </div>
+                          <div className="text-sm font-bold text-sky-700">
+                            €{ppsm.toLocaleString(isPT ? "pt-PT" : "en-US")}/m²
+                          </div>
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                </div>
+
+                {/* Key details grid */}
+                <div className="mb-5 rounded-2xl bg-white border border-slate-200 p-4">
+                  <div className="text-xs font-semibold text-slate-800 mb-3">
+                    {isPT ? "Detalhes do imóvel" : "Property details"}
                   </div>
 
-                  <div className="flex flex-wrap gap-2 text-[11px]">
-                    <span className="inline-flex items-center rounded-full bg-white px-3 py-1 border border-slate-200 text-slate-700">
-                      🛏 {selectedProperty.bedrooms}{" "}
-                      {isPT ? "quartos" : "bedrooms"}
-                    </span>
-                    <span className="inline-flex items-center rounded-full bg-white px-3 py-1 border border-slate-200 text-slate-700">
-                      🛁 {selectedProperty.bathrooms}{" "}
-                      {isPT ? "casas de banho" : "bathrooms"}
-                    </span>
-                    <span className="inline-flex items-center rounded-full bg-white px-3 py-1 border border-slate-200 text-slate-700">
-                      📏 {selectedProperty.usableArea} m²
-                    </span>
-                    <span className="inline-flex items-center rounded-full bg-white px-3 py-1 border border-slate-200 text-slate-700">
-                      📍 {selectedProperty.location}
-                    </span>
+                  <div className="grid grid-cols-2 gap-3 text-[12px]">
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+                      <span className="text-slate-500">
+                        {isPT ? "Tipo" : "Type"}
+                      </span>
+                      <span className="font-semibold text-slate-800">
+                        {formatTypeLabel(selectedProperty.type, isPT)}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+                      <span className="text-slate-500">
+                        📍 {isPT ? "Zona" : "Location"}
+                      </span>
+                      <span className="font-semibold text-slate-800">
+                        {selectedProperty.location}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+                      <span className="text-slate-500">
+                        🛏 {isPT ? "Quartos" : "Bedrooms"}
+                      </span>
+                      <span className="font-semibold text-slate-800">
+                        {selectedProperty.bedrooms}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+                      <span className="text-slate-500">
+                        🛁 {isPT ? "WC" : "Bathrooms"}
+                      </span>
+                      <span className="font-semibold text-slate-800">
+                        {selectedProperty.bathrooms}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+                      <span className="text-slate-500">
+                        📏 {isPT ? "Área útil" : "Usable"}
+                      </span>
+                      <span className="font-semibold text-slate-800">
+                        {selectedProperty.usableArea
+                          ? `${selectedProperty.usableArea} m²`
+                          : "-"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+                      <span className="text-slate-500">
+                        {isPT ? "Área bruta" : "Gross area"}
+                      </span>
+                      <span className="font-semibold text-slate-800">
+                        {selectedProperty.grossArea
+                          ? `${selectedProperty.grossArea} m²`
+                          : "-"}
+                      </span>
+                    </div>
+
+                    {selectedProperty.type === "land" && (
+                      <div className="col-span-2 flex items-center justify-between rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+                        <span className="text-slate-500">
+                          {isPT ? "Área de terreno" : "Land area"}
+                        </span>
+                        <span className="font-semibold text-slate-800">
+                          {selectedProperty.landArea
+                            ? `${selectedProperty.landArea} m²`
+                            : "-"}
+                        </span>
+                      </div>
+                    )}
+
+                    {formatConditionLabel(selectedProperty.condition, isPT) && (
+                      <div className="col-span-2 flex items-center justify-between rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+                        <span className="text-slate-500">
+                          {isPT ? "Condição" : "Condition"}
+                        </span>
+                        <span className="font-semibold text-slate-800">
+                          {formatConditionLabel(
+                            selectedProperty.condition,
+                            isPT
+                          )}
+                        </span>
+                      </div>
+                    )}
+
+                    {formatFurnishedLabel(selectedProperty.furnished, isPT) && (
+                      <div className="col-span-2 flex items-center justify-between rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+                        <span className="text-slate-500">
+                          {isPT ? "Mobilado" : "Furnished"}
+                        </span>
+                        <span className="font-semibold text-slate-800">
+                          {formatFurnishedLabel(
+                            selectedProperty.furnished,
+                            isPT
+                          )}
+                        </span>
+                      </div>
+                    )}
+
+                    {selectedProperty.energyCertificate && (
+                      <div className="col-span-2 flex items-center justify-between rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+                        <span className="text-slate-500">
+                          {isPT
+                            ? "Certificado Energético"
+                            : "Energy certificate"}
+                        </span>
+                        <span className="font-semibold text-slate-800">
+                          {selectedProperty.energyCertificate}
+                        </span>
+                      </div>
+                    )}
+
+                    {selectedProperty.divisions != null &&
+                      selectedProperty.divisions > 0 && (
+                        <div className="col-span-2 flex items-center justify-between rounded-xl bg-slate-50 border border-slate-100 px-3 py-2">
+                          <span className="text-slate-500">
+                            {isPT ? "N.º de divisões" : "Rooms"}
+                          </span>
+                          <span className="font-semibold text-slate-800">
+                            {selectedProperty.divisions}
+                          </span>
+                        </div>
+                      )}
                   </div>
                 </div>
 
@@ -826,7 +1264,27 @@ const RealEstatePage: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Agent CTA */}
+                {/* Owner controls (edit / delete) */}
+                {isOwner && (
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={handleEditListing}
+                      className="inline-flex items-center justify-center rounded-full bg-amber-500 text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow hover:bg-amber-600"
+                    >
+                      ✏️ {isPT ? "Editar anúncio" : "Edit listing"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeleteListing}
+                      className="inline-flex items-center justify-center rounded-full bg-red-600 text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow hover:bg-red-700"
+                    >
+                      🗑 {isPT ? "Remover anúncio" : "Remove listing"}
+                    </button>
+                  </div>
+                )}
+
+                {/* Agent/Contact CTA */}
                 <div className="mt-auto pt-4 border-t border-slate-200 flex flex-col gap-2">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                     <div className="text-[11px] sm:text-xs text-slate-500">
@@ -887,7 +1345,6 @@ const RealEstatePage: React.FC = () => {
       {showRequestForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-2 sm:px-4">
           <div className="bg-white rounded-3xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            {/* Header */}
             <div className="flex items-center justify-between px-5 sm:px-6 py-3 border-b border-slate-100">
               <div>
                 <h2 className="text-xs sm:text-sm font-semibold text-slate-900 leading-snug">
@@ -911,12 +1368,10 @@ const RealEstatePage: React.FC = () => {
               </button>
             </div>
 
-            {/* Form body */}
             <form
               onSubmit={handleSubmitRequest}
               className="flex-1 overflow-y-auto px-5 sm:px-6 py-4 space-y-4"
             >
-              {/* Contact info block */}
               <div className="rounded-2xl bg-sky-50 border border-sky-100 px-4 py-4 space-y-3">
                 <h3 className="text-xs sm:text-sm font-semibold text-slate-800">
                   {isPT
@@ -966,7 +1421,6 @@ const RealEstatePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Looking for */}
               <div className="space-y-2">
                 <label className="block text-xs font-semibold text-slate-700">
                   {isPT
@@ -999,7 +1453,6 @@ const RealEstatePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Dates – only for Rent */}
               {requestType === "rent" && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
@@ -1027,7 +1480,6 @@ const RealEstatePage: React.FC = () => {
                 </div>
               )}
 
-              {/* Size */}
               <div className="space-y-1.5">
                 <label className="block text-[11px] text-slate-600">
                   {isPT ? "Tamanho mínimo (m²)" : "Size (m²)"}
@@ -1042,7 +1494,6 @@ const RealEstatePage: React.FC = () => {
                 />
               </div>
 
-              {/* Special requests */}
               <div className="space-y-1.5">
                 <label className="block text-[11px] text-slate-600">
                   {isPT ? "Pedidos especiais" : "Special requests"}
@@ -1060,7 +1511,6 @@ const RealEstatePage: React.FC = () => {
                 />
               </div>
 
-              {/* Submit */}
               <div className="pt-2 pb-1 flex justify-end">
                 <button
                   type="submit"
