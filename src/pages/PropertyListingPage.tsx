@@ -757,19 +757,64 @@ const PropertyListingPage: React.FC = () => {
                     setIsPriceNegotiable((v) => !v);
                   }}
                   className={[
-                    "inline-flex items-center rounded-full px-3 py-1 text-[11px] border transition",
+                    // Base
+                    "group w-full sm:w-auto inline-flex items-center justify-center sm:justify-start gap-2",
+                    "rounded-xl sm:rounded-full px-4 py-3 sm:py-2",
+                    "text-sm sm:text-xs font-semibold border transition-all",
+                    "shadow-sm hover:shadow-md active:scale-[0.99]",
+                    "focus:outline-none focus:ring-4 focus:ring-[#1F6FA6]/20",
+
+                    // State
                     isPriceNegotiable
-                      ? "bg-emerald-50 border-emerald-500 text-emerald-700"
-                      : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50",
+                      ? "border-emerald-300 bg-gradient-to-b from-emerald-50 to-white text-emerald-900"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
                   ].join(" ")}
+                  aria-pressed={isPriceNegotiable}
                 >
-                  {isPT
-                    ? isPriceNegotiable
-                      ? "Preço negociável"
-                      : "Marcar negociável"
-                    : isPriceNegotiable
-                    ? "Price negotiable"
-                    : "Mark negotiable"}
+                  {/* Status dot */}
+                  <span
+                    className={[
+                      "inline-flex items-center justify-center w-8 h-8 sm:w-7 sm:h-7 rounded-full border transition",
+                      isPriceNegotiable
+                        ? "bg-emerald-100 border-emerald-200"
+                        : "bg-slate-100 border-slate-200 group-hover:bg-slate-200",
+                    ].join(" ")}
+                    aria-hidden="true"
+                  >
+                    <span
+                      className={[
+                        "w-2.5 h-2.5 sm:w-2 sm:h-2 rounded-full transition",
+                        isPriceNegotiable ? "bg-emerald-600" : "bg-slate-400",
+                      ].join(" ")}
+                    />
+                  </span>
+
+                  {/* Label */}
+                  <span className="whitespace-nowrap">
+                    {isPT
+                      ? isPriceNegotiable
+                        ? "Preço negociável"
+                        : "Tornar negociável"
+                      : isPriceNegotiable
+                      ? "Price negotiable"
+                      : "Make negotiable"}
+                  </span>
+
+                  {/* Desktop-only hint */}
+                  <span
+                    className={[
+                      "hidden sm:inline ml-1 text-[11px] font-medium transition",
+                      isPriceNegotiable ? "text-emerald-700" : "text-slate-400",
+                    ].join(" ")}
+                  >
+                    {isPT
+                      ? isPriceNegotiable
+                        ? "ativo"
+                        : "opcional"
+                      : isPriceNegotiable
+                      ? "on"
+                      : "optional"}
+                  </span>
                 </button>
               </div>
 

@@ -714,7 +714,7 @@ const OffersPage: React.FC = () => {
         <p className="text-sm text-slate-600 max-w-2xl">
           {isPT
             ? "Descubra pacotes especiais, descontos e campanhas sazonais dos prestadores de serviços verificados em Cascais."
-            : "Discover special packages, discounts and seasonal campaigns from trusted local providers in the Cascais area."}
+            : "Discover special packages, discounts and seasonal campaigns from trusted local providers."}
         </p>
       </header>
 

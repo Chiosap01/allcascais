@@ -21,6 +21,9 @@ const AuthPage: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  // Forgot password state
+  const [resetSent, setResetSent] = useState(false);
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
 
@@ -50,16 +53,55 @@ const AuthPage: React.FC = () => {
     </svg>
   );
 
+  const handleForgotPassword = async () => {
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    setResetSent(false);
+
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
+      setErrorMsg(
+        isPT ? "Introduza o seu email primeiro." : "Enter your email first."
+      );
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Make sure you have this route and it is whitelisted in Supabase Auth Redirect URLs
+      const redirectTo = `${window.location.origin}/reset-password`;
+
+      const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
+        redirectTo,
+      });
+
+      if (error) throw error;
+
+      setResetSent(true);
+      setSuccessMsg(
+        isPT
+          ? "Enviámos um email para redefinir a palavra-passe."
+          : "We sent you an email to reset your password."
+      );
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message ?? "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
+    setResetSent(false);
     setLoading(true);
 
     try {
       if (mode === "signin") {
         const { error } = await supabase.auth.signInWithPassword({
-          email,
+          email: email.trim(),
           password,
         });
         if (error) throw error;
@@ -80,7 +122,7 @@ const AuthPage: React.FC = () => {
         const redirectTo = `${window.location.origin}/service-listing`;
 
         const { error } = await supabase.auth.signUp({
-          email,
+          email: email.trim(),
           password,
           options: {
             emailRedirectTo: redirectTo,
@@ -90,7 +132,7 @@ const AuthPage: React.FC = () => {
 
         if (error) {
           if (
-            error.code === "user_already_exists" ||
+            (error as any).code === "user_already_exists" ||
             error.message.toLowerCase().includes("already registered") ||
             error.message.toLowerCase().includes("already exists")
           ) {
@@ -148,14 +190,14 @@ const AuthPage: React.FC = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Background image (put your pattern in /public and update the url) */}
+      {/* Background image */}
       <div
         className="absolute inset-0 bg-center bg-cover"
         style={{ backgroundImage: "url('/background.png')" }}
         aria-hidden="true"
       />
 
-      {/* Porcelain wash overlay (so text stays readable) */}
+      {/* Porcelain wash overlay */}
       <div className="absolute inset-0" aria-hidden="true" />
 
       {/* Content */}
@@ -184,7 +226,12 @@ const AuthPage: React.FC = () => {
             <div className="grid grid-cols-2 border-b border-slate-200/70">
               <button
                 type="button"
-                onClick={() => setMode("signin")}
+                onClick={() => {
+                  setMode("signin");
+                  setErrorMsg(null);
+                  setSuccessMsg(null);
+                  setResetSent(false);
+                }}
                 className={[
                   "py-3 text-sm font-semibold transition",
                   mode === "signin"
@@ -197,7 +244,12 @@ const AuthPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setMode("signup")}
+                onClick={() => {
+                  setMode("signup");
+                  setErrorMsg(null);
+                  setSuccessMsg(null);
+                  setResetSent(false);
+                }}
                 className={[
                   "py-3 text-sm font-semibold transition",
                   mode === "signup"
@@ -350,6 +402,13 @@ const AuthPage: React.FC = () => {
               {successMsg && (
                 <div className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
                   {successMsg}
+                  {resetSent && (
+                    <div className="mt-1 text-[11px] text-emerald-700">
+                      {isPT
+                        ? "Verifique a caixa de entrada e o spam."
+                        : "Check your inbox and spam folder."}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -377,18 +436,13 @@ const AuthPage: React.FC = () => {
                   : "Create account"}
               </button>
 
-              {/* Forgot */}
+              {/* Forgot password */}
               {mode === "signin" && (
                 <button
                   type="button"
-                  className={`text-xs ${AZULEJO.text} hover:underline`}
-                  onClick={() =>
-                    alert(
-                      isPT
-                        ? "Em breve: recuperação de palavra-passe."
-                        : "Coming soon: forgot password flow."
-                    )
-                  }
+                  className={`text-xs ${AZULEJO.text} hover:underline disabled:opacity-60`}
+                  onClick={handleForgotPassword}
+                  disabled={loading}
                 >
                   {isPT ? "Esqueceu-se da palavra-passe?" : "Forgot password?"}
                 </button>
@@ -402,7 +456,12 @@ const AuthPage: React.FC = () => {
                     <button
                       type="button"
                       className={`${AZULEJO.text} underline underline-offset-2`}
-                      onClick={() => setMode("signup")}
+                      onClick={() => {
+                        setMode("signup");
+                        setErrorMsg(null);
+                        setSuccessMsg(null);
+                        setResetSent(false);
+                      }}
                     >
                       {isPT ? "Criar conta" : "Create an account"}
                     </button>
@@ -414,7 +473,12 @@ const AuthPage: React.FC = () => {
                     <button
                       type="button"
                       className={`${AZULEJO.text} underline underline-offset-2`}
-                      onClick={() => setMode("signin")}
+                      onClick={() => {
+                        setMode("signin");
+                        setErrorMsg(null);
+                        setSuccessMsg(null);
+                        setResetSent(false);
+                      }}
                     >
                       {isPT ? "Iniciar sessão" : "Sign in"}
                     </button>

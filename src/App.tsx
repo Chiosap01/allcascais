@@ -10,6 +10,7 @@ import AuthPage from "./pages/AuthPage";
 import ServiceListingPage from "./pages/ServiceProfilePage";
 import CreateOfferPage from "./pages/CreateOfferPage";
 import PropertyListingPage from "./pages/PropertyListingPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 const App: React.FC = () => {
   return (
@@ -21,6 +22,7 @@ const App: React.FC = () => {
           <Route path="/real-estate" element={<RealEstatePage />} />
           <Route path="/about" element={<AboutPage />} />
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/service-listing" element={<ServiceListingPage />} />
           <Route path="/offers/new" element={<CreateOfferPage />} />
           <Route path="/offers/edit/:offerId" element={<CreateOfferPage />} />

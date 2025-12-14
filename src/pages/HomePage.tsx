@@ -1226,7 +1226,7 @@ const HomePage: React.FC = () => {
     <div className="min-h-screen bg-transparent pb-10">
       {/* HEADER / INTRO */}
       <header className="max-w-7xl mx-auto px-4 pt-8 pb-4">
-        <h1 className="text-xl md:text-2xl font-bold text-slate-900 mb-1">
+        <h1 className="text-xl md:text-2xl font-bold text-slate-900 mb-2">
           {isPT
             ? "Serviços verificados em Cascais"
             : "Trusted services in Cascais"}

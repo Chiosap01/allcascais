@@ -100,9 +100,9 @@ const MainLayout: FC<MainLayoutProps> = ({ children }) => {
       <div className="min-h-screen flex flex-col bg-transparent">
         {/* HEADER */}
         <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur shadow-md">
-          <div className="max-w-6xl mx-auto px-3 sm:px-0 h-16 flex items-center justify-between gap-3">
+          <div className="max-w-6xl mx-auto px-3 sm:px-2 h-16 flex items-center justify-between gap-3">
             {/* LEFT – LOGO */}
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2 sm:-ml-12">
               <img
                 src="/logo.png"
                 alt="All Cascais logo"
@@ -418,7 +418,7 @@ const MainLayout: FC<MainLayoutProps> = ({ children }) => {
           <div className="absolute -top-12 left-0 right-0 h-12 bg-linear-to-b from-transparent to-white/30 pointer-events-none" />
 
           <footer className="border-t border-sky-200/60 bg-white/70 backdrop-blur-md">
-            <div className="max-w-6xl mx-auto px-4 py-4 text-[11px] text-slate-600 flex flex-col sm:flex-row gap-2 justify-between">
+            <div className="max-w-6xl mx-auto px-4 py-4 text-[11px] text-slate-600 flex flex-row flex-wrap items-center justify-between gap-x-3 gap-y-1">
               <span>© {new Date().getFullYear()} All Cascais.</span>
               <span>
                 {isPT
