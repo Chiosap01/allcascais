@@ -16,6 +16,7 @@ export type CategoryId =
   | "sports-outdoors"
   | "medical"
   | "transportation"
+  | "auto-services" // ✅ NEW (kept)
   | "pets"
   | "events-entertainment"
   | "professional";
@@ -38,28 +39,17 @@ export const CATEGORIES: Category[] = [
   { id: "home-services", label: "Home Services", icon: "🛠️" },
   { id: "hosting", label: "Property Hosting", icon: "🔑" },
   { id: "food", label: "Food & Dining", icon: "🍽️" },
-  { id: "legal-bureaucracy", label: "Legal & Bureaucracy", icon: "⚖️" },
-  {
-    id: "relocation-expat",
-    label: "Relocation & Expat Services",
-    icon: "🧳",
-  },
+  { id: "legal-bureaucracy", label: "Legal & Tax", icon: "⚖️" },
+  { id: "relocation-expat", label: "Relocation & Settling-in", icon: "🧳" },
   { id: "family-care", label: "Family & Care", icon: "👨‍👩‍👧" },
-  {
-    id: "education-courses",
-    label: "Education & Courses",
-    icon: "📚",
-  },
+  { id: "education-courses", label: "Education & Courses", icon: "📚" },
   { id: "wellness-beauty", label: "Wellness & Beauty", icon: "💆‍♀️" },
   { id: "sports-outdoors", label: "Sports & Outdoors", icon: "🏃‍♂️" },
   { id: "medical", label: "Medical", icon: "🏥" },
   { id: "transportation", label: "Transportation", icon: "🚗" },
+  { id: "auto-services", label: "Auto Services", icon: "🔧" }, // ✅ NEW
   { id: "pets", label: "Pets", icon: "🐾" },
-  {
-    id: "events-entertainment",
-    label: "Events & Entertainment",
-    icon: "🎉",
-  },
+  { id: "events-entertainment", label: "Events & Entertainment", icon: "🎉" },
   { id: "professional", label: "Professional Services", icon: "💼" },
 ];
 
@@ -70,14 +60,10 @@ export const SUBCATEGORIES: Partial<Record<CategoryId, Subcategory[]>> = {
     { id: "architect", label: "Architect", icon: "🏗️" },
     { id: "contractor", label: "Contractor", icon: "👷‍♂️" },
     { id: "notary", label: "Notary", icon: "📜" },
-    {
-      id: "legal-real-estate",
-      label: "Real Estate Lawyer",
-      icon: "⚖️",
-    },
     { id: "home-staging", label: "Home Staging", icon: "🛋️" },
     { id: "renovation", label: "Renovation", icon: "🧱" },
   ],
+
   "home-services": [
     { id: "cleaning", label: "Cleaning", icon: "🧹" },
     { id: "handyman", label: "Handyman", icon: "🔧" },
@@ -91,35 +77,30 @@ export const SUBCATEGORIES: Partial<Record<CategoryId, Subcategory[]>> = {
     { id: "glazier", label: "Glazier / Windows", icon: "🪟" },
     { id: "pool-service", label: "Pool Service", icon: "🏊" },
     { id: "appliance-repair", label: "Appliance Repair", icon: "🧺" },
-    {
-      id: "solar-photovoltaics",
-      label: "Solar / Photovoltaics",
-      icon: "☀️",
-    },
+    { id: "solar-photovoltaics", label: "Solar / Photovoltaics", icon: "☀️" },
     { id: "security-systems", label: "Security Systems", icon: "🔒" },
     { id: "locksmith", label: "Locksmith", icon: "🔐" },
+    { id: "aircon-hvac", label: "Air Conditioning / HVAC", icon: "❄️" },
+    { id: "moving-company", label: "Moving & Relocation", icon: "🚚" },
+
+    // ✅ NEW (kept only the truly hireable ones)
+    { id: "window-cleaning", label: "Window Cleaning", icon: "🧽" },
     {
-      id: "aircon-hvac",
-      label: "Air Conditioning / HVAC",
-      icon: "❄️",
+      id: "waterproofing-mold",
+      label: "Waterproofing / Damp & Mold",
+      icon: "🧱",
     },
-    {
-      id: "moving-company",
-      label: "Moving & Relocation",
-      icon: "🚚",
-    },
+    { id: "interior-designer", label: "Interior Designer", icon: "🪑" },
   ],
+
   hosting: [
     { id: "airbnb-management", label: "Airbnb Management", icon: "🏡" },
     { id: "key-holding", label: "Key Holding", icon: "🔑" },
     { id: "guest-reception", label: "Guest Reception", icon: "🤝" },
-    {
-      id: "laundry-rentals",
-      label: "Laundry for Rentals",
-      icon: "🧺",
-    },
+    { id: "laundry-rentals", label: "Laundry for Rentals", icon: "🧺" },
     { id: "home-checks", label: "Home Check-ins", icon: "👀" },
   ],
+
   food: [
     { id: "restaurant", label: "Restaurant", icon: "🍽️" },
     { id: "cafe", label: "Café", icon: "☕" },
@@ -129,10 +110,12 @@ export const SUBCATEGORIES: Partial<Record<CategoryId, Subcategory[]>> = {
     { id: "bakery", label: "Bakery", icon: "🥖" },
     { id: "wine-spirits", label: "Wine & Spirits", icon: "🍷" },
   ],
+
   "legal-bureaucracy": [
     { id: "lawyer", label: "Lawyer", icon: "⚖️" },
     { id: "tax-advisor", label: "Tax Advisor", icon: "📊" },
   ],
+
   "relocation-expat": [
     {
       id: "immigration-residency",
@@ -140,38 +123,22 @@ export const SUBCATEGORIES: Partial<Record<CategoryId, Subcategory[]>> = {
       icon: "🛂",
     },
     { id: "nif-bank", label: "NIF & Bank Setup", icon: "🏦" },
-    {
-      id: "documentation-help",
-      label: "Documentation Help",
-      icon: "📄",
-    },
-    {
-      id: "relocation-agency",
-      label: "Relocation Agency",
-      icon: "📦",
-    },
-    {
-      id: "settling-in-services",
-      label: "Settling-in Services",
-      icon: "🧭",
-    },
+    { id: "documentation-help", label: "Documentation Help", icon: "📄" },
+    { id: "relocation-agency", label: "Relocation Agency", icon: "📦" },
+    { id: "settling-in-services", label: "Settling-in Services", icon: "🧭" },
   ],
+
   "family-care": [
     { id: "babysitting", label: "Babysitting", icon: "🧸" },
     { id: "nanny", label: "Nanny", icon: "👶" },
     { id: "elderly-care", label: "Elderly Care", icon: "🧓" },
-    {
-      id: "kindergarten-daycare",
-      label: "Kindergarten / Daycare",
-      icon: "🧒",
-    },
+    { id: "kindergarten-daycare", label: "Kindergarten / Daycare", icon: "🧒" },
     { id: "summer-camp", label: "Summer Camp", icon: "🏕️" },
-    {
-      id: "special-needs",
-      label: "Special Needs Support",
-      icon: "🧩",
-    },
+    { id: "special-needs", label: "Special Needs Support", icon: "🧩" },
+    // ✅ NEW
+    { id: "after-school", label: "After-school / Activities", icon: "🎒" },
   ],
+
   "education-courses": [
     { id: "language-school", label: "Language School", icon: "📘" },
     { id: "tutoring", label: "Tutoring", icon: "✏️" },
@@ -179,6 +146,7 @@ export const SUBCATEGORIES: Partial<Record<CategoryId, Subcategory[]>> = {
     { id: "music-school", label: "Music School", icon: "🎵" },
     { id: "dance-school", label: "Dance School", icon: "💃" },
   ],
+
   "wellness-beauty": [
     { id: "massage", label: "Massage", icon: "💆‍♀️" },
     { id: "yoga", label: "Yoga", icon: "🧘‍♀️" },
@@ -196,49 +164,27 @@ export const SUBCATEGORIES: Partial<Record<CategoryId, Subcategory[]>> = {
     { id: "osteopath", label: "Osteopath", icon: "🦴" },
     { id: "psychologist", label: "Psychologist", icon: "🧠" },
     { id: "acupuncture", label: "Acupuncture", icon: "🪡" },
-    {
-      id: "personal-training",
-      label: "Personal Training",
-      icon: "🏋️",
-    },
+    { id: "personal-training", label: "Personal Training", icon: "🏋️" },
   ],
+
   "sports-outdoors": [
     { id: "surf-school", label: "Surf School", icon: "🏄‍♂️" },
     { id: "padel", label: "Padel", icon: "🏓" },
     { id: "gym-fitness", label: "Gym & Fitness", icon: "💪" },
     { id: "running-club", label: "Running Club", icon: "🏃‍♂️" },
-    {
-      id: "swimming",
-      label: "Swimming & Aquatics",
-      icon: "🏊‍♂️",
-    },
+    { id: "swimming", label: "Swimming & Aquatics", icon: "🏊‍♂️" },
     { id: "golf", label: "Golf", icon: "⛳" },
     { id: "tennis", label: "Tennis", icon: "🎾" },
     { id: "cycling", label: "Cycling", icon: "🚴‍♂️" },
     { id: "martial-arts", label: "Martial Arts", icon: "🥋" },
-    {
-      id: "sailing-school",
-      label: "Sailing School",
-      icon: "⛵",
-    },
-    {
-      id: "boat-tours",
-      label: "Boat Tours & Charters",
-      icon: "🛥️",
-    },
-    {
-      id: "horse-riding",
-      label: "Horse Riding",
-      icon: "🐎",
-    },
+    { id: "sailing-school", label: "Sailing School", icon: "⛵" },
+    { id: "boat-tours", label: "Boat Tours & Charters", icon: "🛥️" },
+    { id: "horse-riding", label: "Horse Riding", icon: "🐎" },
   ],
+
   medical: [
     { id: "gp", label: "General Practitioner", icon: "👨‍⚕️" },
-    {
-      id: "clinic-urgent-care",
-      label: "Clinic / Urgent Care",
-      icon: "🏥",
-    },
+    { id: "clinic-urgent-care", label: "Clinic / Urgent Care", icon: "🏥" },
     { id: "laboratory", label: "Laboratory / Analysis", icon: "🧪" },
     { id: "imaging", label: "Imaging", icon: "🩻" },
     { id: "dentist", label: "Dentist", icon: "🦷" },
@@ -246,103 +192,74 @@ export const SUBCATEGORIES: Partial<Record<CategoryId, Subcategory[]>> = {
     { id: "gynecology", label: "Gynecology", icon: "👩‍⚕️" },
     { id: "orthopedist", label: "Orthopedist", icon: "🦴" },
     { id: "dermatologist", label: "Dermatologist", icon: "🧴" },
-    {
-      id: "vaccinations-travel",
-      label: "Vaccinations / Travel",
-      icon: "💉",
-    },
+    { id: "vaccinations-travel", label: "Vaccinations / Travel", icon: "💉" },
   ],
+
   transportation: [
     { id: "airport-transfer", label: "Airport Transfer", icon: "✈️" },
     { id: "taxi", label: "Taxi", icon: "🚕" },
     { id: "private-driver", label: "Private Driver", icon: "🚘" },
-    {
-      id: "shuttle-service",
-      label: "Shuttle Service",
-      icon: "🚐",
-    },
+    { id: "shuttle-service", label: "Shuttle Service", icon: "🚐" },
     { id: "car-rental", label: "Car Rental", icon: "🚗" },
     { id: "scooter-rental", label: "Scooter Rental", icon: "🛵" },
     { id: "bike-rental", label: "Bike Rental", icon: "🚲" },
     { id: "bike-repair", label: "Bike Repair", icon: "🛠️" },
     { id: "scooter-repair", label: "Scooter Repair", icon: "🛠️" },
   ],
+
+  // ✅ NEW CATEGORY: Auto Services (kept minimal & service-focused)
+  "auto-services": [
+    { id: "mechanic", label: "Mechanic / Auto Repair", icon: "🔧" },
+    { id: "inspection-ipo", label: "Inspection (IPO) Help", icon: "✅" },
+    { id: "tires", label: "Tires", icon: "🛞" },
+    { id: "car-detailing", label: "Car Detailing", icon: "✨" },
+    { id: "auto-electrician", label: "Auto Electrician", icon: "⚡" },
+  ],
+
   pets: [
     { id: "veterinarian", label: "Veterinarian", icon: "🐾" },
     { id: "grooming", label: "Grooming", icon: "✂️" },
     { id: "dog-walker", label: "Dog Walker", icon: "🚶‍♂️" },
     { id: "pet-sitting", label: "Pet Sitting", icon: "🐕" },
-    {
-      id: "pet-boarding",
-      label: "Pet Boarding / Hotel",
-      icon: "🏨",
-    },
+    { id: "pet-boarding", label: "Pet Boarding / Hotel", icon: "🏨" },
     { id: "pet-taxi", label: "Pet Taxi", icon: "🚕" },
     { id: "pet-supplies", label: "Pet Supplies", icon: "🦴" },
     { id: "pet-training", label: "Dog Training", icon: "🦮" },
   ],
+
   "events-entertainment": [
     { id: "dj", label: "DJ / Music", icon: "🎧" },
     { id: "live-music", label: "Live Music", icon: "🎤" },
-    {
-      id: "event-planner",
-      label: "Event Planner",
-      icon: "🎪",
-    },
+    { id: "event-planner", label: "Event Planner", icon: "🎪" },
     { id: "kids-parties", label: "Kids Parties", icon: "🥳" },
-    {
-      id: "event-decoration",
-      label: "Event Decoration",
-      icon: "🎈",
-    },
-    {
-      id: "party-rental",
-      label: "Party Rentals",
-      icon: "🪑",
-    },
-    {
-      id: "wedding-planner",
-      label: "Wedding Planner",
-      icon: "💍",
-    },
+    { id: "event-decoration", label: "Event Decoration", icon: "🎈" },
+    { id: "party-rental", label: "Party Rentals", icon: "🪑" },
+    { id: "wedding-planner", label: "Wedding Planner", icon: "💍" },
   ],
+
   professional: [
     { id: "photography", label: "Photographer", icon: "📸" },
     { id: "video-maker", label: "Video Maker", icon: "🎥" },
     { id: "it-service", label: "IT Services", icon: "💻" },
     { id: "translation", label: "Translation", icon: "🌐" },
-    {
-      id: "consulting",
-      label: "Business Consulting",
-      icon: "📈",
-    },
-    {
-      id: "insurance-broker",
-      label: "Insurance Broker",
-      icon: "📋",
-    },
+    { id: "consulting", label: "Business Consulting", icon: "📈" },
+    { id: "insurance-broker", label: "Insurance Broker", icon: "📋" },
     { id: "accountant", label: "Accountant", icon: "📊" },
     { id: "coworking", label: "Coworking Space", icon: "🏢" },
     { id: "web-design", label: "Web Design & Dev", icon: "🖥️" },
-    {
-      id: "digital-marketing",
-      label: "Digital Marketing",
-      icon: "📣",
-    },
-    {
-      id: "hr-recruitment",
-      label: "HR & Recruitment",
-      icon: "👥",
-    },
+    { id: "digital-marketing", label: "Digital Marketing", icon: "📣" },
+    { id: "hr-recruitment", label: "HR & Recruitment", icon: "👥" },
+
+    // ✅ NEW (kept)
+    { id: "mortgage-broker", label: "Mortgage Broker", icon: "🏦" },
+    { id: "financial-advisor", label: "Financial Advisor", icon: "💶" },
   ],
 };
 
 /* ---------- LOCALIZATION HELPERS ---------- */
 
 export const getCategoryLabel = (id: CategoryId, isPT: boolean): string => {
-  if (!isPT) {
-    return CATEGORIES.find((c) => c.id === id)?.label ?? id;
-  }
+  if (!isPT) return CATEGORIES.find((c) => c.id === id)?.label ?? id;
 
   switch (id) {
     case "all":
@@ -356,9 +273,9 @@ export const getCategoryLabel = (id: CategoryId, isPT: boolean): string => {
     case "food":
       return "Comida & Restauração";
     case "legal-bureaucracy":
-      return "Legal & Burocracia";
+      return "Legal & Fiscal";
     case "relocation-expat":
-      return "Relocation & Expats";
+      return "Relocação & Integração";
     case "family-care":
       return "Família & Cuidados";
     case "education-courses":
@@ -371,6 +288,8 @@ export const getCategoryLabel = (id: CategoryId, isPT: boolean): string => {
       return "Saúde";
     case "transportation":
       return "Transportes";
+    case "auto-services":
+      return "Serviços Auto";
     case "pets":
       return "Animais de Estimação";
     case "events-entertainment":
@@ -451,6 +370,14 @@ export const getSubcategoryLabel = (
           return "Ar Condicionado / AVAC";
         case "moving-company":
           return "Empresa de Mudanças";
+
+        // ✅ NEW
+        case "window-cleaning":
+          return "Limpeza de Janelas";
+        case "waterproofing-mold":
+          return "Impermeabilização / Humidades & Bolor";
+        case "interior-designer":
+          return "Designer de Interiores";
       }
       break;
 
@@ -504,11 +431,11 @@ export const getSubcategoryLabel = (
         case "nif-bank":
           return "NIF & Conta Bancária";
         case "documentation-help":
-          return "Apoio com Documentos";
+          return "Apoio Administrativo";
         case "relocation-agency":
           return "Agência de Relocation";
         case "settling-in-services":
-          return "Serviços de Acolhimento";
+          return "Serviços de Integração";
       }
       break;
 
@@ -526,6 +453,9 @@ export const getSubcategoryLabel = (
           return "Campo de Férias";
         case "special-needs":
           return "Apoio Necessidades Especiais";
+        // ✅ NEW
+        case "after-school":
+          return "ATL / Atividades Pós-Aulas";
       }
       break;
 
@@ -652,6 +582,21 @@ export const getSubcategoryLabel = (
       }
       break;
 
+    case "auto-services":
+      switch (subId) {
+        case "mechanic":
+          return "Mecânico / Reparação Auto";
+        case "inspection-ipo":
+          return "Inspeção (IPO)";
+        case "tires":
+          return "Pneus";
+        case "car-detailing":
+          return "Detailing Auto";
+        case "auto-electrician":
+          return "Eletricista Auto";
+      }
+      break;
+
     case "pets":
       switch (subId) {
         case "veterinarian":
@@ -716,6 +661,11 @@ export const getSubcategoryLabel = (
           return "Marketing Digital";
         case "hr-recruitment":
           return "RH & Recrutamento";
+        // ✅ NEW
+        case "mortgage-broker":
+          return "Intermediário de Crédito";
+        case "financial-advisor":
+          return "Consultor Financeiro";
       }
       break;
   }

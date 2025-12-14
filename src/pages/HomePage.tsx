@@ -18,12 +18,12 @@ import type { CategoryId, Category, Subcategory } from "../data/categories";
 /* ---------- SHARED PILL STYLES ---------- */
 
 const pillBase =
-  "relative flex flex-col items-center justify-center gap-1 text-center rounded-2xl border bg-white/90 shadow-sm px-3 py-2 text-[11px] sm:text-xs transform transition duration-150";
-const pillSize = "min-w-[88px] sm:min-w-[110px]";
+  "relative flex flex-col items-center justify-center gap-1 text-center rounded-2xl border bg-white/90 shadow-sm px-2.5 py-2 text-[10px] sm:text-[11px] transform transition duration-150";
+const pillSize = "min-w-[76px] sm:min-w-[96px] md:min-w-[104px]";
 
 const subPillBase =
-  "relative flex flex-col items-center justify-center gap-1 text-center rounded-2xl border bg-white/90 shadow-sm px-3 py-1.5 text-[10px] sm:text-xs transform transition duration-150";
-const subPillSize = "min-w-[78px] sm:min-w-[100px]";
+  "relative flex flex-col items-center justify-center gap-1 text-center rounded-2xl border bg-white/90 shadow-sm px-2.5 py-1.5 text-[9.5px] sm:text-[11px] transform transition duration-150";
+const subPillSize = "min-w-[70px] sm:min-w-[90px] md:min-w-[96px]";
 
 /* ---------- OPENING HOURS TYPE (matches jsonb) ---------- */
 
@@ -1301,7 +1301,7 @@ const HomePage: React.FC = () => {
                 >
                   <span
                     className={[
-                      "flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full",
+                      "flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full",
                       active
                         ? "bg-sky-100 text-sky-900"
                         : "bg-slate-50 text-slate-700",
@@ -1345,7 +1345,7 @@ const HomePage: React.FC = () => {
               >
                 <span
                   className={[
-                    "flex items-center justify-center w-7 h-7 rounded-full",
+                    "flex items-center justify-center w-6.5 h-6.5 rounded-full",
                     selectedSubcategory === "all"
                       ? "bg-sky-100 text-sky-900"
                       : "bg-slate-50 text-slate-700",
@@ -1378,7 +1378,7 @@ const HomePage: React.FC = () => {
                   >
                     <span
                       className={[
-                        "flex items-center justify-center w-7 h-7 rounded-full",
+                        "flex items-center justify-center w-6.5 h-6.5 rounded-full",
                         active
                           ? "bg-sky-100 text-sky-900"
                           : "bg-slate-50 text-slate-700",

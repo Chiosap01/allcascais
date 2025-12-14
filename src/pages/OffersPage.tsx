@@ -22,12 +22,12 @@ type CategoryFilterId = CategoryId | "all";
 /* ---------- SHARED PILL STYLES ---------- */
 
 const pillBase =
-  "relative flex flex-col items-center justify-center gap-1 text-center rounded-2xl border bg-white/90 shadow-sm px-3 py-2 text-[11px] sm:text-xs transform transition duration-150";
-const pillSize = "min-w-[88px] sm:min-w-[110px]";
+  "relative flex flex-col items-center justify-center gap-1 text-center rounded-2xl border bg-white/90 shadow-sm px-2.5 py-2 text-[10px] sm:text-[11px] transform transition duration-150";
+const pillSize = "min-w-[76px] sm:min-w-[96px] md:min-w-[104px]";
 
 const subPillBase =
-  "relative flex flex-col items-center justify-center gap-1 text-center rounded-2xl border bg-white/90 shadow-sm px-3 py-1.5 text-[10px] sm:text-xs transform transition duration-150";
-const subPillSize = "min-w-[78px] sm:min-w-[100px]";
+  "relative flex flex-col items-center justify-center gap-1 text-center rounded-2xl border bg-white/90 shadow-sm px-2.5 py-1.5 text-[9.5px] sm:text-[11px] transform transition duration-150";
+const subPillSize = "min-w-[70px] sm:min-w-[90px] md:min-w-[96px]";
 
 /* ---------- OFFER TYPES ---------- */
 
@@ -751,7 +751,7 @@ const OffersPage: React.FC = () => {
                       "border-sky-500/80",
                       "bg-gradient-to-b from-white to-sky-50",
                       "text-slate-900",
-                      "ring-2 ring-sky-200/70",
+                      "ring-2 ring-[#1F6FA6]/70",
                       "shadow-sm",
                     ].join(" ")
                   : [
@@ -781,7 +781,7 @@ const OffersPage: React.FC = () => {
                 >
                   <span
                     className={[
-                      "flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full",
+                      "flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full",
                       active
                         ? "bg-sky-100 text-sky-900"
                         : "bg-slate-50 text-slate-700",
@@ -819,13 +819,13 @@ const OffersPage: React.FC = () => {
                   subPillSize,
                   "border hover:-translate-y-0.5 hover:shadow-md",
                   selectedSubcategory === "all"
-                    ? "border-sky-500/80 bg-linear-to-b from-white to-sky-50 text-slate-900 ring-2 ring-sky-200/70"
-                    : "border-sky-200/70 bg-white/90 text-slate-700 hover:bg-white hover:border-sky-300",
+                    ? "border-sky-500/80 bg-linear-to-b from-white to-sky-50 text-slate-900 ring-2 ring-[#1F6FA6]/70"
+                    : "border-[#1F6FA6]/70 bg-white/90 text-slate-700 hover:bg-white hover:border-sky-300",
                 ].join(" ")}
               >
                 <span
                   className={[
-                    "flex items-center justify-center w-7 h-7 rounded-full",
+                    "flex items-center justify-center w-6.5 h-6.5 rounded-full",
                     selectedSubcategory === "all"
                       ? "bg-sky-100 text-sky-900"
                       : "bg-slate-50 text-slate-700",
@@ -852,13 +852,13 @@ const OffersPage: React.FC = () => {
                       subPillSize,
                       "border hover:-translate-y-0.5 hover:shadow-md",
                       active
-                        ? "border-sky-500/80 bg-linear-to-b from-white to-sky-50 text-slate-900 ring-2 ring-sky-200/70"
+                        ? "border-[#1F6FA6]/80 bg-linear-to-b from-white to-sky-50 text-slate-900 ring-2 ring-[#1F6FA6]/70"
                         : "border-sky-200/70 bg-white/90 text-slate-700 hover:bg-white hover:border-sky-300",
                     ].join(" ")}
                   >
                     <span
                       className={[
-                        "flex items-center justify-center w-7 h-7 rounded-full",
+                        "flex items-center justify-center w-6.5 h-6.5 rounded-full",
                         active
                           ? "bg-sky-100 text-sky-900"
                           : "bg-slate-50 text-slate-700",
