@@ -611,7 +611,7 @@ const CreateOffersPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10">
+    <div className="min-h-screen bg-transparent py-10">
       <div className="max-w-4xl mx-auto px-4">
         {/* HEADER */}
         <header className="mb-8">
@@ -914,7 +914,7 @@ const CreateOffersPage: React.FC = () => {
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 min={todayStr} // ✅ cannot pick a date before today
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]"
               />
             </div>
           </div>

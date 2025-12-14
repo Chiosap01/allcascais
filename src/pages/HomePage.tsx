@@ -432,7 +432,7 @@ const RatingModal: React.FC<RatingModalProps> = ({ service, onClose }) => {
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={3}
-              className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]"
               placeholder={
                 isPT
                   ? "Partilhe detalhes sobre a sua experiência com este serviço..."
@@ -458,7 +458,7 @@ const RatingModal: React.FC<RatingModalProps> = ({ service, onClose }) => {
             <button
               type="submit"
               disabled={submitting}
-              className="inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-xs sm:text-sm font-semibold px-5 py-2.5 shadow-sm hover:bg-sky-700 disabled:opacity-60"
+              className="inline-flex items-center justify-center rounded-full bg-[#1F6FA6] text-white text-xs sm:text-sm font-semibold px-5 py-2.5 shadow-sm hover:bg-sky-800 disabled:opacity-60"
             >
               {submitting
                 ? isPT
@@ -789,7 +789,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   const isLongDescription = normalizedQuote.length > 140; // adjust threshold if needed
 
   return (
-    <article className="bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition break-inside-avoid">
+    <article className="bg-white rounded-3xl shadow-md border border-slate-200 overflow-hidden hover:shadow-lg transition">
       {/* HEADER */}
       <div className="p-4 pb-3 flex items-start gap-3 border-b border-slate-100">
         <div className="w-11 h-11 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center text-sm font-semibold text-slate-700">
@@ -935,7 +935,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
                 <span>✉️</span>
                 <a
                   href={`mailto:${service.email}`}
-                  className="truncate text-sky-700 hover:underline"
+                  className="truncate text-sky-800 hover:underline"
                 >
                   {service.email}
                 </a>
@@ -1046,7 +1046,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
           <button
             type="button"
             onClick={() => onRate(service)}
-            className="flex-1 rounded-full bg-sky-600 text-white text-xs font-semibold py-2.5 shadow-sm hover:bg-sky-700 transition"
+            className="flex-1 rounded-full bg-[#1F6FA6] text-white text-xs font-semibold py-2.5 shadow-sm hover:bg-sky-800 transition"
           >
             {isPT ? "Avaliar serviço" : "Rate service"}
           </button>
@@ -1223,7 +1223,7 @@ const HomePage: React.FC = () => {
   }, [isPT]);
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-10">
+    <div className="min-h-screen bg-transparent pb-10">
       {/* HEADER / INTRO */}
       <header className="max-w-7xl mx-auto px-4 pt-8 pb-4">
         <h1 className="text-xl md:text-2xl font-bold text-slate-900 mb-1">
@@ -1240,24 +1240,49 @@ const HomePage: React.FC = () => {
 
       {/* CATEGORY STRIP */}
       <section
-        className="bg-linear-to-r from-sky-50 via-cyan-50 to-sky-50 pt-4 pb-4 border-y border-sky-100/70"
-        aria-label={isPT ? "Categorias de serviços" : "Service categories"}
+        className="
+    relative
+    pt-4 pb-5
+    border-y border-sky-200/60
+    bg-white/75
+    backdrop-blur-md
+    shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]
+  "
+        aria-label={isPT ? "Categorias de ofertas" : "Offer categories"}
       >
-        <div className="max-w-7xl mx-auto px-4">
+        {/* subtle “ceramic glaze” highlight */}
+        <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-white/60 via-white/20 to-transparent" />
+
+        <div className="relative max-w-7xl mx-auto px-4">
+          {/* CATEGORIES */}
           <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
             {displayCategories.map((category: Category) => {
               const active = category.id === selectedCategory;
+              const isAll = category.id === "all";
 
-              const baseClasses = [
+              const classes = [
                 pillBase,
                 pillSize,
-                active
-                  ? "border-sky-500 bg-gradient-to-b from-sky-50 to-cyan-50 text-slate-900 ring-2 ring-sky-100"
-                  : "border-sky-300 text-slate-700 hover:bg-white hover:border-sky-400",
+                "border",
                 "hover:-translate-y-0.5 hover:shadow-md",
+                active
+                  ? [
+                      // ACTIVE (premium tile-like)
+                      "border-sky-500/80",
+                      "bg-gradient-to-b from-white to-sky-50",
+                      "text-slate-900",
+                      "ring-2 ring-[#1F6FA6]/70",
+                      "shadow-sm",
+                    ].join(" ")
+                  : [
+                      // INACTIVE
+                      "border-sky-200/70",
+                      "bg-white/90",
+                      "text-slate-700",
+                      "hover:bg-white",
+                      "hover:border-sky-300",
+                    ].join(" "),
               ].join(" ");
-
-              const isAll = category.id === "all";
 
               return (
                 <button
@@ -1272,14 +1297,20 @@ const HomePage: React.FC = () => {
                       setSelectedSubcategory("all");
                     }
                   }}
-                  className={baseClasses}
+                  className={classes}
                 >
                   <span
-                    className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sky-50 text-lg sm:text-xl"
+                    className={[
+                      "flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full",
+                      active
+                        ? "bg-sky-100 text-sky-900"
+                        : "bg-slate-50 text-slate-700",
+                    ].join(" ")}
                     aria-hidden="true"
                   >
                     {isAll ? "🏖️" : category.icon}
                   </span>
+
                   <span className="truncate font-medium">
                     {isAll
                       ? isPT
@@ -1289,31 +1320,36 @@ const HomePage: React.FC = () => {
                   </span>
 
                   {active && (
-                    <span className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-sky-200/60" />
+                    <span className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-white/60" />
                   )}
                 </button>
               );
             })}
           </div>
 
-          {/* SUBCATEGORY STRIP */}
+          {/* SUBCATEGORIES */}
           {selectedCategory !== "all" && currentSubcategories.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2 sm:gap-3 items-center">
-              {/* "All" pill styled like the others */}
+              {/* “All” subcategory */}
               <button
                 type="button"
                 onClick={() => setSelectedSubcategory("all")}
                 className={[
                   subPillBase,
                   subPillSize,
+                  "border hover:-translate-y-0.5 hover:shadow-md",
                   selectedSubcategory === "all"
-                    ? "border-sky-500 bg-linear-to-b from-sky-50 to-cyan-50 text-slate-900 ring-2 ring-sky-100"
-                    : "border-sky-300 text-slate-700 hover:bg-white hover:border-sky-400",
-                  "hover:-translate-y-0.5 hover:shadow-md",
+                    ? "border-sky-500/80 bg-linear-to-b from-white to-sky-50 text-slate-900 ring-2 ring-[#1F6FA6]/70"
+                    : "border-[#1F6FA6]/70 bg-white/90 text-slate-700 hover:bg-white hover:border-sky-300",
                 ].join(" ")}
               >
                 <span
-                  className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-50 text-base"
+                  className={[
+                    "flex items-center justify-center w-7 h-7 rounded-full",
+                    selectedSubcategory === "all"
+                      ? "bg-sky-100 text-sky-900"
+                      : "bg-slate-50 text-slate-700",
+                  ].join(" ")}
                   aria-hidden="true"
                 >
                   🏖️
@@ -1334,24 +1370,34 @@ const HomePage: React.FC = () => {
                     className={[
                       subPillBase,
                       subPillSize,
+                      "border hover:-translate-y-0.5 hover:shadow-md",
                       active
-                        ? "border-sky-500 bg-linear-to-b from-sky-50 to-cyan-50 text-slate-900 ring-2 ring-sky-100"
-                        : "border-sky-300 text-slate-700 hover:bg-white hover:border-sky-400",
-                      "hover:-translate-y-0.5 hover:shadow-md",
+                        ? "border-[#1F6FA6]/80 bg-linear-to-b from-white to-sky-50 text-slate-900 ring-2 ring-[#1F6FA6]/70"
+                        : "border-sky-200/70 bg-white/90 text-slate-700 hover:bg-white hover:border-sky-300",
                     ].join(" ")}
                   >
                     <span
-                      className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-50 text-base"
+                      className={[
+                        "flex items-center justify-center w-7 h-7 rounded-full",
+                        active
+                          ? "bg-sky-100 text-sky-900"
+                          : "bg-slate-50 text-slate-700",
+                      ].join(" ")}
                       aria-hidden="true"
                     >
                       {sub.icon}
                     </span>
+
                     <span className="truncate font-medium">
-                      {getSubcategoryLabel(selectedCategory, sub.id, isPT)}
+                      {getSubcategoryLabel(
+                        selectedCategory as CategoryId,
+                        sub.id,
+                        isPT
+                      )}
                     </span>
 
                     {active && (
-                      <span className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-sky-200/60" />
+                      <span className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-white/60" />
                     )}
                   </button>
                 );

@@ -97,9 +97,9 @@ const MainLayout: FC<MainLayoutProps> = ({ children }) => {
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage }}>
-      <div className="min-h-screen flex flex-col bg-slate-50">
+      <div className="min-h-screen flex flex-col bg-transparent">
         {/* HEADER */}
-        <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur shadow-md">
+        <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur shadow-md">
           <div className="max-w-6xl mx-auto px-3 sm:px-0 h-16 flex items-center justify-between gap-3">
             {/* LEFT – LOGO */}
             <Link to="/" className="flex items-center gap-2">
@@ -317,7 +317,7 @@ const MainLayout: FC<MainLayoutProps> = ({ children }) => {
                     <button
                       type="button"
                       onClick={handleGoToAuth}
-                      className="hidden sm:inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm bg-sky-600 hover:bg-sky-700 transition ml-6"
+                      className="hidden sm:inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm bg-[#1F6FA6] hover:bg-sky-800 transition ml-6"
                       disabled={loading}
                     >
                       {isPT ? "Entrar / Registar" : "Sign In / Register"}
@@ -413,16 +413,21 @@ const MainLayout: FC<MainLayoutProps> = ({ children }) => {
         <main className="flex-1">{children}</main>
 
         {/* FOOTER */}
-        <footer className="border-t border-slate-200 bg-white mt-6">
-          <div className="max-w-6xl mx-auto px-4 py-4 text-[11px] text-slate-500 flex justify-between">
-            <span>© {new Date().getFullYear()} All Cascais.</span>
-            <span>
-              {isPT
-                ? "Serviços locais de confiança em Cascais"
-                : "Trusted local services in Cascais"}
-            </span>
-          </div>
-        </footer>
+        <div className="relative mt-10">
+          {/* soft fade into the footer */}
+          <div className="absolute -top-12 left-0 right-0 h-12 bg-linear-to-b from-transparent to-white/30 pointer-events-none" />
+
+          <footer className="border-t border-sky-200/60 bg-white/70 backdrop-blur-md">
+            <div className="max-w-6xl mx-auto px-4 py-4 text-[11px] text-slate-600 flex flex-col sm:flex-row gap-2 justify-between">
+              <span>© {new Date().getFullYear()} All Cascais.</span>
+              <span>
+                {isPT
+                  ? "Serviços locais de confiança em Cascais"
+                  : "Trusted local services in Cascais"}
+              </span>
+            </div>
+          </footer>
+        </div>
       </div>
     </LanguageContext.Provider>
   );

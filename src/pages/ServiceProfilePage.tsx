@@ -569,7 +569,7 @@ const ServiceProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-10">
+    <div className="min-h-screen bg-transparent py-10">
       <div className="max-w-4xl mx-auto px-4">
         {/* HEADER */}
         <header className="mb-8">
@@ -593,10 +593,7 @@ const ServiceProfilePage: React.FC = () => {
             className="bg-white rounded-3xl shadow-md border border-slate-100 px-6 py-6 space-y-6"
           >
             {/* VISIBILITY TOGGLE */}
-            <div
-              className="rounded-2xl border border-s
-late-200 bg-slate-50 px-4 py-3"
-            >
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div>
                   <label className="flex items-center gap-2 text-sm font-semibold text-slate-800">

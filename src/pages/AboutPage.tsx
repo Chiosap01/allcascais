@@ -136,7 +136,7 @@ const AboutPage: React.FC = () => {
         };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-transparent">
       {/* HERO + WEATHER */}
       <section className="relative">
         {/* Background image */}
@@ -512,7 +512,7 @@ const AboutPage: React.FC = () => {
           <div className="grid md:grid-cols-3 gap-6 md:gap-7">
             {/* Card 1 */}
             <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4 md:p-5 hover:shadow-sm hover:-translate-y-0.5 transition">
-              <div className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-sky-700 mb-2 border border-sky-100">
+              <div className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-[#1F6FA6] mb-2 border border-sky-100">
                 {isPT ? "Encontrar profissionais" : "Finding professionals"}
               </div>
               <h3 className="font-semibold mb-2 text-slate-900 text-sm md:text-base">

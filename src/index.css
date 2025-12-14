@@ -9,3 +9,30 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* App-wide background attached to the React root */
+#root {
+  min-height: 100vh;
+  position: relative;
+  isolation: isolate; /* keeps pseudo-layer behind content */
+}
+
+#root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: url("/background/background.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: -2;
+}
+
+/* soft readable overlay */
+#root::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(248, 250, 252, 0.88);
+  z-index: -1;
+}

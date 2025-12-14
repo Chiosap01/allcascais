@@ -281,17 +281,20 @@ const OfferCard: React.FC<OfferCardProps> = ({
     "?";
 
   return (
-    <article className="bg-white rounded-3xl shadow-md border border-slate-100 overflow-hidden hover:-translate-y-0.5 hover:shadow-lg transition">
+    <article className="bg-white/90 backdrop-blur-md rounded-3xl shadow-md border border-white/40 overflow-hidden">
       <div className="flex flex-col md:flex-row">
         {/* IMAGE / LEFT SIDE */}
         <div className="md:w-2/5 lg:w-1/3 self-start">
           <div className="relative bg-slate-100">
             {offer.imageUrl ? (
-              <img
-                src={offer.imageUrl}
-                alt={offer.title}
-                className="w-full h-52 md:h-60 lg:h-64 object-cover"
-              />
+              <div className="w-full aspect-4/3 bg-slate-100 overflow-hidden">
+                <img
+                  src={offer.imageUrl}
+                  alt={offer.title}
+                  className="w-full h-full object-cover object-center"
+                  loading="lazy"
+                />
+              </div>
             ) : (
               <div className="w-full h-52 md:h-60 lg:h-64 flex flex-col items-center justify-center text-slate-400 text-xs gap-1">
                 <div className="w-14 h-14 rounded-2xl bg-slate-200 flex items-center justify-center text-lg font-semibold text-slate-600">
@@ -400,7 +403,7 @@ const OfferCard: React.FC<OfferCardProps> = ({
             <div className="flex items-baseline gap-2">
               {hasDiscount ? (
                 <>
-                  <span className="text-lg font-bold text-sky-600">
+                  <span className="text-lg font-bold text-[#1F6FA6]">
                     {formatPrice(offer.discountedPrice)}
                   </span>
                   <span className="text-xs line-through text-slate-400">
@@ -408,7 +411,7 @@ const OfferCard: React.FC<OfferCardProps> = ({
                   </span>
                 </>
               ) : (
-                <span className="text-lg font-bold text-sky-600">
+                <span className="text-lg font-bold text-[#1F6FA6]">
                   {formatPrice(
                     offer.discountedPrice ?? offer.originalPrice ?? null
                   )}
@@ -702,7 +705,7 @@ const OffersPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-10">
+    <div className="min-h-screen bg-transparent pb-10">
       {/* HEADER / INTRO */}
       <header className="max-w-7xl mx-auto px-4 pt-8 pb-4">
         <h1 className="text-xl md:text-2xl font-bold text-slate-900 mb-2">
@@ -717,22 +720,48 @@ const OffersPage: React.FC = () => {
 
       {/* CATEGORY STRIP */}
       <section
-        className="bg-linear-to-r from-sky-50 via-cyan-50 to-sky-50 pt-3 pb-4 border-y border-sky-100/70"
+        className="
+    relative
+    pt-4 pb-5
+    border-y border-sky-200/60
+    bg-white/75
+    backdrop-blur-md
+    shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]
+  "
         aria-label={isPT ? "Categorias de ofertas" : "Offer categories"}
       >
-        <div className="max-w-7xl mx-auto px-4">
+        {/* subtle “ceramic glaze” highlight */}
+        <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-white/60 via-white/20 to-transparent" />
+
+        <div className="relative max-w-7xl mx-auto px-4">
+          {/* CATEGORIES */}
           <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
             {displayCategories.map((category: Category) => {
               const active = category.id === selectedCategory;
               const isAll = category.id === "all";
 
-              const baseClasses = [
+              const classes = [
                 pillBase,
                 pillSize,
-                active
-                  ? "border-sky-500 bg-gradient-to-b from-sky-50 to-cyan-50 text-slate-900 ring-2 ring-sky-100"
-                  : "border-sky-300 text-slate-700 hover:bg-white hover:border-sky-400",
+                "border",
                 "hover:-translate-y-0.5 hover:shadow-md",
+                active
+                  ? [
+                      // ACTIVE (premium tile-like)
+                      "border-sky-500/80",
+                      "bg-gradient-to-b from-white to-sky-50",
+                      "text-slate-900",
+                      "ring-2 ring-sky-200/70",
+                      "shadow-sm",
+                    ].join(" ")
+                  : [
+                      // INACTIVE
+                      "border-sky-200/70",
+                      "bg-white/90",
+                      "text-slate-700",
+                      "hover:bg-white",
+                      "hover:border-sky-300",
+                    ].join(" "),
               ].join(" ");
 
               return (
@@ -748,14 +777,20 @@ const OffersPage: React.FC = () => {
                       setSelectedSubcategory("all");
                     }
                   }}
-                  className={baseClasses}
+                  className={classes}
                 >
                   <span
-                    className="flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-sky-50 text-lg sm:text-xl"
+                    className={[
+                      "flex items-center justify-center w-8 h-8 sm:w-9 sm:h-9 rounded-full",
+                      active
+                        ? "bg-sky-100 text-sky-900"
+                        : "bg-slate-50 text-slate-700",
+                    ].join(" ")}
                     aria-hidden="true"
                   >
                     {isAll ? "🏖️" : category.icon}
                   </span>
+
                   <span className="truncate font-medium">
                     {isAll
                       ? isPT
@@ -765,31 +800,36 @@ const OffersPage: React.FC = () => {
                   </span>
 
                   {active && (
-                    <span className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-sky-200/60" />
+                    <span className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-white/60" />
                   )}
                 </button>
               );
             })}
           </div>
 
-          {/* SUBCATEGORY STRIP */}
+          {/* SUBCATEGORIES */}
           {selectedCategory !== "all" && currentSubcategories.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2 sm:gap-3 items-center">
-              {/* "All" subcategory pill */}
+              {/* “All” subcategory */}
               <button
                 type="button"
                 onClick={() => setSelectedSubcategory("all")}
                 className={[
                   subPillBase,
                   subPillSize,
+                  "border hover:-translate-y-0.5 hover:shadow-md",
                   selectedSubcategory === "all"
-                    ? "border-sky-500 bg-linear-to-b from-sky-50 to-cyan-50 text-slate-900 ring-2 ring-sky-100"
-                    : "border-sky-300 text-slate-700 hover:bg-white hover:border-sky-400",
-                  "hover:-translate-y-0.5 hover:shadow-md",
+                    ? "border-sky-500/80 bg-linear-to-b from-white to-sky-50 text-slate-900 ring-2 ring-sky-200/70"
+                    : "border-sky-200/70 bg-white/90 text-slate-700 hover:bg-white hover:border-sky-300",
                 ].join(" ")}
               >
                 <span
-                  className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-50 text-base"
+                  className={[
+                    "flex items-center justify-center w-7 h-7 rounded-full",
+                    selectedSubcategory === "all"
+                      ? "bg-sky-100 text-sky-900"
+                      : "bg-slate-50 text-slate-700",
+                  ].join(" ")}
                   aria-hidden="true"
                 >
                   🏖️
@@ -801,6 +841,7 @@ const OffersPage: React.FC = () => {
 
               {currentSubcategories.map((sub: Subcategory) => {
                 const active = selectedSubcategory === sub.id;
+
                 return (
                   <button
                     key={sub.id}
@@ -809,18 +850,24 @@ const OffersPage: React.FC = () => {
                     className={[
                       subPillBase,
                       subPillSize,
+                      "border hover:-translate-y-0.5 hover:shadow-md",
                       active
-                        ? "border-sky-500 bg-linear-to-b from-sky-50 to-cyan-50 text-slate-900 ring-2 ring-sky-100"
-                        : "border-sky-300 text-slate-700 hover:bg-white hover:border-sky-400",
-                      "hover:-translate-y-0.5 hover:shadow-md",
+                        ? "border-sky-500/80 bg-linear-to-b from-white to-sky-50 text-slate-900 ring-2 ring-sky-200/70"
+                        : "border-sky-200/70 bg-white/90 text-slate-700 hover:bg-white hover:border-sky-300",
                     ].join(" ")}
                   >
                     <span
-                      className="flex items-center justify-center w-7 h-7 rounded-full bg-slate-50 text-base"
+                      className={[
+                        "flex items-center justify-center w-7 h-7 rounded-full",
+                        active
+                          ? "bg-sky-100 text-sky-900"
+                          : "bg-slate-50 text-slate-700",
+                      ].join(" ")}
                       aria-hidden="true"
                     >
                       {sub.icon}
                     </span>
+
                     <span className="truncate font-medium">
                       {getSubcategoryLabel(
                         selectedCategory as CategoryId,
@@ -830,7 +877,7 @@ const OffersPage: React.FC = () => {
                     </span>
 
                     {active && (
-                      <span className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-sky-200/60" />
+                      <span className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-white/60" />
                     )}
                   </button>
                 );

@@ -491,7 +491,7 @@ const PropertyListingPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8">
+    <div className="min-h-screen bg-transparent py-8">
       <div className="max-w-4xl mx-auto px-4">
         <header className="mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-1">

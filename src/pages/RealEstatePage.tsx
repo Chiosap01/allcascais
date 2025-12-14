@@ -410,12 +410,6 @@ const RealEstatePage: React.FC = () => {
     selectedProperty?.images ??
     (selectedProperty?.image ? [selectedProperty.image] : []);
 
-  // Request form helpers
-  const openRequestForm = () => {
-    setShowRequestForm(true);
-    document.body.style.overflow = "hidden";
-  };
-
   const closeRequestForm = () => {
     setShowRequestForm(false);
     document.body.style.overflow = "";
@@ -523,7 +517,7 @@ const RealEstatePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-sky-50 to-slate-50">
+    <div className="min-h-screen bg-transparent py-10">
       <div className="max-w-6xl mx-auto px-4 py-8 md:py-10">
         {/* CHIOSS highlight */}
         <div className="mb-8">
@@ -797,30 +791,8 @@ const RealEstatePage: React.FC = () => {
           <div className="flex flex-col sm:flex-row gap-2">
             <button
               type="button"
-              onClick={openRequestForm}
-              className="inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-xs sm:text-sm font-semibold px-4 sm:px-5 py-2 shadow hover:bg-sky-700 transition"
-            >
-              <svg
-                className="mr-1.5 w-4 h-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M3 10.5L12 3l9 7.5" />
-                <path d="M5 10.5V21h14V10.5" />
-                <path d="M10 21v-6h4v6" />
-              </svg>
-              {isPT ? "Encontrar imóvel para mim" : "Help me find a property"}
-            </button>
-
-            <button
-              type="button"
               onClick={handleListPropertyClick}
-              className="inline-flex items-center justify-center rounded-full border border-sky-600 bg-white text-sky-700 text-xs sm:text-sm font-semibold px-4 sm:px-5 py-2 shadow-sm hover:bg-sky-50 transition"
+              className="inline-flex items-center justify-center rounded-full border border-[#1F6FA6] bg-white text-[#1F6FA6] text-xs sm:text-sm font-semibold px-4 sm:px-5 py-2 shadow-sm hover:bg-blue-50 transition"
             >
               <svg
                 className="mr-1.5 w-4 h-4"
@@ -928,7 +900,7 @@ const RealEstatePage: React.FC = () => {
                 <div className="mt-3 flex items-end justify-between">
                   <div className="flex flex-col">
                     <div className="flex items-baseline gap-2">
-                      <div className="text-lg font-bold text-sky-600">
+                      <div className="text-lg font-bold text-[#1F6FA6]">
                         €{property.price.toLocaleString("en-US")}
                       </div>
 
@@ -973,7 +945,7 @@ const RealEstatePage: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between px-5 sm:px-7 py-3 border-b border-slate-100 bg-slate-50/80">
               <div>
-                <p className="text-[11px] font-medium text-sky-600 mb-0.5">
+                <p className="text-[11px] font-medium text-[#1F6FA6] mb-0.5">
                   {formatBuyRentLabel(selectedProperty)} ·{" "}
                   {selectedProperty.location}
                 </p>
@@ -1069,7 +1041,7 @@ const RealEstatePage: React.FC = () => {
                           onClick={() => setActiveImageIndex(idx)}
                           className={`w-20 aspect-4/3 rounded-xl overflow-hidden border transition shrink-0 ${
                             idx === activeImageIndex
-                              ? "border-sky-500"
+                              ? "border-[#1F6FA6]"
                               : "border-transparent opacity-80 hover:opacity-100"
                           }`}
                         >
@@ -1112,8 +1084,9 @@ const RealEstatePage: React.FC = () => {
                           <div className="text-xs font-semibold text-slate-700">
                             {isPT ? "Preço por m²" : "Price per m²"}
                           </div>
-                          <div className="text-sm font-bold text-sky-700">
-                            €{ppsm.toLocaleString(isPT ? "pt-PT" : "en-US")}/m²
+                          <div className="text-sm font-bold text-[#1F6FA6]">
+                            €{ppsm.toLocaleString(isPT ? "pt-PT" : "en-US")}
+                            /m²
                           </div>
                         </div>
                       ) : null;
@@ -1318,7 +1291,7 @@ const RealEstatePage: React.FC = () => {
                         <button
                           type="button"
                           onClick={handleCopyAgentEmail}
-                          className="inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow hover:bg-sky-700 transition"
+                          className="inline-flex items-center justify-center rounded-full bg-[#1F6FA6] text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow hover:bg-sky-700 transition"
                         >
                           ✉️{" "}
                           {hasCopiedEmail
