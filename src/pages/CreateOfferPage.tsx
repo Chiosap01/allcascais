@@ -1071,7 +1071,7 @@ const CreateOffersPage: React.FC = () => {
                   <span className="text-2xl">🏷️</span>
                 )}
               </div>
-              <label className="cursor-pointer inline-flex items-center rounded-full bg-sky-600 text-white text-xs font-semibold px-4 py-2 shadow-sm hover:bg-sky-700 transition">
+              <label className="cursor-pointer inline-flex items-center rounded-full bg-[#1F6FA6] text-white text-xs font-semibold px-4 py-2 shadow-sm hover:[#195c8a] transition">
                 {uploadingImage
                   ? isPT
                     ? "A carregar..."
@@ -1107,7 +1107,7 @@ const CreateOffersPage: React.FC = () => {
             <button
               type="submit"
               disabled={saving}
-              className="w-full inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-sm font-semibold px-6 py-2.5 shadow-md hover:bg-sky-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full inline-flex items-center justify-center rounded-full bg-[#1F6FA6] text-white text-sm font-semibold px-6 py-2.5 shadow-md hover:bg-[#195c8a] disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {saving
                 ? isPT

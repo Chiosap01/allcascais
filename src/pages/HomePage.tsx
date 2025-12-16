@@ -950,7 +950,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
                     /^https?:\/\//,
                     ""
                   )}`}
-                  className="text-sky-600 underline"
+                  className="text-[#1F6FA6] underline"
                   target="_blank"
                   rel="noreferrer"
                 >

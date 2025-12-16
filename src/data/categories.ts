@@ -325,8 +325,6 @@ export const getSubcategoryLabel = (
           return "Empreiteiro";
         case "notary":
           return "Notário";
-        case "legal-real-estate":
-          return "Advogado Imobiliário";
         case "home-staging":
           return "Home Staging";
         case "renovation":

@@ -804,7 +804,7 @@ const ServiceProfilePage: React.FC = () => {
                       className={[
                         "inline-flex items-center rounded-full px-3 py-1 text-xs border transition",
                         active
-                          ? "bg-sky-50 border-sky-500 text-sky-700"
+                          ? "bg-sky-50 border-sky-500 text-[#1F6FA6]"
                           : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50",
                       ].join(" ")}
                     >
@@ -978,7 +978,7 @@ const ServiceProfilePage: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <label className="cursor-pointer inline-flex items-center rounded-full bg-sky-600 text-white text-xs font-semibold px-4 py-2 shadow-sm hover:bg-sky-700 transition">
+                <label className="cursor-pointer inline-flex items-center rounded-full bg-[#1F6FA6] text-white text-xs font-semibold px-4 py-2 shadow-sm hover:bg-[#195c8a] transition">
                   {uploadingImage
                     ? isPT
                       ? "A carregar..."
@@ -1104,7 +1104,7 @@ const ServiceProfilePage: React.FC = () => {
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full inline-flex items-center justify-center rounded-full bg-sky-600 text-white text-sm font-semibold px-6 py-2.5 shadow-md hover:bg-sky-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full inline-flex items-center justify-center rounded-full bg-[#1F6FA6] text-white text-sm font-semibold px-6 py-2.5 shadow-md hover:bg-[#195c8a] disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {saving
                   ? isPT
