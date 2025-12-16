@@ -132,7 +132,7 @@ export const SUBCATEGORIES: Partial<Record<CategoryId, Subcategory[]>> = {
     { id: "babysitting", label: "Babysitting", icon: "🧸" },
     { id: "nanny", label: "Nanny", icon: "👶" },
     { id: "elderly-care", label: "Elderly Care", icon: "🧓" },
-    { id: "kindergarten-daycare", label: "Kindergarten / Daycare", icon: "🧒" },
+    { id: "kindergarten-daycare", label: "Daycare", icon: "🧒" },
     { id: "summer-camp", label: "Summer Camp", icon: "🏕️" },
     { id: "special-needs", label: "Special Needs Support", icon: "🧩" },
     // ✅ NEW
