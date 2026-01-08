@@ -28,7 +28,7 @@ interface Property {
   currency: "EUR";
   buyRent: BuyRent;
 
-  // ✅ now split (zona + bairro)
+  // split (zona + bairro)
   location: string; // zona (area)
   neighborhood?: string | null; // bairro (optional)
 
@@ -54,6 +54,9 @@ interface Property {
   agentPhone?: string;
   agentEmail?: string;
 
+  // kept in data model but NOT used in UI while paid features are disabled
+  featuredUntil?: string | null;
+
   ownerId?: string;
 }
 
@@ -70,7 +73,7 @@ type PropertyRow = {
 
   buy_rent: "buy" | "rent";
 
-  // ✅ legacy + new
+  // legacy + new
   location: string | null;
   location_area: string | null;
   location_neighborhood: string | null;
@@ -105,6 +108,9 @@ type PropertyRow = {
   contact_name: string | null;
   contact_email: string | null;
   contact_phone: string | null;
+
+  // kept in DB but NOT used in UI while paid features are disabled
+  featured_until: string | null;
 };
 
 const RENT_MAX_STEPS = [
@@ -114,6 +120,11 @@ const RENT_MAX_STEPS = [
 const BUY_MAX_STEPS = [
   200000, 300000, 400000, 500000, 650000, 800000, 1000000, 1500000, 2000000,
   3000000, 4000000, 6000000, 8000000, 10000000,
+];
+
+const AREA_STEPS = [
+  10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 175, 200, 225, 250, 275,
+  300, 350,
 ];
 
 const formatPriceOption = (value: number, isPT: boolean) =>
@@ -132,7 +143,6 @@ const mapRowToProperty = (row: PropertyRow): Property => {
 
     buyRent: row.buy_rent as BuyRent,
 
-    // ✅ split
     location: area,
     neighborhood: row.location_neighborhood ?? null,
 
@@ -158,11 +168,12 @@ const mapRowToProperty = (row: PropertyRow): Property => {
     agentName: row.contact_name ?? undefined,
     agentEmail: row.contact_email ?? undefined,
     agentPhone: row.contact_phone ?? undefined,
+
+    featuredUntil: row.featured_until ?? null,
   };
 };
 
-// -------- helpers --------
-
+// helpers
 const formatTypeLabel = (t: PropertyType, isPT: boolean) => {
   const map: Record<PropertyType, { pt: string; en: string }> = {
     all: { pt: "Todos", en: "All" },
@@ -210,11 +221,6 @@ const calcPricePerSqm = (p: Property) => {
   return Math.round((p.price / area) * 100) / 100;
 };
 
-const AREA_STEPS = [
-  10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 125, 150, 175, 200, 225, 250, 275,
-  300, 350,
-];
-
 const RealEstatePage: React.FC = () => {
   const { language } = useLanguage();
   const isPT = language === "pt";
@@ -225,7 +231,7 @@ const RealEstatePage: React.FC = () => {
   // Filters
   const [buyRent, setBuyRent] = useState<BuyRent>("all");
 
-  // ✅ split filters
+  // split filters
   const [locationArea, setLocationArea] = useState<string>("all");
   const [locationNeighborhood, setLocationNeighborhood] =
     useState<string>("all");
@@ -277,7 +283,6 @@ const RealEstatePage: React.FC = () => {
   useEffect(() => {
     if (!selectedProperty) return;
 
-    // move focus into modal (close button is a good first focus target)
     requestAnimationFrame(() => {
       closeBtnRef.current?.focus();
     });
@@ -288,7 +293,6 @@ const RealEstatePage: React.FC = () => {
         closePropertyModal();
         return;
       }
-
       if (e.key !== "Tab") return;
 
       const root = modalRef.current;
@@ -312,7 +316,6 @@ const RealEstatePage: React.FC = () => {
       const first = focusables[0];
       const last = focusables[focusables.length - 1];
 
-      // cycle focus inside the modal
       if (e.shiftKey) {
         if (document.activeElement === first) {
           e.preventDefault();
@@ -331,7 +334,7 @@ const RealEstatePage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedProperty]);
 
-  // ✅ helper for display "Zona · Bairro"
+  // display "Zona · Bairro"
   const locationLabel = (p: Property) =>
     p.neighborhood ? `${p.location} · ${p.neighborhood}` : p.location;
 
@@ -408,7 +411,7 @@ const RealEstatePage: React.FC = () => {
     return Array.from(set);
   }, [properties]);
 
-  // ✅ neighborhoods list depends on selected area
+  // neighborhoods list depends on selected area
   const neighborhoodsForArea = useMemo(() => {
     if (locationArea === "all") return [];
     const hardcoded = NEIGHBORHOODS_BY_AREA[locationArea] ?? [];
@@ -424,11 +427,11 @@ const RealEstatePage: React.FC = () => {
 
     if (buyRent !== "all") list = list.filter((p) => p.buyRent === buyRent);
 
-    // ✅ area filter
+    // area filter
     if (locationArea !== "all")
       list = list.filter((p) => p.location === locationArea);
 
-    // ✅ neighborhood filter (only when area selected)
+    // neighborhood filter (only when area selected)
     if (locationNeighborhood !== "all" && locationArea !== "all") {
       list = list.filter(
         (p) => (p.neighborhood ?? "") === locationNeighborhood
@@ -472,6 +475,9 @@ const RealEstatePage: React.FC = () => {
         });
       }
     }
+
+    // IMPORTANT: Paid/featured sorting disabled for now (free platform)
+    // If you re-enable paid features later, you can restore the featuredUntil logic here.
 
     if (sortBy === "price-asc") list.sort((a, b) => a.price - b.price);
     else if (sortBy === "price-desc") list.sort((a, b) => b.price - a.price);
@@ -542,7 +548,6 @@ const RealEstatePage: React.FC = () => {
     setShowAgentEmail(false);
     setHasCopiedEmail(false);
 
-    // return focus to the card that opened the modal
     requestAnimationFrame(() => {
       lastFocusedElRef.current?.focus?.();
     });
@@ -560,7 +565,7 @@ const RealEstatePage: React.FC = () => {
     if (!selectedProperty?.images || selectedProperty.images.length <= 1)
       return;
     setActiveImageIndex((prev) =>
-      prev - 1 < 0 ? selectedProperty.images!.length - 1 : prev - 1
+      prev - 1 < 0 ? selectedProperty.images!.length - 1 : prev
     );
   };
 
@@ -674,7 +679,7 @@ const RealEstatePage: React.FC = () => {
     });
   }
 
-  // ✅ zona chip
+  // zona chip
   if (locationArea !== "all") {
     appliedChips.push({
       key: "locationArea",
@@ -686,7 +691,7 @@ const RealEstatePage: React.FC = () => {
     });
   }
 
-  // ✅ bairro chip (only if area set)
+  // bairro chip
   if (locationArea !== "all" && locationNeighborhood !== "all") {
     appliedChips.push({
       key: "locationNeighborhood",
@@ -758,13 +763,11 @@ const RealEstatePage: React.FC = () => {
         {/* Featured partner */}
         <div className="mb-6">
           <div className="relative overflow-hidden rounded-2xl border border-slate-200 shadow-sm bg-slate-900">
-            {/* Background */}
             <div
               className="absolute inset-0 bg-cover bg-center"
               style={{ backgroundImage: "url('/cascais-coast.png')" }}
               aria-hidden="true"
             />
-            {/* Clean dark overlay */}
             <div
               className="absolute inset-0"
               aria-hidden="true"
@@ -776,7 +779,6 @@ const RealEstatePage: React.FC = () => {
 
             <div className="relative px-4 py-3 sm:px-6 sm:py-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                {/* Left */}
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -797,7 +799,6 @@ const RealEstatePage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Right */}
                 <div className="flex gap-2 w-full sm:w-auto">
                   <button
                     type="button"
@@ -863,9 +864,9 @@ const RealEstatePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Primary filters: scroll row on mobile, grid on md+ */}
+            {/* Primary filters */}
             <div className="md:grid md:grid-cols-5 md:gap-3 flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 md:overflow-visible md:pb-0 md:mx-0 md:px-0">
-              <div className="flex flex-col gap-1 shrink-0 w-[220px] md:w-auto md:col-span-1">
+              <div className="flex flex-col gap-1 shrink-0 w-55 md:w-auto md:col-span-1">
                 <label className="text-[11px] font-semibold text-slate-600">
                   {isPT ? "Comprar / Arrendar" : "Buy / Rent"}
                 </label>
@@ -880,8 +881,8 @@ const RealEstatePage: React.FC = () => {
                 </select>
               </div>
 
-              {/* ✅ Zona */}
-              <div className="flex flex-col gap-1 shrink-0 w-[220px] md:w-auto">
+              {/* Zona */}
+              <div className="flex flex-col gap-1 shrink-0 w-55 md:w-auto">
                 <label className="text-[11px] font-semibold text-slate-600">
                   {isPT ? "Zona" : "Area"}
                 </label>
@@ -902,8 +903,8 @@ const RealEstatePage: React.FC = () => {
                 </select>
               </div>
 
-              {/* ✅ Bairro */}
-              <div className="flex flex-col gap-1 shrink-0 w-[220px] md:w-auto">
+              {/* Bairro */}
+              <div className="flex flex-col gap-1 shrink-0 w-55 md:w-auto">
                 <label className="text-[11px] font-semibold text-slate-600">
                   {isPT ? "Bairro" : "Neighborhood"}
                 </label>
@@ -930,7 +931,7 @@ const RealEstatePage: React.FC = () => {
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1 shrink-0 w-[220px] md:w-auto">
+              <div className="flex flex-col gap-1 shrink-0 w-55 md:w-auto">
                 <label className="text-[11px] font-semibold text-slate-600">
                   {isPT ? "Tipo de imóvel" : "Property type"}
                 </label>
@@ -957,7 +958,7 @@ const RealEstatePage: React.FC = () => {
                 </select>
               </div>
 
-              <div className="flex flex-col gap-1 shrink-0 w-[220px] md:w-auto">
+              <div className="flex flex-col gap-1 shrink-0 w-55 md:w-auto">
                 <label className="text-[11px] font-semibold text-slate-600">
                   {isPT ? "Preço máx." : "Max price"}
                 </label>
@@ -993,7 +994,7 @@ const RealEstatePage: React.FC = () => {
               </div>
             </div>
 
-            {/* More filters (2 columns on mobile) */}
+            {/* More filters */}
             {showMoreFilters && (
               <div className="mt-4 pt-4 border-t border-slate-100">
                 <div className="text-[11px] font-semibold text-slate-600 mb-3">
@@ -1098,7 +1099,7 @@ const RealEstatePage: React.FC = () => {
               </div>
             )}
 
-            {/* Applied chips: tighter + scrollable */}
+            {/* Applied chips */}
             {appliedChips.length > 0 && (
               <div className="mt-4 -mx-1 px-1">
                 <div className="flex gap-2 overflow-x-auto pb-1">
@@ -1221,7 +1222,6 @@ const RealEstatePage: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* ✅ Zona · Bairro */}
                   <span className="text-[11px] text-slate-500">
                     {locationLabel(property)}
                   </span>
@@ -1443,6 +1443,7 @@ const RealEstatePage: React.FC = () => {
 
               {/* Right: info */}
               <div className="md:w-1/2 flex flex-col overflow-y-auto bg-linear-to-b from-white to-slate-50">
+                {/* MAIN CONTENT (scrollable) */}
                 <div className="p-5 sm:p-7">
                   {/* Top meta */}
                   <div className="flex flex-wrap items-center gap-2 mb-3">
@@ -1563,7 +1564,7 @@ const RealEstatePage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Details section */}
+                  {/* Details */}
                   <div className="mt-6">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-semibold text-slate-900">
@@ -1576,7 +1577,6 @@ const RealEstatePage: React.FC = () => {
 
                     <div className="rounded-3xl bg-white border border-slate-200 shadow-sm p-4 sm:p-5">
                       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[12px]">
-                        {/* Type */}
                         <div className="rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2.5">
                           <dt className="text-[10px] font-semibold text-slate-500">
                             {isPT ? "Tipo" : "Type"}
@@ -1586,7 +1586,6 @@ const RealEstatePage: React.FC = () => {
                           </dd>
                         </div>
 
-                        {/* Condition (optional) */}
                         {formatConditionLabel(
                           selectedProperty.condition,
                           isPT
@@ -1604,7 +1603,6 @@ const RealEstatePage: React.FC = () => {
                           </div>
                         )}
 
-                        {/* Usable/Gross */}
                         <div className="rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2.5">
                           <dt className="text-[10px] font-semibold text-slate-500">
                             {selectedProperty.type === "land"
@@ -1637,7 +1635,6 @@ const RealEstatePage: React.FC = () => {
                           </dd>
                         </div>
 
-                        {/* Furnished (optional) */}
                         {formatFurnishedLabel(
                           selectedProperty.furnished,
                           isPT
@@ -1655,7 +1652,6 @@ const RealEstatePage: React.FC = () => {
                           </div>
                         )}
 
-                        {/* Energy certificate (optional) */}
                         {selectedProperty.energyCertificate && (
                           <div className="rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2.5">
                             <dt className="text-[10px] font-semibold text-slate-500">
@@ -1667,7 +1663,6 @@ const RealEstatePage: React.FC = () => {
                           </div>
                         )}
 
-                        {/* Divisions (optional) */}
                         {selectedProperty.divisions != null &&
                           selectedProperty.divisions > 0 && (
                             <div className="rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2.5">
@@ -1680,7 +1675,6 @@ const RealEstatePage: React.FC = () => {
                             </div>
                           )}
 
-                        {/* Location full width */}
                         <div className="sm:col-span-2 rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2.5">
                           <dt className="text-[10px] font-semibold text-slate-500">
                             {isPT ? "Localização" : "Location"}
@@ -1705,9 +1699,9 @@ const RealEstatePage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Owner controls */}
-                  {isOwner && (
-                    <div className="mt-6 flex flex-wrap gap-2">
+                  {/* Owner controls (only edit/delete while free features) */}
+                  {isOwner && selectedProperty && (
+                    <div className="mt-6 flex flex-wrap gap-2 items-center">
                       <button
                         type="button"
                         onClick={handleEditListing}
@@ -1715,6 +1709,7 @@ const RealEstatePage: React.FC = () => {
                       >
                         {isPT ? "Editar anúncio" : "Edit listing"}
                       </button>
+
                       <button
                         type="button"
                         onClick={handleDeleteListing}
@@ -1726,7 +1721,7 @@ const RealEstatePage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Contact footer (sticky-ish) */}
+                {/* CONTACT FOOTER */}
                 <div className="mt-auto border-t border-slate-200 bg-white/90 backdrop-blur px-5 sm:px-7 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="text-[11px] sm:text-xs text-slate-600">

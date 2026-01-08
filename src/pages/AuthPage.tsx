@@ -491,9 +491,31 @@ const AuthPage: React.FC = () => {
 
           {/* Small note */}
           <p className="mt-5 text-center text-[11px] text-slate-600">
-            {isPT
-              ? "Ao continuar, concorda com os termos e a política de privacidade."
-              : "By continuing, you agree to our terms and privacy policy."}
+            {isPT ? (
+              <>
+                Ao continuar, concorda com os{" "}
+                <a className="underline" href="/terms">
+                  termos
+                </a>{" "}
+                e a{" "}
+                <a className="underline" href="/privacy">
+                  política de privacidade
+                </a>
+                .
+              </>
+            ) : (
+              <>
+                By continuing, you agree to our{" "}
+                <a className="underline" href="/terms">
+                  terms
+                </a>{" "}
+                and{" "}
+                <a className="underline" href="/privacy">
+                  privacy policy
+                </a>
+                .
+              </>
+            )}
           </p>
         </div>
       </div>

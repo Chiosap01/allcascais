@@ -418,13 +418,47 @@ const MainLayout: FC<MainLayoutProps> = ({ children }) => {
           <div className="absolute -top-12 left-0 right-0 h-12 bg-linear-to-b from-transparent to-white/30 pointer-events-none" />
 
           <footer className="border-t border-sky-200/60 bg-white/70 backdrop-blur-md">
-            <div className="max-w-6xl mx-auto px-4 py-4 text-[11px] text-slate-600 flex flex-row flex-wrap items-center justify-between gap-x-3 gap-y-1">
-              <span>© {new Date().getFullYear()} All Cascais.</span>
-              <span>
-                {isPT
-                  ? "Serviços locais de confiança em Cascais"
-                  : "Trusted local services in Cascais"}
-              </span>
+            <div className="max-w-6xl mx-auto px-4 py-4 text-[11px] text-slate-600 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div className="flex flex-col gap-1">
+                <span>© {new Date().getFullYear()} AllCascais.</span>
+
+                <span className="text-[10px] text-slate-500">
+                  {isPT ? (
+                    <>
+                      Projeto explorado por{" "}
+                      <strong>Chiosa &amp; Chiosa, Lda</strong> — Rua Antão
+                      Gonçalves, Nº 89, 3º D, 2750-152 Cascais
+                    </>
+                  ) : (
+                    <>
+                      Operated by <strong>Chiosa &amp; Chiosa, Lda</strong> —
+                      Rua Antão Gonçalves, Nº 89, 3º D, 2750-152 Cascais
+                    </>
+                  )}
+                </span>
+
+                <span className="text-[10px] text-slate-500">
+                  {isPT ? "Contacto: " : "Contact: "}
+                  <a
+                    className="underline hover:text-slate-900"
+                    href="mailto:info@allcascais.com"
+                  >
+                    info@allcascais.com
+                  </a>
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-x-3 gap-y-1">
+                <Link className="underline hover:text-slate-900" to="/terms">
+                  {isPT ? "Termos" : "Terms"}
+                </Link>
+                <Link className="underline hover:text-slate-900" to="/privacy">
+                  {isPT ? "Privacidade" : "Privacy"}
+                </Link>
+                <Link className="underline hover:text-slate-900" to="/cookies">
+                  {isPT ? "Cookies" : "Cookies"}
+                </Link>
+              </div>
             </div>
           </footer>
         </div>
