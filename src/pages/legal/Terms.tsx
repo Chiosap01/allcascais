@@ -171,7 +171,7 @@ const Terms: React.FC = () => {
   const lang: Lang = language === "pt" ? "pt" : "en";
 
   // Keep this date aligned with your production Terms content/versioning.
-  const lastUpdated = { pt: "18/12/2025", en: "2025-12-18" };
+  const lastUpdated = { pt: "08/01/2026", en: "2026-01-08" };
 
   const sections: Section[] = useMemo(
     () => [

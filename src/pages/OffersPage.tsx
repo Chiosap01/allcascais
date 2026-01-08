@@ -603,7 +603,6 @@ const OffersPage: React.FC = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState<
     string | "all"
   >("all");
-  const [onlyHighlighted, setOnlyHighlighted] = useState(false);
 
   const [dbOffers, setDbOffers] = useState<Offer[]>([]);
   const [loadingOffers, setLoadingOffers] = useState(true);
@@ -669,12 +668,8 @@ const OffersPage: React.FC = () => {
       list = list.filter((o) => o.subcategoryId === selectedSubcategory);
     }
 
-    if (onlyHighlighted) {
-      list = list.filter((o) => o.highlight != null);
-    }
-
     return list;
-  }, [dbOffers, selectedCategory, selectedSubcategory, onlyHighlighted]);
+  }, [dbOffers, selectedCategory, selectedSubcategory]);
 
   const handleDeleteOffer = async (offerId: string | number) => {
     if (!user || typeof offerId !== "string") return;
@@ -889,19 +884,6 @@ const OffersPage: React.FC = () => {
 
       {/* FILTER BAR (highlight toggle + summary) */}
       <section className="max-w-7xl mx-auto px-4 pt-4 pb-2 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() => setOnlyHighlighted((v) => !v)}
-          className={[
-            "inline-flex items-center rounded-full border px-3 py-1 text-xs sm:text-sm font-medium",
-            onlyHighlighted
-              ? "bg-amber-50 border-amber-400 text-amber-700"
-              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50",
-          ].join(" ")}
-        >
-          ⭐ {isPT ? "Só ofertas em destaque" : "Only highlighted offers"}
-        </button>
-
         {filteredOffers.length > 0 && (
           <span className="text-xs sm:text-sm text-slate-500 ml-auto">
             {filteredOffers.length}{" "}

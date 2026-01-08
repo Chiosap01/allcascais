@@ -141,7 +141,7 @@ const AboutPage: React.FC = () => {
       <section className="relative">
         {/* Background image */}
         <div
-          className="h-[640px] sm:h-[700px] w-full bg-cover bg-center"
+          className="h-160 sm:h-175 w-full bg-cover bg-center"
           style={{ backgroundImage: "url('/cascais-about.jpg')" }}
         />
 
