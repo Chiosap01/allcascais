@@ -3,6 +3,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useLanguage } from "../layouts/MainLayout";
 import { supabase } from "../supabase";
 import { useAuth } from "../context/AuthContext";
+import { cdnImageUrl, toCdnFromSupabasePublicUrl } from "../utils/cdn";
 
 // Value imports from categories.ts
 import {
@@ -206,6 +207,12 @@ const formatOpeningHours = (
 };
 
 const mapRowToService = (row: ServiceRow, isPT: boolean): Service => {
+  const rawAvatar = row.provider_profile_image_url ?? undefined;
+
+  const avatarUrl =
+    rawAvatar && rawAvatar.includes("/storage/v1/object/public/")
+      ? toCdnFromSupabasePublicUrl(rawAvatar) || undefined
+      : cdnImageUrl("profile-images", rawAvatar) || undefined;
   // languages can be text[] or comma-separated string
   let languages: string[] = [];
   if (Array.isArray(row.languages)) {
@@ -239,7 +246,7 @@ const mapRowToService = (row: ServiceRow, isPT: boolean): Service => {
     rating,
     ratingCount,
     languages,
-    avatarUrl: row.provider_profile_image_url ?? undefined,
+    avatarUrl,
     providerFirstName: undefined,
 
     instagram: row.instagram ?? undefined,

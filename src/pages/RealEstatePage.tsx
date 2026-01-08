@@ -832,9 +832,6 @@ const RealEstatePage: React.FC = () => {
                     ? "Pesquisar imóveis em Cascais"
                     : "Search homes in Cascais"}
                 </div>
-                <div className="text-[11px] text-slate-500">
-                  {filteredProperties.length} {isPT ? "resultados" : "results"}
-                </div>
               </div>
 
               <div className="flex items-center gap-2">
