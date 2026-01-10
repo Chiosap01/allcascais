@@ -51,7 +51,6 @@ type Service = {
   website?: string;
   openingHoursText?: string;
 
-  // Derived rating summary
   rating?: number;
   ratingCount?: number;
 
@@ -65,7 +64,6 @@ type Service = {
   tiktok?: string;
   linkedin?: string;
 
-  // raw rating details
   workQuality?: number;
   punctuality?: number;
   ratingComment?: string;
@@ -116,7 +114,6 @@ type ServiceRow = {
   rating_created_at: string | null;
 };
 
-// Format OpeningHour[] into a compact string
 const formatOpeningHours = (
   opening: OpeningHour[] | null | undefined,
   isPT: boolean
@@ -212,7 +209,6 @@ const mapRowToService = (row: ServiceRow, isPT: boolean): Service => {
     "profile-images"
   );
 
-  // languages can be text[] or comma-separated string
   let languages: string[] = [];
   if (Array.isArray(row.languages)) {
     languages = row.languages;
@@ -222,7 +218,6 @@ const mapRowToService = (row: ServiceRow, isPT: boolean): Service => {
 
   const openingHoursText = formatOpeningHours(row.opening_hours ?? null, isPT);
 
-  // derive overall rating if both criteria exist (fallback when we don't aggregate)
   let rating: number | undefined;
   let ratingCount: number | undefined;
 
@@ -342,7 +337,9 @@ const RatingModal: React.FC<RatingModalProps> = ({ service, onClose }) => {
           punctuality,
           comment: comment.trim() || null,
         },
-        { onConflict: "service_id,user_id" }
+        {
+          onConflict: "service_id,user_id",
+        }
       );
 
       if (error) {
@@ -762,7 +759,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   const createdAtDate = service.createdAt ? new Date(service.createdAt) : null;
   const isNew =
     createdAtDate !== null &&
-    Date.now() - createdAtDate.getTime() < 48 * 60 * 60 * 1000; // 48h
+    Date.now() - createdAtDate.getTime() < 48 * 60 * 60 * 1000;
 
   const instagramUrl = socialUrl("instagram", service.instagram);
   const facebookUrl = socialUrl("facebook", service.facebook);
@@ -780,7 +777,8 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   const isLongDescription = normalizedQuote.length > 140;
 
   return (
-    <article className="bg-white/80 backdrop-blur-md rounded-3xl shadow-sm border border-white/60 overflow-hidden hover:shadow-md transition-shadow">
+    <article className="bg-white rounded-3xl shadow-md border border-slate-200 overflow-hidden hover:shadow-lg transition">
+      {/* HEADER */}
       <div className="p-4 pb-3 flex items-start gap-3 border-b border-slate-100">
         <div className="w-11 h-11 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center text-sm font-semibold text-slate-700">
           {service.avatarUrl ? (
@@ -860,6 +858,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
         </div>
       </div>
 
+      {/* BODY */}
       <div className="px-4 pt-3 pb-4 flex flex-col gap-3">
         {service.quote && (
           <div className="space-y-1">
@@ -1046,7 +1045,6 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
 /* ---------- HOMEPAGE ---------- */
 
 type RatingFilter = "all" | "no-rating" | 1 | 2 | 3 | 4 | 5;
-type SortMode = "newest" | "top-rated";
 
 const HomePage: React.FC = () => {
   const { language } = useLanguage();
@@ -1058,9 +1056,8 @@ const HomePage: React.FC = () => {
   >("all");
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
 
-  // ✅ Same as OffersPage
+  // ✅ ADDED: Search state (same idea as Offers page)
   const [search, setSearch] = useState("");
-  const [sortMode, setSortMode] = useState<SortMode>("newest");
 
   const [dbServices, setDbServices] = useState<Service[]>([]);
   const [loadingServices, setLoadingServices] = useState<boolean>(true);
@@ -1101,26 +1098,29 @@ const HomePage: React.FC = () => {
       list = list.filter((s) => (s.rating ?? 0) >= ratingFilter);
     }
 
-    // ✅ search
+    // ✅ ADDED: Search filter
     const q = search.trim().toLowerCase();
     if (q) {
       list = list.filter((s) => {
-        const hay = [s.name, s.quote, s.location, s.openingHoursText]
+        const cat = getCategoryLabel(s.categoryId, false);
+        const catPt = getCategoryLabel(s.categoryId, true);
+
+        const sub =
+          s.subcategoryId != null
+            ? getSubcategoryLabel(s.categoryId, s.subcategoryId, false)
+            : "";
+        const subPt =
+          s.subcategoryId != null
+            ? getSubcategoryLabel(s.categoryId, s.subcategoryId, true)
+            : "";
+
+        const hay = [s.name, s.quote, s.location, cat, catPt, sub, subPt]
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
+
         return hay.includes(q);
       });
-    }
-
-    // ✅ sort
-    if (sortMode === "top-rated") {
-      list.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
-    } else {
-      list.sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
     }
 
     return list;
@@ -1130,7 +1130,6 @@ const HomePage: React.FC = () => {
     selectedSubcategory,
     ratingFilter,
     search,
-    sortMode,
   ]);
 
   const ratingOptions: RatingFilter[] = [5, 4, 3];
@@ -1234,76 +1233,57 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-transparent pb-10">
-      {/* HERO (same as OffersPage) */}
-      <header className="max-w-7xl mx-auto px-4 pt-8 pb-5">
-        <div className="rounded-3xl border border-white/50 bg-white/70 backdrop-blur-md p-6 sm:p-8 shadow-sm">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-            <div className="max-w-2xl">
-              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">
-                {isPT
-                  ? "Serviços verificados em Cascais"
-                  : "Trusted services in Cascais"}
-              </h1>
-              <p className="mt-2 text-sm sm:text-base text-slate-600">
-                {isPT
-                  ? "Descubra prestadores locais e de confiança em Cascais — desde serviços essenciais do dia a dia até experiências que fazem a diferença."
-                  : "Discover local, trusted providers around Cascais — from everyday essentials to experiences that make a difference."}
-              </p>
-            </div>
+      {/* HEADER / INTRO */}
+      <header className="max-w-7xl mx-auto px-4 pt-8 pb-4">
+        <h1 className="text-xl md:text-2xl font-bold text-slate-900 mb-2">
+          {isPT
+            ? "Serviços verificados em Cascais"
+            : "Trusted services in Cascais"}
+        </h1>
+        <p className="text-sm text-slate-600">
+          {isPT
+            ? "Encontre prestadores de confiança na linha de Cascais – de surf a saúde, de limpezas a transfers."
+            : "Discover local, trusted providers around Cascais – from surf and health to cleaning and transfers."}
+        </p>
+      </header>
 
-            <div className="w-full md:w-105 flex flex-col gap-2">
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                  🔎
-                </span>
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={
-                    isPT
-                      ? "Pesquisar por serviço, local, descrição..."
-                      : "Search by service, location, description..."
-                  }
-                  className="w-full rounded-2xl border border-slate-200 bg-white/90 px-10 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1F6FA6]/40"
-                />
-                {search.trim() && (
-                  <button
-                    type="button"
-                    onClick={() => setSearch("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    aria-label={isPT ? "Limpar pesquisa" : "Clear search"}
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
+      {/* ✅ ADDED: SEARCH CARD (same style as offers page) */}
+      <section className="max-w-7xl mx-auto px-4 pb-4">
+        <div className="rounded-3xl border border-white/50 bg-white/70 backdrop-blur-md p-4 sm:p-5 shadow-sm">
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+              🔎
+            </span>
 
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500">
-                  {isPT ? "Ordenar:" : "Sort:"}
-                </span>
-                <select
-                  value={sortMode}
-                  onChange={(e) => setSortMode(e.target.value as SortMode)}
-                  className="flex-1 rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1F6FA6]/40"
-                >
-                  <option value="newest">
-                    {isPT ? "Mais recentes" : "Newest"}
-                  </option>
-                  <option value="top-rated">
-                    {isPT ? "Melhor avaliação" : "Top rated"}
-                  </option>
-                </select>
-              </div>
-            </div>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={
+                isPT
+                  ? "Pesquisar por serviço, local, categoria..."
+                  : "Search by service, location, category..."
+              }
+              className="w-full rounded-2xl border border-slate-200 bg-white/90 px-10 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1F6FA6]/40"
+            />
+
+            {search.trim() && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                aria-label={isPT ? "Limpar pesquisa" : "Clear search"}
+              >
+                ✕
+              </button>
+            )}
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+          <div className="mt-2 text-xs text-slate-500 flex items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-100 px-3 py-1">
               ✨ {isPT ? "Dica:" : "Tip:"}{" "}
               {isPT
-                ? "Use pesquisa e filtros de avaliação para encontrar o prestador ideal."
-                : "Use search and rating filters to find the right provider."}
+                ? "Experimente “fisioterapia”, “limpeza”, “surf”, “cabeleireiro”…"
+                : "Try “physio”, “cleaning”, “surf”, “hairdresser”…"}
             </span>
 
             <span className="ml-auto">
@@ -1312,7 +1292,7 @@ const HomePage: React.FC = () => {
             </span>
           </div>
         </div>
-      </header>
+      </section>
 
       {/* CATEGORY STRIP */}
       <section
@@ -1324,7 +1304,7 @@ const HomePage: React.FC = () => {
           backdrop-blur-md
           shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]
         "
-        aria-label={isPT ? "Categorias" : "Categories"}
+        aria-label={isPT ? "Categorias de ofertas" : "Offer categories"}
       >
         <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-white/60 via-white/20 to-transparent" />
 
@@ -1530,7 +1510,7 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* SERVICES LIST */}
-      <section className="max-w-7xl mx-auto px-4 pt-6 pb-10">
+      <section className="max-w-7xl mx-auto px-4 pt-6">
         {loadingServices && dbServices.length === 0 && (
           <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center text-xs text-slate-400">
             {isPT ? "A carregar serviços..." : "Loading services..."}
@@ -1540,21 +1520,12 @@ const HomePage: React.FC = () => {
         {filteredServices.length === 0 && !loadingServices && (
           <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
             {isPT
-              ? "Ainda não há serviços que correspondam aos filtros. Experimente mudar a categoria, subcategoria ou avaliação."
-              : "No services match your filters yet. Try changing category, subcategory or rating."}
+              ? "Ainda não há serviços que correspondam aos filtros. Experimente mudar a categoria, subcategoria, avaliação ou pesquisa."
+              : "No services match your filters yet. Try changing category, subcategory, rating, or your search."}
           </div>
         )}
 
-        {filteredServices.length > 0 && (
-          <div className="mb-3 text-xs sm:text-sm text-slate-500">
-            {isPT
-              ? `${filteredServices.length} serviço(s) encontrado(s)`
-              : `${filteredServices.length} service(s) found`}
-          </div>
-        )}
-
-        {/* ✅ Grid like OffersPage (instead of columns/masonry) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div className="columns-1 md:columns-2 xl:columns-3 gap-5 space-y-5">
           {filteredServices.map((service: Service) => (
             <ServiceCard
               key={service.id}
@@ -1566,7 +1537,6 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* GLOBAL MODALS */}
       {ratingModalService && (
         <RatingModal
           service={ratingModalService}
