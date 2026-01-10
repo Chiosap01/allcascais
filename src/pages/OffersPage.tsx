@@ -18,6 +18,8 @@ import type { CategoryId, Category, Subcategory } from "../data/categories";
 /* ---------- EXTRA TYPES ---------- */
 
 type CategoryFilterId = CategoryId | "all";
+type OfferHighlight = "new" | "last-minute" | "popular";
+type SortMode = "newest" | "biggest-discount" | "ending-soon";
 
 /* ---------- SHARED PILL STYLES ---------- */
 
@@ -30,8 +32,6 @@ const subPillBase =
 const subPillSize = "min-w-[70px] sm:min-w-[90px] md:min-w-[96px]";
 
 /* ---------- OFFER TYPES ---------- */
-
-type OfferHighlight = "new" | "last-minute" | "popular";
 
 type Offer = {
   id: string | number;
@@ -62,6 +62,8 @@ type Offer = {
   facebook?: string | null;
   tiktok?: string | null;
   linkedin?: string | null;
+
+  createdAt?: string | null;
 };
 
 /* Supabase row type */
@@ -129,6 +131,15 @@ const highlightLabel = (highlight?: OfferHighlight, isPT?: boolean): string => {
     if (highlight === "popular") return "Popular";
   }
   return "";
+};
+
+const highlightPillClass = (highlight?: OfferHighlight) => {
+  if (!highlight) return "bg-white/85 text-slate-700 border-white/60";
+  if (highlight === "new")
+    return "bg-emerald-50/95 text-emerald-700 border-emerald-100";
+  if (highlight === "last-minute")
+    return "bg-rose-50/95 text-rose-700 border-rose-100";
+  return "bg-amber-50/95 text-amber-700 border-amber-100";
 };
 
 const languageFlag = (code: string) => {
@@ -200,6 +211,8 @@ const mapRowToOffer = (row: OfferRow): Offer => {
     facebook: row.facebook,
     tiktok: row.tiktok,
     linkedin: row.linkedin,
+
+    createdAt: row.created_at ?? null,
   };
 };
 
@@ -227,7 +240,19 @@ const socialUrl = (
   }
 };
 
-/* ---------- OFFER CARD COMPONENT ---------- */
+const safeNumber = (n: number | null | undefined) =>
+  typeof n === "number" && !Number.isNaN(n) ? n : null;
+
+const calcDiscountPercent = (o: Offer) => {
+  const op = safeNumber(o.originalPrice);
+  const dp = safeNumber(o.discountedPrice);
+  if (op == null || dp == null || dp >= op) return null;
+  return Math.round(((op - dp) / op) * 100);
+};
+
+const normalizePhoneForTel = (raw: string) => raw.replace(/[^\d+]/g, "");
+
+/* ---------- OFFER CARD ---------- */
 
 type OfferCardProps = {
   offer: Offer;
@@ -244,345 +269,523 @@ const OfferCard: React.FC<OfferCardProps> = ({
   onDelete,
   onEdit,
 }) => {
+  // ✅ overlays: no layout shift, no grid “white bars”
   const [showContact, setShowContact] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
-  const hasDiscount =
-    offer.originalPrice != null &&
-    offer.discountedPrice != null &&
-    offer.discountedPrice < offer.originalPrice;
-
-  const discountPercent =
-    hasDiscount && offer.originalPrice
-      ? Math.round(
-          ((offer.originalPrice - (offer.discountedPrice ?? 0)) /
-            offer.originalPrice) *
-            100
-        )
-      : null;
+  const discountPercent = calcDiscountPercent(offer);
+  const hasDiscount = discountPercent != null;
 
   const discountAmount =
-    hasDiscount && offer.originalPrice && offer.discountedPrice
+    hasDiscount && offer.originalPrice != null && offer.discountedPrice != null
       ? offer.originalPrice - offer.discountedPrice
       : null;
-
-  const isLongDescription = (offer.description || "").length > 220;
 
   const instagramUrl = socialUrl("instagram", offer.instagram);
   const facebookUrl = socialUrl("facebook", offer.facebook);
   const tiktokUrl = socialUrl("tiktok", offer.tiktok);
   const linkedinUrl = socialUrl("linkedin", offer.linkedin);
-
   const hasAnySocial = instagramUrl || facebookUrl || tiktokUrl || linkedinUrl;
+
+  const isLongDescription = (offer.description || "").trim().length > 220;
 
   const initials =
     offer.serviceName?.charAt(0).toUpperCase() ||
     offer.title?.charAt(0).toUpperCase() ||
     "?";
 
-  return (
-    <article className="bg-white/90 backdrop-blur-md rounded-3xl shadow-md border border-white/40 overflow-hidden">
-      <div className="flex flex-col md:flex-row">
-        {/* IMAGE / LEFT SIDE */}
-        <div className="md:w-2/5 lg:w-1/3 self-start">
-          <div className="relative bg-slate-100">
-            {offer.imageUrl ? (
-              <div className="w-full aspect-4/3 bg-slate-100 overflow-hidden">
-                <img
-                  src={offer.imageUrl}
-                  alt={offer.title}
-                  className="w-full h-full object-cover object-center"
-                  loading="lazy"
-                />
-              </div>
-            ) : (
-              <div className="w-full h-52 md:h-60 lg:h-64 flex flex-col items-center justify-center text-slate-400 text-xs gap-1">
-                <div className="w-14 h-14 rounded-2xl bg-slate-200 flex items-center justify-center text-lg font-semibold text-slate-600">
-                  {initials}
-                </div>
-                <span>
-                  {isPT
-                    ? "Adicione uma imagem da oferta"
-                    : "Add a photo of your offer"}
-                </span>
-              </div>
-            )}
-          </div>
+  const primaryPrice = formatPrice(
+    offer.discountedPrice ?? offer.originalPrice ?? null
+  );
 
-          {offer.highlight && (
-            <div className="absolute top-3 left-3 inline-flex items-center rounded-full bg-amber-50/95 text-amber-700 text-[11px] font-semibold px-3 py-1 shadow-sm">
-              ⭐ {highlightLabel(offer.highlight, isPT)}
+  const oldPrice = hasDiscount ? formatPrice(offer.originalPrice) : null;
+
+  const closeAllOverlays = () => {
+    setShowContact(false);
+    setShowFullDescription(false);
+  };
+
+  const phoneTel =
+    offer.phone && offer.phone.trim()
+      ? normalizePhoneForTel(offer.phone)
+      : null;
+
+  return (
+    <article className="relative bg-white/80 backdrop-blur-md rounded-3xl border border-white/60 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+      {/* IMAGE TOP */}
+      <div className="relative">
+        <div className="w-full aspect-16/10 bg-slate-100 overflow-hidden">
+          {offer.imageUrl ? (
+            <img
+              src={offer.imageUrl}
+              alt={offer.title}
+              className="w-full h-full object-cover object-center"
+              loading="lazy"
+            />
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 text-xs gap-2">
+              <div className="w-14 h-14 rounded-2xl bg-slate-200 flex items-center justify-center text-lg font-semibold text-slate-600">
+                {initials}
+              </div>
+              <span className="text-center px-4">
+                {isPT
+                  ? "Adicione uma imagem da oferta"
+                  : "Add a photo of your offer"}
+              </span>
             </div>
           )}
         </div>
 
-        {/* CONTENT / RIGHT SIDE */}
-        <div className="flex-1 p-4 sm:p-5 flex flex-col gap-3">
-          {/* TOP ROW: category + service + location + languages */}
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold text-slate-700 border border-slate-200">
-                {getCategoryLabel(offer.categoryId, isPT)}
+        {/* Gradient */}
+        <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/45 via-black/10 to-transparent" />
+
+        {/* Badges */}
+        <div className="absolute top-3 left-3 flex flex-wrap gap-2">
+          {offer.highlight && (
+            <span
+              className={[
+                "inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold shadow-sm",
+                highlightPillClass(offer.highlight),
+              ].join(" ")}
+            >
+              ⭐ {highlightLabel(offer.highlight, isPT)}
+            </span>
+          )}
+
+          {hasDiscount && discountPercent != null && (
+            <span className="inline-flex items-center rounded-full bg-emerald-600 text-white text-[11px] font-semibold px-3 py-1 shadow-sm">
+              -{discountPercent}%
+            </span>
+          )}
+        </div>
+
+        {/* Price + CTA */}
+        <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-baseline gap-2">
+              <span className="text-white text-xl sm:text-2xl font-extrabold drop-shadow">
+                {primaryPrice}
               </span>
-
-              {offer.subcategoryId && (
-                <span className="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200">
-                  {getSubcategoryLabel(
-                    offer.categoryId,
-                    offer.subcategoryId,
-                    isPT
-                  )}
-                </span>
-              )}
-
-              {offer.validUntil && (
-                <span className="inline-flex items-center rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700 border border-sky-100 ml-auto">
-                  ⏰ {formatValidUntil(offer.validUntil, isPT)}
+              {oldPrice && (
+                <span className="text-white/80 text-sm line-through drop-shadow">
+                  {oldPrice}
                 </span>
               )}
             </div>
-
-            <h3 className="text-sm sm:text-base font-semibold text-slate-900">
-              {offer.title}
-            </h3>
-
-            <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-              {offer.serviceName && (
-                <span className="font-semibold text-slate-700">
-                  {offer.serviceName}
-                </span>
-              )}
-              {offer.location && (
-                <span className="flex items-center gap-1">
-                  <span>📍</span>
-                  <span>{offer.location}</span>
-                </span>
-              )}
-              {offer.languages.length > 0 && (
-                <span className="flex items-center gap-1 ml-auto">
-                  {offer.languages.map((lang) => (
-                    <span key={lang}>{languageFlag(lang)}</span>
-                  ))}
-                </span>
-              )}
-            </div>
+            {hasDiscount && discountAmount != null && (
+              <div className="mt-1 text-[12px] text-white/90 drop-shadow">
+                {isPT ? "Poupa" : "Save"} €{discountAmount}
+              </div>
+            )}
           </div>
 
-          {/* DESCRIPTION */}
-          {offer.description && (
-            <div className="space-y-1">
-              <p
-                className={[
-                  "text-xs sm:text-sm text-slate-800 leading-relaxed",
-                  !showFullDescription ? "line-clamp-3" : "",
-                ].join(" ")}
-              >
-                {offer.description}
-              </p>
+          <button
+            type="button"
+            onClick={() => setShowContact(true)}
+            className="shrink-0 rounded-full bg-white/95 hover:bg-white text-slate-900 text-xs sm:text-sm font-semibold px-4 py-2.5 shadow-sm border border-white/60 transition"
+          >
+            {isPT ? "Ver contacto" : "Get this deal"}
+          </button>
+        </div>
+      </div>
 
-              {isLongDescription && (
+      {/* CONTENT */}
+      <div className="p-4 sm:p-5 flex flex-col gap-3">
+        {/* Meta tags */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold text-slate-700 border border-slate-200">
+            {getCategoryLabel(offer.categoryId, isPT)}
+          </span>
+
+          {offer.subcategoryId && (
+            <span className="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200">
+              {getSubcategoryLabel(offer.categoryId, offer.subcategoryId, isPT)}
+            </span>
+          )}
+
+          {offer.validUntil && (
+            <span className="inline-flex items-center rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700 border border-sky-100 ml-auto">
+              ⏰ {formatValidUntil(offer.validUntil, isPT)}
+            </span>
+          )}
+        </div>
+
+        {/* Title + provider */}
+        <div className="space-y-1">
+          <h3 className="text-base sm:text-lg font-semibold text-slate-900 leading-tight">
+            {offer.title}
+          </h3>
+
+          <div className="flex flex-wrap items-center gap-2 text-[12px] text-slate-500">
+            {offer.serviceName && (
+              <span className="font-semibold text-slate-800">
+                {offer.serviceName}
+              </span>
+            )}
+            {offer.location && (
+              <span className="flex items-center gap-1">
+                <span>📍</span>
+                <span>{offer.location}</span>
+              </span>
+            )}
+            {offer.languages.length > 0 && (
+              <span className="flex items-center gap-1 ml-auto">
+                {offer.languages.map((lang) => (
+                  <span key={lang} title={lang}>
+                    {languageFlag(lang)}
+                  </span>
+                ))}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Short label */}
+        {offer.shortLabel && (
+          <div className="rounded-2xl border border-slate-100 bg-linear-to-br from-sky-50/70 via-white to-white px-3 py-2 text-[12px] text-slate-700">
+            <span className="font-semibold text-slate-900">
+              {isPT ? "Destaque:" : "Deal:"}
+            </span>{" "}
+            {offer.shortLabel}
+          </div>
+        )}
+
+        {/* Description (always clamped to avoid grid row height issues) */}
+        {offer.description && (
+          <div className="space-y-2">
+            <p className="text-sm text-slate-700 leading-relaxed line-clamp-3">
+              {offer.description}
+            </p>
+
+            {isLongDescription && (
+              <button
+                type="button"
+                onClick={() => setShowFullDescription(true)}
+                className="text-[12px] font-semibold text-sky-700 hover:text-sky-900 underline underline-offset-2"
+              >
+                {isPT ? "Mostrar descrição completa" : "Show full description"}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Bottom CTA row */}
+        <div className="pt-2 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowContact(true)}
+            className="flex-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold py-2.5 transition"
+          >
+            {isPT ? "Ver contacto / Comprar" : "Contact / Buy"}
+          </button>
+
+          {/* ✅ small button should call the provider (if phone exists) */}
+          {phoneTel ? (
+            <a
+              href={`tel:${phoneTel}`}
+              className="rounded-full bg-white hover:bg-slate-50 text-slate-800 text-sm font-semibold px-4 py-2.5 border border-slate-200 transition"
+              aria-label={isPT ? "Ligar" : "Call"}
+            >
+              📞
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowContact(true)}
+              className="rounded-full bg-white hover:bg-slate-50 text-slate-800 text-sm font-semibold px-4 py-2.5 border border-slate-200 transition"
+              aria-label={isPT ? "Abrir contactos" : "Open contacts"}
+            >
+              📞
+            </button>
+          )}
+        </div>
+
+        {/* Owner actions */}
+        {canDelete && (
+          <div className="pt-1 flex items-center justify-between">
+            <span className="text-[11px] text-slate-400">
+              {isPT ? "Gerir oferta" : "Manage offer"}
+            </span>
+            <div className="flex items-center gap-4">
+              {onEdit && (
                 <button
                   type="button"
-                  onClick={() => setShowFullDescription((v) => !v)}
-                  className="text-[11px] text-slate-500 underline underline-offset-2 hover:text-slate-700"
+                  onClick={onEdit}
+                  className="text-[12px] text-slate-600 hover:text-slate-900 font-semibold"
                 >
-                  {showFullDescription
-                    ? isPT
-                      ? "Mostrar menos"
-                      : "Show less"
-                    : isPT
-                    ? "Mostrar descrição completa"
-                    : "Show full description"}
+                  {isPT ? "Editar" : "Edit"}
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  className="text-[12px] text-red-600 hover:text-red-700 font-semibold"
+                >
+                  {isPT ? "Remover" : "Remove"}
                 </button>
               )}
             </div>
-          )}
-
-          {/* PRICES */}
-          <div className="flex flex-wrap items-baseline gap-3 mt-1">
-            <div className="flex items-baseline gap-2">
-              {hasDiscount ? (
-                <>
-                  <span className="text-lg font-bold text-[#1F6FA6]">
-                    {formatPrice(offer.discountedPrice)}
-                  </span>
-                  <span className="text-xs line-through text-slate-400">
-                    {formatPrice(offer.originalPrice)}
-                  </span>
-                </>
-              ) : (
-                <span className="text-lg font-bold text-[#1F6FA6]">
-                  {formatPrice(
-                    offer.discountedPrice ?? offer.originalPrice ?? null
-                  )}
-                </span>
-              )}
-            </div>
-
-            {hasDiscount && discountPercent != null && (
-              <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-semibold px-2.5 py-0.5">
-                -{discountPercent}%{" "}
-                {discountAmount != null &&
-                  ` (${isPT ? "Poupa" : "Save"} €${discountAmount})`}
-              </span>
-            )}
           </div>
+        )}
+      </div>
 
-          {/* CONTACT PANEL */}
-          {showContact && (
-            <div className="mt-2 rounded-2xl bg-slate-50 border border-slate-100 px-3 py-3 text-[11px] sm:text-xs space-y-2">
-              <div className="font-semibold text-slate-700 mb-1">
-                {isPT ? "Informações de contacto" : "Contact information"}
+      {/* OVERLAY WRAPPER */}
+      <div
+        className={[
+          "absolute inset-0 z-30 transition",
+          showContact || showFullDescription
+            ? "pointer-events-auto"
+            : "pointer-events-none",
+        ].join(" ")}
+        aria-hidden={!(showContact || showFullDescription)}
+      >
+        {/* Backdrop */}
+        <button
+          type="button"
+          onClick={closeAllOverlays}
+          className={[
+            "absolute inset-0 w-full h-full transition-opacity",
+            showContact || showFullDescription
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none",
+          ].join(" ")}
+          style={{ background: "rgba(2, 6, 23, 0.45)" }}
+          aria-label={isPT ? "Fechar" : "Close"}
+        />
+
+        {/* CONTACT PANEL */}
+        <div
+          className={[
+            "absolute left-3 right-3 bottom-3 sm:left-5 sm:right-5 sm:bottom-5",
+            "rounded-3xl bg-white/95 backdrop-blur-md border border-white/60 shadow-lg",
+            "transition-all duration-200",
+            showContact
+              ? "opacity-100 translate-y-0 pointer-events-auto"
+              : "opacity-0 translate-y-3 pointer-events-none",
+          ].join(" ")}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-slate-900">
+                  {isPT ? "Contactos" : "Contacts"}
+                </div>
+                <div className="mt-1 text-[12px] text-slate-500 wrap-break-word">
+                  {offer.serviceName || offer.title}
+                </div>
               </div>
 
+              <button
+                type="button"
+                onClick={() => setShowContact(false)}
+                className="rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold px-3 py-2 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* ✅ Desktop-safe wrapping: no truncate, no overflow */}
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
               {offer.phone && (
-                <div className="flex items-center gap-2">
+                <a
+                  href={`tel:${normalizePhoneForTel(offer.phone)}`}
+                  className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 hover:bg-slate-100 transition overflow-hidden"
+                >
                   <span>📞</span>
-                  <a
-                    href={`tel:${offer.phone.replace(/\s/g, "")}`}
-                    className="hover:underline"
-                  >
+                  <span className="font-semibold text-slate-800 wrap-break-word">
                     {offer.phone}
-                  </a>
-                </div>
+                  </span>
+                </a>
               )}
 
               {offer.contactEmail && (
-                <div className="flex items-center gap-2">
+                <a
+                  href={`mailto:${offer.contactEmail}`}
+                  className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 hover:bg-slate-100 transition overflow-hidden"
+                  title={offer.contactEmail}
+                >
                   <span>✉️</span>
-                  <a
-                    href={`mailto:${offer.contactEmail}`}
-                    className="truncate text-sky-700 hover:underline"
-                  >
+                  {/* ✅ show full email with wrapping */}
+                  <span className="font-semibold text-slate-800 break-all select-text">
                     {offer.contactEmail}
-                  </a>
-                </div>
+                  </span>
+                </a>
               )}
 
               {offer.website && (
-                <div className="flex items-center gap-2">
+                <a
+                  href={`https://${offer.website.replace(/^https?:\/\//, "")}`}
+                  className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 hover:bg-slate-100 transition sm:col-span-2 overflow-hidden"
+                  target="_blank"
+                  rel="noreferrer"
+                  title={offer.website}
+                >
                   <span>🌐</span>
-                  <a
-                    href={`https://${offer.website.replace(
-                      /^https?:\/\//,
-                      ""
-                    )}`}
-                    className="text-sky-600 underline"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
+                  <span className="font-semibold text-slate-800 break-all">
                     {offer.website}
-                  </a>
-                </div>
-              )}
-
-              {hasAnySocial && (
-                <div className="pt-2 mt-2 border-t border-slate-200 flex flex-wrap gap-3">
-                  {instagramUrl && (
-                    <a
-                      href={instagramUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 w-7 h-7"
-                    >
-                      <img
-                        src="assets/social-media/instagram.png"
-                        alt="Instagram"
-                        className="w-4 h-4 object-contain"
-                      />
-                    </a>
-                  )}
-                  {facebookUrl && (
-                    <a
-                      href={facebookUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 w-7 h-7"
-                    >
-                      <img
-                        src="assets/social-media/facebook.png"
-                        alt="Facebook"
-                        className="w-4 h-4 object-contain"
-                      />
-                    </a>
-                  )}
-                  {tiktokUrl && (
-                    <a
-                      href={tiktokUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 w-7 h-7"
-                    >
-                      <img
-                        src="assets/social-media/tiktok.png"
-                        alt="TikTok"
-                        className="w-4 h-4 object-contain"
-                      />
-                    </a>
-                  )}
-                  {linkedinUrl && (
-                    <a
-                      href={linkedinUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 w-7 h-7"
-                    >
-                      <img
-                        src="assets/social-media/linkedin.png"
-                        alt="LinkedIn"
-                        className="w-4 h-4 object-contain"
-                      />
-                    </a>
-                  )}
-                </div>
+                  </span>
+                </a>
               )}
             </div>
-          )}
 
-          {/* FOOTER BUTTONS */}
-          <div className="mt-3 flex flex-col sm:flex-row gap-3 items-center">
-            <button
-              type="button"
-              onClick={() => setShowContact((v) => !v)}
-              className={[
-                "flex-1 rounded-full text-xs font-semibold py-2.5 border transition",
-                showContact
-                  ? "bg-slate-100 text-slate-800 border-slate-400 hover:bg-slate-200"
-                  : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50",
-              ].join(" ")}
-            >
-              {showContact
-                ? isPT
-                  ? "Esconder contacto"
-                  : "Hide contact"
-                : isPT
-                ? "Mostrar contacto"
-                : "Show contact"}
-            </button>
+            {hasAnySocial && (
+              <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-3">
+                <span className="text-[12px] text-slate-500 mr-1">
+                  {isPT ? "Redes sociais:" : "Socials:"}
+                </span>
 
-            {canDelete && (
-              <div className="flex items-center gap-3">
-                {onEdit && (
-                  <button
-                    type="button"
-                    onClick={onEdit}
-                    className="text-[11px] sm:text-xs text-slate-500 hover:text-slate-700 font-semibold"
+                {instagramUrl && (
+                  <a
+                    href={instagramUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 w-10 h-10 hover:shadow-sm transition"
+                    aria-label="Instagram"
                   >
-                    {isPT ? "Editar oferta" : "Edit offer"}
-                  </button>
+                    <img
+                      src="assets/social-media/instagram.png"
+                      alt="Instagram"
+                      className="w-4 h-4 object-contain"
+                    />
+                  </a>
                 )}
-
-                {onDelete && (
-                  <button
-                    type="button"
-                    onClick={onDelete}
-                    className="text-[11px] sm:text-xs text-red-600 hover:text-red-700 font-semibold"
+                {facebookUrl && (
+                  <a
+                    href={facebookUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 w-10 h-10 hover:shadow-sm transition"
+                    aria-label="Facebook"
                   >
-                    {isPT ? "Remover oferta" : "Remove offer"}
-                  </button>
+                    <img
+                      src="assets/social-media/facebook.png"
+                      alt="Facebook"
+                      className="w-4 h-4 object-contain"
+                    />
+                  </a>
+                )}
+                {tiktokUrl && (
+                  <a
+                    href={tiktokUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 w-10 h-10 hover:shadow-sm transition"
+                    aria-label="TikTok"
+                  >
+                    <img
+                      src="assets/social-media/tiktok.png"
+                      alt="TikTok"
+                      className="w-4 h-4 object-contain"
+                    />
+                  </a>
+                )}
+                {linkedinUrl && (
+                  <a
+                    href={linkedinUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 w-10 h-10 hover:shadow-sm transition"
+                    aria-label="LinkedIn"
+                  >
+                    <img
+                      src="assets/social-media/linkedin.png"
+                      alt="LinkedIn"
+                      className="w-4 h-4 object-contain"
+                    />
+                  </a>
                 )}
               </div>
             )}
+
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowContact(false)}
+                className="flex-1 rounded-full bg-white hover:bg-slate-50 text-slate-800 text-sm font-semibold py-2.5 border border-slate-200 transition"
+              >
+                {isPT ? "Voltar" : "Back"}
+              </button>
+              {phoneTel ? (
+                <a
+                  href={`tel:${phoneTel}`}
+                  className="flex-1 text-center rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold py-2.5 transition"
+                >
+                  {isPT ? "Ligar agora" : "Call now"}
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowContact(false)}
+                  className="flex-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold py-2.5 transition"
+                >
+                  {isPT ? "Continuar" : "Continue"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* FULL DESCRIPTION PANEL */}
+        <div
+          className={[
+            "absolute left-3 right-3 bottom-3 sm:left-5 sm:right-5 sm:bottom-5",
+            "rounded-3xl bg-white/95 backdrop-blur-md border border-white/60 shadow-lg",
+            "transition-all duration-200",
+            showFullDescription
+              ? "opacity-100 translate-y-0 pointer-events-auto"
+              : "opacity-0 translate-y-3 pointer-events-none",
+          ].join(" ")}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="text-sm font-semibold text-slate-900">
+                  {isPT ? "Descrição completa" : "Full description"}
+                </div>
+                <div className="mt-1 text-[12px] text-slate-500 wrap-break-word">
+                  {offer.title}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowFullDescription(false)}
+                className="rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold px-3 py-2 transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-slate-100 bg-white px-4 py-4 max-h-[45vh] overflow-auto">
+              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                {offer.description}
+              </p>
+            </div>
+
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowFullDescription(false)}
+                className="flex-1 rounded-full bg-white hover:bg-slate-50 text-slate-800 text-sm font-semibold py-2.5 border border-slate-200 transition"
+              >
+                {isPT ? "Mostrar menos" : "Show less"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowFullDescription(false);
+                  setShowContact(true);
+                }}
+                className="flex-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold py-2.5 transition"
+              >
+                {isPT ? "Ver contacto" : "Get this deal"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -607,6 +810,9 @@ const OffersPage: React.FC = () => {
   const [dbOffers, setDbOffers] = useState<Offer[]>([]);
   const [loadingOffers, setLoadingOffers] = useState(true);
 
+  const [search, setSearch] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("newest");
+
   const currentSubcategories =
     (selectedCategory !== "all"
       ? SUBCATEGORIES[selectedCategory as CategoryId]
@@ -620,7 +826,6 @@ const OffersPage: React.FC = () => {
             c.id === "all" || c.id === (selectedCategory as CategoryId)
         );
 
-  /* Load offers from Supabase */
   useEffect(() => {
     const fetchOffers = async () => {
       setLoadingOffers(true);
@@ -638,8 +843,7 @@ const OffersPage: React.FC = () => {
       }
 
       const rows = (data ?? []) as OfferRow[];
-      const mapped = rows.map((row) => mapRowToOffer(row));
-      setDbOffers(mapped);
+      setDbOffers(rows.map((row) => mapRowToOffer(row)));
       setLoadingOffers(false);
     };
 
@@ -649,15 +853,15 @@ const OffersPage: React.FC = () => {
   const filteredOffers = useMemo(() => {
     let list = [...dbOffers];
 
-    // ✅ Auto-hide expired offers (valid_until before today)
+    // Auto-hide expired
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     list = list.filter((o) => {
-      if (!o.validUntil) return true; // no expiration → always visible
+      if (!o.validUntil) return true;
       const d = new Date(o.validUntil);
       d.setHours(0, 0, 0, 0);
-      return d >= today; // only show offers valid today or later
+      return d >= today;
     });
 
     if (selectedCategory !== "all") {
@@ -668,8 +872,47 @@ const OffersPage: React.FC = () => {
       list = list.filter((o) => o.subcategoryId === selectedSubcategory);
     }
 
+    const q = search.trim().toLowerCase();
+    if (q) {
+      list = list.filter((o) => {
+        const hay = [
+          o.title,
+          o.shortLabel,
+          o.description,
+          o.serviceName,
+          o.location,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return hay.includes(q);
+      });
+    }
+
+    const discountPercent = (o: Offer) => calcDiscountPercent(o) ?? 0;
+
+    const validUntilTime = (o: Offer) => {
+      if (!o.validUntil) return Number.POSITIVE_INFINITY;
+      const t = new Date(o.validUntil).getTime();
+      return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY;
+    };
+
+    const createdTime = (o: Offer) => {
+      if (!o.createdAt) return 0;
+      const t = new Date(o.createdAt).getTime();
+      return Number.isFinite(t) ? t : 0;
+    };
+
+    if (sortMode === "newest") {
+      list.sort((a, b) => createdTime(b) - createdTime(a));
+    } else if (sortMode === "biggest-discount") {
+      list.sort((a, b) => discountPercent(b) - discountPercent(a));
+    } else if (sortMode === "ending-soon") {
+      list.sort((a, b) => validUntilTime(a) - validUntilTime(b));
+    }
+
     return list;
-  }, [dbOffers, selectedCategory, selectedSubcategory]);
+  }, [dbOffers, selectedCategory, selectedSubcategory, search, sortMode]);
 
   const handleDeleteOffer = async (offerId: string | number) => {
     if (!user || typeof offerId !== "string") return;
@@ -701,35 +944,103 @@ const OffersPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-transparent pb-10">
-      {/* HEADER / INTRO */}
-      <header className="max-w-7xl mx-auto px-4 pt-8 pb-4">
-        <h1 className="text-xl md:text-2xl font-bold text-slate-900 mb-2">
-          {isPT ? "Ofertas locais em Cascais" : "Local offers in Cascais"}
-        </h1>
-        <p className="text-sm text-slate-600 max-w-2xl">
-          {isPT
-            ? "Descubra pacotes especiais, descontos e campanhas sazonais dos prestadores de serviços verificados em Cascais."
-            : "Discover special packages, discounts and seasonal campaigns from trusted local providers."}
-        </p>
+      {/* HERO */}
+      <header className="max-w-7xl mx-auto px-4 pt-8 pb-5">
+        <div className="rounded-3xl border border-white/50 bg-white/70 backdrop-blur-md p-6 sm:p-8 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <div className="max-w-2xl">
+              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">
+                {isPT ? "Ofertas locais em Cascais" : "Local offers in Cascais"}
+              </h1>
+              <p className="mt-2 text-sm sm:text-base text-slate-600">
+                {isPT
+                  ? "Descubra descontos, pacotes especiais e campanhas sazonais dos prestadores verificados."
+                  : "Discover discounts, special packages and seasonal campaigns from trusted local providers."}
+              </p>
+            </div>
+
+            {/* Search + Sort */}
+            <div className="w-full md:w-105 flex flex-col gap-2">
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  🔎
+                </span>
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={
+                    isPT
+                      ? "Pesquisar por serviço, local, desconto..."
+                      : "Search by service, location, deal..."
+                  }
+                  className="w-full rounded-2xl border border-slate-200 bg-white/90 px-10 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1F6FA6]/40"
+                />
+                {search.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    aria-label="Clear search"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500">
+                  {isPT ? "Ordenar:" : "Sort:"}
+                </span>
+                <select
+                  value={sortMode}
+                  onChange={(e) => setSortMode(e.target.value as SortMode)}
+                  className="flex-1 rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1F6FA6]/40"
+                >
+                  <option value="newest">
+                    {isPT ? "Mais recentes" : "Newest"}
+                  </option>
+                  <option value="biggest-discount">
+                    {isPT ? "Maior desconto" : "Biggest discount"}
+                  </option>
+                  <option value="ending-soon">
+                    {isPT ? "A terminar" : "Ending soon"}
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <span className="inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-100 px-3 py-1">
+              ✨ {isPT ? "Dica:" : "Tip:"}{" "}
+              {isPT
+                ? "Toque em “Ver contacto” para ligar ou visitar o website."
+                : "Tap “Get this deal” to call or visit the website."}
+            </span>
+
+            <span className="ml-auto">
+              {filteredOffers.length}{" "}
+              {isPT ? "oferta(s) encontrada(s)" : "offer(s) found"}
+            </span>
+          </div>
+        </div>
       </header>
 
       {/* CATEGORY STRIP */}
       <section
         className="
-    relative
-    pt-4 pb-5
-    border-y border-sky-200/60
-    bg-white/75
-    backdrop-blur-md
-    shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]
-  "
+          relative
+          pt-4 pb-5
+          border-y border-sky-200/60
+          bg-white/75
+          backdrop-blur-md
+          shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]
+        "
         aria-label={isPT ? "Categorias de ofertas" : "Offer categories"}
       >
-        {/* subtle “ceramic glaze” highlight */}
         <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-white/60 via-white/20 to-transparent" />
 
         <div className="relative max-w-7xl mx-auto px-4">
-          {/* CATEGORIES */}
           <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
             {displayCategories.map((category: Category) => {
               const active = category.id === selectedCategory;
@@ -742,7 +1053,6 @@ const OffersPage: React.FC = () => {
                 "hover:-translate-y-0.5 hover:shadow-md",
                 active
                   ? [
-                      // ACTIVE (premium tile-like)
                       "border-sky-500/80",
                       "bg-gradient-to-b from-white to-sky-50",
                       "text-slate-900",
@@ -750,7 +1060,6 @@ const OffersPage: React.FC = () => {
                       "shadow-sm",
                     ].join(" ")
                   : [
-                      // INACTIVE
                       "border-sky-200/70",
                       "bg-white/90",
                       "text-slate-700",
@@ -802,10 +1111,8 @@ const OffersPage: React.FC = () => {
             })}
           </div>
 
-          {/* SUBCATEGORIES */}
           {selectedCategory !== "all" && currentSubcategories.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2 sm:gap-3 items-center">
-              {/* “All” subcategory */}
               <button
                 type="button"
                 onClick={() => setSelectedSubcategory("all")}
@@ -882,48 +1189,45 @@ const OffersPage: React.FC = () => {
         </div>
       </section>
 
-      {/* FILTER BAR (highlight toggle + summary) */}
-      <section className="max-w-7xl mx-auto px-4 pt-4 pb-2 flex flex-wrap items-center gap-3">
-        {filteredOffers.length > 0 && (
-          <span className="text-xs sm:text-sm text-slate-500 ml-auto">
-            {filteredOffers.length}{" "}
-            {isPT ? "oferta(s) encontrada(s)" : "offer(s) found"}
-          </span>
-        )}
-      </section>
-
-      {/* OFFERS LIST */}
-      <section className="max-w-7xl mx-auto px-4 pt-4 space-y-4 pb-10">
+      {/* OFFERS GRID */}
+      <section className="max-w-7xl mx-auto px-4 pt-6 pb-10">
         {loadingOffers && filteredOffers.length === 0 && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center text-xs text-slate-400">
+          <div className="bg-white/80 backdrop-blur rounded-2xl border border-slate-200 p-6 text-center text-sm text-slate-500">
             {isPT ? "A carregar ofertas..." : "Loading offers..."}
           </div>
         )}
 
         {!loadingOffers && filteredOffers.length === 0 && (
-          <div className="bg-white rounded-2xl border border-dashed border-slate-200 p-6 text-center text-sm text-slate-500">
+          <div className="bg-white/80 backdrop-blur rounded-2xl border border-dashed border-slate-200 p-8 text-center text-sm text-slate-600">
+            <div className="text-2xl mb-2">🫧</div>
             {isPT
-              ? "Ainda não há ofertas que correspondam aos filtros. Experimente mudar a categoria ou subcategoria."
-              : "No offers match your filters yet. Try changing category or subcategory."}
+              ? "Ainda não há ofertas que correspondam aos filtros. Experimente mudar a categoria, subcategoria ou pesquisa."
+              : "No offers match your filters yet. Try changing category, subcategory, or your search."}
           </div>
         )}
 
-        {filteredOffers.map((offer) => {
-          const isOwner = !!user && offer.userId === user.id;
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+          {filteredOffers.map((offer) => {
+            const isOwner = !!user && offer.userId === user.id;
 
-          return (
-            <OfferCard
-              key={offer.id}
-              offer={offer}
-              isPT={isPT}
-              canDelete={isOwner}
-              onDelete={isOwner ? () => handleDeleteOffer(offer.id) : undefined}
-              onEdit={
-                isOwner ? () => navigate(`/offers/edit/${offer.id}`) : undefined
-              }
-            />
-          );
-        })}
+            return (
+              <OfferCard
+                key={offer.id}
+                offer={offer}
+                isPT={isPT}
+                canDelete={isOwner}
+                onDelete={
+                  isOwner ? () => handleDeleteOffer(offer.id) : undefined
+                }
+                onEdit={
+                  isOwner
+                    ? () => navigate(`/offers/edit/${offer.id}`)
+                    : undefined
+                }
+              />
+            );
+          })}
+        </div>
       </section>
     </div>
   );

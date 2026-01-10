@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import { useLanguage } from "../layouts/MainLayout";
 import { supabase } from "../supabase";
 import { useAuth } from "../context/AuthContext";
-import { cdnImageUrl, toCdnFromSupabasePublicUrl } from "../utils/cdn";
+import { toCdnUrl } from "../utils/cdn";
 
 // Value imports from categories.ts
 import {
@@ -82,8 +82,6 @@ type ServiceRatingRow = {
   comment: string | null;
   created_at: string;
 };
-
-/* ---------- STATIC DEMO SERVICES ---------- */
 
 /* ---------- DB ROW TYPE & FORMATTER ---------- */
 
@@ -207,12 +205,13 @@ const formatOpeningHours = (
 };
 
 const mapRowToService = (row: ServiceRow, isPT: boolean): Service => {
-  const rawAvatar = row.provider_profile_image_url ?? undefined;
+  const raw = row.provider_profile_image_url;
 
-  const avatarUrl =
-    rawAvatar && rawAvatar.includes("/storage/v1/object/public/")
-      ? toCdnFromSupabasePublicUrl(rawAvatar) || undefined
-      : cdnImageUrl("profile-images", rawAvatar) || undefined;
+  const avatarUrl = toCdnUrl(
+    raw && !raw.includes("/") && row.user_id ? `${row.user_id}/${raw}` : raw,
+    "profile-images"
+  );
+
   // languages can be text[] or comma-separated string
   let languages: string[] = [];
   if (Array.isArray(row.languages)) {
@@ -302,7 +301,6 @@ const RatingModal: React.FC<RatingModalProps> = ({ service, onClose }) => {
   const isPT = language === "pt";
   const { user } = useAuth();
 
-  // start empty; we don't prefill with averages
   const [workQuality, setWorkQuality] = useState(0);
   const [punctuality, setPunctuality] = useState(0);
   const [comment, setComment] = useState("");
@@ -344,13 +342,10 @@ const RatingModal: React.FC<RatingModalProps> = ({ service, onClose }) => {
           punctuality,
           comment: comment.trim() || null,
         },
-        {
-          onConflict: "service_id,user_id", // matches the unique index
-        }
+        { onConflict: "service_id,user_id" }
       );
 
       if (error) {
-        // 23505 = unique_violation (already has a rating for this service+user)
         if ((error as any).code === "23505") {
           setErrorMsg(
             isPT
@@ -375,7 +370,6 @@ const RatingModal: React.FC<RatingModalProps> = ({ service, onClose }) => {
 
       setTimeout(() => {
         onClose();
-        // Optionally: trigger a refetch of services to update stars immediately
       }, 900);
     } finally {
       setSubmitting(false);
@@ -386,7 +380,6 @@ const RatingModal: React.FC<RatingModalProps> = ({ service, onClose }) => {
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 px-3">
       <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-xl border border-slate-100">
         <form onSubmit={handleSubmit} className="px-5 py-4 sm:px-6 sm:py-5">
-          {/* Header */}
           <div className="flex items-start justify-between gap-3 mb-4">
             <div>
               <h2 className="text-base sm:text-lg font-semibold text-slate-900">
@@ -408,7 +401,6 @@ const RatingModal: React.FC<RatingModalProps> = ({ service, onClose }) => {
             </button>
           </div>
 
-          {/* Criteria */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
               <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
@@ -427,7 +419,6 @@ const RatingModal: React.FC<RatingModalProps> = ({ service, onClose }) => {
             </div>
           </div>
 
-          {/* Comment */}
           <div className="mb-4">
             <div className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-1">
               <span>💬</span>
@@ -448,7 +439,6 @@ const RatingModal: React.FC<RatingModalProps> = ({ service, onClose }) => {
             />
           </div>
 
-          {/* Messages */}
           {errorMsg && (
             <div className="mb-3 text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
               {errorMsg}
@@ -460,7 +450,6 @@ const RatingModal: React.FC<RatingModalProps> = ({ service, onClose }) => {
             </div>
           )}
 
-          {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-2 sm:justify-end mt-2">
             <button
               type="submit"
@@ -524,7 +513,6 @@ const RatingDetailsModal: React.FC<RatingDetailsModalProps> = ({
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 px-3">
       <div className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-xl border border-slate-100">
         <div className="px-5 py-4 sm:px-6 sm:py-5">
-          {/* Header */}
           <div className="flex items-start justify-between gap-3 mb-4">
             <div>
               <h2 className="text-base sm:text-lg font-semibold text-slate-900">
@@ -554,7 +542,6 @@ const RatingDetailsModal: React.FC<RatingDetailsModalProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Overall */}
               <div className="rounded-2xl bg-white border border-slate-200 px-4 py-3 flex items-center justify-between">
                 <div>
                   <div className="text-xs uppercase tracking-wide text-slate-500 mb-1">
@@ -581,7 +568,6 @@ const RatingDetailsModal: React.FC<RatingDetailsModalProps> = ({
                 )}
               </div>
 
-              {/* Criteria */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="rounded-2xl bg-white border border-slate-200 px-4 py-3">
                   <div className="flex items-center gap-2 text-xs font-semibold text-slate-800 mb-1">
@@ -632,7 +618,6 @@ const RatingDetailsModal: React.FC<RatingDetailsModalProps> = ({
                 </div>
               </div>
 
-              {/* Comment */}
               {service.ratingComment && (
                 <div className="rounded-2xl bg-white border border-slate-200 px-4 py-3">
                   <div className="flex items-center gap-2 text-xs font-semibold text-slate-800 mb-1">
@@ -647,7 +632,6 @@ const RatingDetailsModal: React.FC<RatingDetailsModalProps> = ({
             </div>
           )}
 
-          {/* Footer */}
           <div className="mt-4 flex justify-end">
             <button
               type="button"
@@ -793,11 +777,10 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
     "?";
 
   const normalizedQuote = (service.quote || "").replace(/\s+/g, " ").trim();
-  const isLongDescription = normalizedQuote.length > 140; // adjust threshold if needed
+  const isLongDescription = normalizedQuote.length > 140;
 
   return (
-    <article className="bg-white rounded-3xl shadow-md border border-slate-200 overflow-hidden hover:shadow-lg transition">
-      {/* HEADER */}
+    <article className="bg-white/80 backdrop-blur-md rounded-3xl shadow-sm border border-white/60 overflow-hidden hover:shadow-md transition-shadow">
       <div className="p-4 pb-3 flex items-start gap-3 border-b border-slate-100">
         <div className="w-11 h-11 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center text-sm font-semibold text-slate-700">
           {service.avatarUrl ? (
@@ -852,7 +835,6 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
             )}
           </div>
 
-          {/* Rating + location */}
           <div className="mt-2 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <div>{renderStars(service.rating)}</div>
@@ -878,7 +860,6 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
         </div>
       </div>
 
-      {/* BODY */}
       <div className="px-4 pt-3 pb-4 flex flex-col gap-3">
         {service.quote && (
           <div className="space-y-1">
@@ -1029,7 +1010,6 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
           </div>
         )}
 
-        {/* Footer buttons – contact + rate */}
         <div className="mt-4 flex flex-col sm:flex-row gap-3">
           <button
             type="button"
@@ -1066,6 +1046,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
 /* ---------- HOMEPAGE ---------- */
 
 type RatingFilter = "all" | "no-rating" | 1 | 2 | 3 | 4 | 5;
+type SortMode = "newest" | "top-rated";
 
 const HomePage: React.FC = () => {
   const { language } = useLanguage();
@@ -1077,10 +1058,13 @@ const HomePage: React.FC = () => {
   >("all");
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
 
+  // ✅ Same as OffersPage
+  const [search, setSearch] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("newest");
+
   const [dbServices, setDbServices] = useState<Service[]>([]);
   const [loadingServices, setLoadingServices] = useState<boolean>(true);
 
-  // lifted modal state
   const [ratingModalService, setRatingModalService] = useState<Service | null>(
     null
   );
@@ -1117,17 +1101,44 @@ const HomePage: React.FC = () => {
       list = list.filter((s) => (s.rating ?? 0) >= ratingFilter);
     }
 
-    return list;
-  }, [allServices, selectedCategory, selectedSubcategory, ratingFilter]);
+    // ✅ search
+    const q = search.trim().toLowerCase();
+    if (q) {
+      list = list.filter((s) => {
+        const hay = [s.name, s.quote, s.location, s.openingHoursText]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return hay.includes(q);
+      });
+    }
 
-  // Only show the most common useful thresholds
+    // ✅ sort
+    if (sortMode === "top-rated") {
+      list.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
+    } else {
+      list.sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    }
+
+    return list;
+  }, [
+    allServices,
+    selectedCategory,
+    selectedSubcategory,
+    ratingFilter,
+    search,
+    sortMode,
+  ]);
+
   const ratingOptions: RatingFilter[] = [5, 4, 3];
 
   useEffect(() => {
     const fetchServices = async () => {
       setLoadingServices(true);
 
-      // 1) Load service listings
       const { data: servicesData, error: servicesError } = await supabase
         .from("service_listings")
         .select("*")
@@ -1143,7 +1154,6 @@ const HomePage: React.FC = () => {
       const serviceRows = (servicesData ?? []) as ServiceRow[];
       let mapped = serviceRows.map((row) => mapRowToService(row, isPT));
 
-      // 2) Load all ratings
       const { data: ratingsData, error: ratingsError } = await supabase
         .from("service_ratings")
         .select("*");
@@ -1157,7 +1167,6 @@ const HomePage: React.FC = () => {
 
       const ratings = (ratingsData ?? []) as ServiceRatingRow[];
 
-      // 3) Aggregate ratings by service_id
       const ratingStats: Record<
         string,
         {
@@ -1185,14 +1194,12 @@ const HomePage: React.FC = () => {
         stat.sumPunct += r.punctuality;
         stat.count += 1;
 
-        // keep latest comment by created_at
         if (!stat.lastCreatedAt || r.created_at > stat.lastCreatedAt) {
           stat.lastCreatedAt = r.created_at;
           stat.lastComment = r.comment;
         }
       });
 
-      // 4) Merge stats into services
       mapped = mapped.map((svc) => {
         const stats = ratingStats[String(svc.id)];
         if (!stats || stats.count === 0) return svc;
@@ -1212,15 +1219,11 @@ const HomePage: React.FC = () => {
         };
       });
 
-      // 5) Sort services by createdAt descending (newest first)
       mapped = mapped.sort((a, b) => {
         const aTime = new Date(a.createdAt).getTime();
         const bTime = new Date(b.createdAt).getTime();
         return bTime - aTime;
       });
-
-      setDbServices(mapped);
-      setLoadingServices(false);
 
       setDbServices(mapped);
       setLoadingServices(false);
@@ -1231,37 +1234,101 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-transparent pb-10">
-      {/* HEADER / INTRO */}
-      <header className="max-w-7xl mx-auto px-4 pt-8 pb-4">
-        <h1 className="text-xl md:text-2xl font-bold text-slate-900 mb-2">
-          {isPT
-            ? "Serviços verificados em Cascais"
-            : "Trusted services in Cascais"}
-        </h1>
-        <p className="text-sm text-slate-600">
-          {isPT
-            ? "Encontre prestadores de confiança na linha de Cascais – de surf a saúde, de limpezas a transfers."
-            : "Discover local, trusted providers around Cascais – from surf and health to cleaning and transfers."}
-        </p>
+      {/* HERO (same as OffersPage) */}
+      <header className="max-w-7xl mx-auto px-4 pt-8 pb-5">
+        <div className="rounded-3xl border border-white/50 bg-white/70 backdrop-blur-md p-6 sm:p-8 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <div className="max-w-2xl">
+              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">
+                {isPT
+                  ? "Serviços verificados em Cascais"
+                  : "Trusted services in Cascais"}
+              </h1>
+              <p className="mt-2 text-sm sm:text-base text-slate-600">
+                {isPT
+                  ? "Descubra prestadores locais e de confiança em Cascais — desde serviços essenciais do dia a dia até experiências que fazem a diferença."
+                  : "Discover local, trusted providers around Cascais — from everyday essentials to experiences that make a difference."}
+              </p>
+            </div>
+
+            <div className="w-full md:w-105 flex flex-col gap-2">
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  🔎
+                </span>
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={
+                    isPT
+                      ? "Pesquisar por serviço, local, descrição..."
+                      : "Search by service, location, description..."
+                  }
+                  className="w-full rounded-2xl border border-slate-200 bg-white/90 px-10 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1F6FA6]/40"
+                />
+                {search.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    aria-label={isPT ? "Limpar pesquisa" : "Clear search"}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-500">
+                  {isPT ? "Ordenar:" : "Sort:"}
+                </span>
+                <select
+                  value={sortMode}
+                  onChange={(e) => setSortMode(e.target.value as SortMode)}
+                  className="flex-1 rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1F6FA6]/40"
+                >
+                  <option value="newest">
+                    {isPT ? "Mais recentes" : "Newest"}
+                  </option>
+                  <option value="top-rated">
+                    {isPT ? "Melhor avaliação" : "Top rated"}
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+            <span className="inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-100 px-3 py-1">
+              ✨ {isPT ? "Dica:" : "Tip:"}{" "}
+              {isPT
+                ? "Use pesquisa e filtros de avaliação para encontrar o prestador ideal."
+                : "Use search and rating filters to find the right provider."}
+            </span>
+
+            <span className="ml-auto">
+              {filteredServices.length}{" "}
+              {isPT ? "serviço(s) encontrado(s)" : "service(s) found"}
+            </span>
+          </div>
+        </div>
       </header>
 
       {/* CATEGORY STRIP */}
       <section
         className="
-    relative
-    pt-4 pb-5
-    border-y border-sky-200/60
-    bg-white/75
-    backdrop-blur-md
-    shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]
-  "
-        aria-label={isPT ? "Categorias de ofertas" : "Offer categories"}
+          relative
+          pt-4 pb-5
+          border-y border-sky-200/60
+          bg-white/75
+          backdrop-blur-md
+          shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]
+        "
+        aria-label={isPT ? "Categorias" : "Categories"}
       >
-        {/* subtle “ceramic glaze” highlight */}
         <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-white/60 via-white/20 to-transparent" />
 
         <div className="relative max-w-7xl mx-auto px-4">
-          {/* CATEGORIES */}
           <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
             {displayCategories.map((category: Category) => {
               const active = category.id === selectedCategory;
@@ -1274,7 +1341,6 @@ const HomePage: React.FC = () => {
                 "hover:-translate-y-0.5 hover:shadow-md",
                 active
                   ? [
-                      // ACTIVE (premium tile-like)
                       "border-sky-500/80",
                       "bg-gradient-to-b from-white to-sky-50",
                       "text-slate-900",
@@ -1282,7 +1348,6 @@ const HomePage: React.FC = () => {
                       "shadow-sm",
                     ].join(" ")
                   : [
-                      // INACTIVE
                       "border-sky-200/70",
                       "bg-white/90",
                       "text-slate-700",
@@ -1334,10 +1399,8 @@ const HomePage: React.FC = () => {
             })}
           </div>
 
-          {/* SUBCATEGORIES */}
           {selectedCategory !== "all" && currentSubcategories.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-2 sm:gap-3 items-center">
-              {/* “All” subcategory */}
               <button
                 type="button"
                 onClick={() => setSelectedSubcategory("all")}
@@ -1417,7 +1480,6 @@ const HomePage: React.FC = () => {
       {/* RATING FILTER BAR */}
       <section className="max-w-7xl mx-auto px-4 pt-4">
         <div className="flex flex-wrap items-center gap-3">
-          {/* Left: minimum rating chips */}
           <div className="flex items-center gap-2">
             <span className="text-xs sm:text-sm text-slate-500">
               {isPT ? "Avaliação mínima" : "Minimum rating"}
@@ -1444,7 +1506,6 @@ const HomePage: React.FC = () => {
             })}
           </div>
 
-          {/* Middle: no-rating toggle */}
           <button
             type="button"
             onClick={() => setRatingFilter("no-rating")}
@@ -1458,7 +1519,6 @@ const HomePage: React.FC = () => {
             {isPT ? "Sem avaliação" : "No rating"}
           </button>
 
-          {/* Right: reset */}
           <button
             type="button"
             onClick={() => setRatingFilter("all")}
@@ -1470,7 +1530,7 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* SERVICES LIST */}
-      <section className="max-w-7xl mx-auto px-4 pt-6">
+      <section className="max-w-7xl mx-auto px-4 pt-6 pb-10">
         {loadingServices && dbServices.length === 0 && (
           <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center text-xs text-slate-400">
             {isPT ? "A carregar serviços..." : "Loading services..."}
@@ -1493,7 +1553,8 @@ const HomePage: React.FC = () => {
           </div>
         )}
 
-        <div className="columns-1 md:columns-2 xl:columns-3 gap-5 space-y-5">
+        {/* ✅ Grid like OffersPage (instead of columns/masonry) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {filteredServices.map((service: Service) => (
             <ServiceCard
               key={service.id}
@@ -1505,7 +1566,7 @@ const HomePage: React.FC = () => {
         </div>
       </section>
 
-      {/* GLOBAL MODALS (avoids flicker on re-render) */}
+      {/* GLOBAL MODALS */}
       {ratingModalService && (
         <RatingModal
           service={ratingModalService}
