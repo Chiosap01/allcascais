@@ -19,17 +19,6 @@ import type { CategoryId, Category, Subcategory } from "../data/categories";
 
 type CategoryFilterId = CategoryId | "all";
 type OfferHighlight = "new" | "last-minute" | "popular";
-type SortMode = "newest" | "biggest-discount" | "ending-soon";
-
-/* ---------- SHARED PILL STYLES ---------- */
-
-const pillBase =
-  "relative flex flex-col items-center justify-center gap-1 text-center rounded-2xl border bg-white/90 shadow-sm px-2.5 py-2 text-[10px] sm:text-[11px] transform transition duration-150";
-const pillSize = "min-w-[76px] sm:min-w-[96px] md:min-w-[104px]";
-
-const subPillBase =
-  "relative flex flex-col items-center justify-center gap-1 text-center rounded-2xl border bg-white/90 shadow-sm px-2.5 py-1.5 text-[9.5px] sm:text-[11px] transform transition duration-150";
-const subPillSize = "min-w-[70px] sm:min-w-[90px] md:min-w-[96px]";
 
 /* ---------- OFFER TYPES ---------- */
 
@@ -269,7 +258,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
   onDelete,
   onEdit,
 }) => {
-  // ✅ overlays: no layout shift, no grid “white bars”
   const [showContact, setShowContact] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
@@ -336,10 +324,8 @@ const OfferCard: React.FC<OfferCardProps> = ({
           )}
         </div>
 
-        {/* Gradient */}
         <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/45 via-black/10 to-transparent" />
 
-        {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-wrap gap-2">
           {offer.highlight && (
             <span
@@ -359,7 +345,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
           )}
         </div>
 
-        {/* Price + CTA */}
         <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-baseline gap-2">
@@ -391,7 +376,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
 
       {/* CONTENT */}
       <div className="p-4 sm:p-5 flex flex-col gap-3">
-        {/* Meta tags */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold text-slate-700 border border-slate-200">
             {getCategoryLabel(offer.categoryId, isPT)}
@@ -410,7 +394,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
           )}
         </div>
 
-        {/* Title + provider */}
         <div className="space-y-1">
           <h3 className="text-base sm:text-lg font-semibold text-slate-900 leading-tight">
             {offer.title}
@@ -440,7 +423,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
           </div>
         </div>
 
-        {/* Short label */}
         {offer.shortLabel && (
           <div className="rounded-2xl border border-slate-100 bg-linear-to-br from-sky-50/70 via-white to-white px-3 py-2 text-[12px] text-slate-700">
             <span className="font-semibold text-slate-900">
@@ -450,7 +432,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
           </div>
         )}
 
-        {/* Description (always clamped to avoid grid row height issues) */}
         {offer.description && (
           <div className="space-y-2">
             <p className="text-sm text-slate-700 leading-relaxed line-clamp-3">
@@ -469,7 +450,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
           </div>
         )}
 
-        {/* Bottom CTA row */}
         <div className="pt-2 flex items-center gap-2">
           <button
             type="button"
@@ -479,7 +459,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
             {isPT ? "Ver contacto / Comprar" : "Contact / Buy"}
           </button>
 
-          {/* ✅ small button should call the provider (if phone exists) */}
           {phoneTel ? (
             <a
               href={`tel:${phoneTel}`}
@@ -500,7 +479,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
           )}
         </div>
 
-        {/* Owner actions */}
         {canDelete && (
           <div className="pt-1 flex items-center justify-between">
             <span className="text-[11px] text-slate-400">
@@ -540,7 +518,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
         ].join(" ")}
         aria-hidden={!(showContact || showFullDescription)}
       >
-        {/* Backdrop */}
         <button
           type="button"
           onClick={closeAllOverlays}
@@ -587,7 +564,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
               </button>
             </div>
 
-            {/* ✅ Desktop-safe wrapping: no truncate, no overflow */}
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
               {offer.phone && (
                 <a
@@ -608,7 +584,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
                   title={offer.contactEmail}
                 >
                   <span>✉️</span>
-                  {/* ✅ show full email with wrapping */}
                   <span className="font-semibold text-slate-800 break-all select-text">
                     {offer.contactEmail}
                   </span>
@@ -811,14 +786,14 @@ const OffersPage: React.FC = () => {
   const [loadingOffers, setLoadingOffers] = useState(true);
 
   const [search, setSearch] = useState("");
-  const [sortMode, setSortMode] = useState<SortMode>("newest");
 
-  const currentSubcategories =
-    (selectedCategory !== "all"
-      ? SUBCATEGORIES[selectedCategory as CategoryId]
-      : []) ?? ([] as Subcategory[]);
+  const currentSubcategories: Subcategory[] = (
+    selectedCategory !== "all"
+      ? SUBCATEGORIES[selectedCategory as CategoryId] ?? []
+      : []
+  ) as Subcategory[];
 
-  const displayCategories =
+  const displayCategories: Category[] =
     selectedCategory === "all"
       ? CATEGORIES
       : CATEGORIES.filter(
@@ -889,30 +864,8 @@ const OffersPage: React.FC = () => {
       });
     }
 
-    const discountPercent = (o: Offer) => calcDiscountPercent(o) ?? 0;
-
-    const validUntilTime = (o: Offer) => {
-      if (!o.validUntil) return Number.POSITIVE_INFINITY;
-      const t = new Date(o.validUntil).getTime();
-      return Number.isFinite(t) ? t : Number.POSITIVE_INFINITY;
-    };
-
-    const createdTime = (o: Offer) => {
-      if (!o.createdAt) return 0;
-      const t = new Date(o.createdAt).getTime();
-      return Number.isFinite(t) ? t : 0;
-    };
-
-    if (sortMode === "newest") {
-      list.sort((a, b) => createdTime(b) - createdTime(a));
-    } else if (sortMode === "biggest-discount") {
-      list.sort((a, b) => discountPercent(b) - discountPercent(a));
-    } else if (sortMode === "ending-soon") {
-      list.sort((a, b) => validUntilTime(a) - validUntilTime(b));
-    }
-
     return list;
-  }, [dbOffers, selectedCategory, selectedSubcategory, search, sortMode]);
+  }, [dbOffers, selectedCategory, selectedSubcategory, search]);
 
   const handleDeleteOffer = async (offerId: string | number) => {
     if (!user || typeof offerId !== "string") return;
@@ -942,255 +895,347 @@ const OffersPage: React.FC = () => {
     setDbOffers((prev) => prev.filter((o) => o.id !== offerId));
   };
 
+  const activeCategoryLabel =
+    selectedCategory === "all"
+      ? isPT
+        ? "Todos"
+        : "All"
+      : getCategoryLabel(selectedCategory as CategoryId, isPT);
+
+  const activeSubcategoryLabel =
+    selectedCategory !== "all" && selectedSubcategory !== "all"
+      ? getSubcategoryLabel(
+          selectedCategory as CategoryId,
+          selectedSubcategory,
+          isPT
+        )
+      : null;
+
   return (
     <div className="min-h-screen bg-transparent pb-10">
-      {/* HERO */}
-      <header className="max-w-7xl mx-auto px-4 pt-8 pb-5">
-        <div className="rounded-3xl border border-white/50 bg-white/70 backdrop-blur-md p-6 sm:p-8 shadow-sm">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-            <div className="max-w-2xl">
-              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900">
-                {isPT ? "Ofertas locais em Cascais" : "Local offers in Cascais"}
+      {/* HERO + SEARCH */}
+      <section className="relative overflow-hidden border-b border-white/40 bg-linear-to-b from-white via-white/80 to-sky-50/60">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+        >
+          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-sky-200/35 blur-3xl" />
+          <div className="absolute -bottom-28 -left-20 h-80 w-80 rounded-full bg-amber-100/35 blur-3xl" />
+          <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-slate-200/70 to-transparent" />
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 pt-10 sm:pt-12 pb-6 sm:pb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-end">
+            <div className="lg:col-span-7">
+              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-white/70 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                {isPT ? "Ofertas selecionadas" : "Curated deals"}
+              </div>
+
+              <h1 className="mt-3 text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight text-slate-900">
+                {isPT ? "Ofertas em Cascais" : "Offers in Cascais"}
               </h1>
-              <p className="mt-2 text-sm sm:text-base text-slate-600">
+
+              <p className="mt-2 text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl">
                 {isPT
-                  ? "Descubra descontos, pacotes especiais e campanhas sazonais dos prestadores verificados."
-                  : "Discover discounts, special packages and seasonal campaigns from trusted local providers."}
+                  ? "Descontos, pacotes especiais e campanhas sazonais dos prestadores verificados — para aproveitar o melhor da linha."
+                  : "Discounts, special packages and seasonal campaigns from verified providers — the best of the coast, for less."}
               </p>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="inline-flex items-center rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-[11px] font-medium text-slate-700">
+                  {isPT ? "Promoções ativas" : "Active deals"}
+                </span>
+                <span className="inline-flex items-center rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-[11px] font-medium text-slate-700">
+                  {isPT ? "Última hora" : "Last minute"}
+                </span>
+                <span className="inline-flex items-center rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-[11px] font-medium text-slate-700">
+                  {isPT ? "Novidades" : "New arrivals"}
+                </span>
+              </div>
             </div>
 
-            {/* Search + Sort */}
-            <div className="w-full md:w-105 flex flex-col gap-2">
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+            {/* SEARCH + SORT CARD */}
+            <div className="lg:col-span-5 rounded-3xl border border-white/60 bg-white/70 backdrop-blur-md shadow-sm p-4 sm:p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">
+                    {isPT ? "Pesquisar ofertas" : "Search offers"}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    {isPT
+                      ? "Procure por serviço, local, desconto ou descrição."
+                      : "Search by service, location, discount or description."}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3 relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
                   🔎
                 </span>
+
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={
                     isPT
-                      ? "Pesquisar por serviço, local, desconto..."
-                      : "Search by service, location, deal..."
+                      ? "Ex: limpeza, surf, desconto, last-minute…"
+                      : "E.g. cleaning, surf, discount, last-minute…"
                   }
-                  className="w-full rounded-2xl border border-slate-200 bg-white/90 px-10 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1F6FA6]/40"
+                  className="w-full rounded-2xl border border-slate-200 bg-white/90 px-10 pr-10 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 focus:border-[#1F6FA6]/40"
                 />
+
                 {search.trim() && (
                   <button
                     type="button"
                     onClick={() => setSearch("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    aria-label="Clear search"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                    aria-label={isPT ? "Limpar pesquisa" : "Clear search"}
                   >
                     ✕
                   </button>
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500">
-                  {isPT ? "Ordenar:" : "Sort:"}
-                </span>
-                <select
-                  value={sortMode}
-                  onChange={(e) => setSortMode(e.target.value as SortMode)}
-                  className="flex-1 rounded-2xl border border-slate-200 bg-white/90 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1F6FA6]/40"
-                >
-                  <option value="newest">
-                    {isPT ? "Mais recentes" : "Newest"}
-                  </option>
-                  <option value="biggest-discount">
-                    {isPT ? "Maior desconto" : "Biggest discount"}
-                  </option>
-                  <option value="ending-soon">
-                    {isPT ? "A terminar" : "Ending soon"}
-                  </option>
-                </select>
+              <div className="mt-3 text-[11px] text-slate-500">
+                {isPT
+                  ? "Dica: pesquise também por “Cascais”, “Estoril” ou “Carcavelos”."
+                  : "Tip: try searching for “Cascais”, “Estoril” or “Carcavelos” too."}
               </div>
             </div>
           </div>
-
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-            <span className="inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-100 px-3 py-1">
-              ✨ {isPT ? "Dica:" : "Tip:"}{" "}
-              {isPT
-                ? "Toque em “Ver contacto” para ligar ou visitar o website."
-                : "Tap “Get this deal” to call or visit the website."}
-            </span>
-
-            <span className="ml-auto">
-              {filteredOffers.length}{" "}
-              {isPT ? "oferta(s) encontrada(s)" : "offer(s) found"}
-            </span>
-          </div>
         </div>
-      </header>
+      </section>
 
       {/* CATEGORY STRIP */}
       <section
-        className="
-          relative
-          pt-4 pb-5
-          border-y border-sky-200/60
-          bg-white/75
-          backdrop-blur-md
-          shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]
-        "
+        className="relative -mt-2 pb-6"
         aria-label={isPT ? "Categorias de ofertas" : "Offer categories"}
       >
-        <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-white/60 via-white/20 to-transparent" />
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="rounded-3xl border border-white/60 bg-white/65 backdrop-blur-md shadow-sm overflow-hidden">
+            <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-white/50">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">
+                    {isPT ? "Categorias" : "Categories"}
+                  </div>
+                  <div className="mt-0.5 text-xs text-slate-500">
+                    {isPT
+                      ? "Filtre ofertas por tipo de serviço."
+                      : "Filter deals by service type."}
+                  </div>
+                </div>
+              </div>
 
-        <div className="relative max-w-7xl mx-auto px-4">
-          <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
-            {displayCategories.map((category: Category) => {
-              const active = category.id === selectedCategory;
-              const isAll = category.id === "all";
-
-              const classes = [
-                pillBase,
-                pillSize,
-                "border",
-                "hover:-translate-y-0.5 hover:shadow-md",
-                active
-                  ? [
-                      "border-sky-500/80",
-                      "bg-gradient-to-b from-white to-sky-50",
-                      "text-slate-900",
-                      "ring-2 ring-[#1F6FA6]/70",
-                      "shadow-sm",
-                    ].join(" ")
-                  : [
-                      "border-sky-200/70",
-                      "bg-white/90",
-                      "text-slate-700",
-                      "hover:bg-white",
-                      "hover:border-sky-300",
-                    ].join(" "),
-              ].join(" ");
-
-              return (
-                <button
-                  key={category.id}
-                  type="button"
-                  onClick={() => {
-                    if (isAll) {
-                      setSelectedCategory("all");
-                      setSelectedSubcategory("all");
-                    } else {
-                      setSelectedCategory(category.id as CategoryId);
-                      setSelectedSubcategory("all");
-                    }
-                  }}
-                  className={classes}
-                >
-                  <span
-                    className={[
-                      "flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full",
-                      active
-                        ? "bg-sky-100 text-sky-900"
-                        : "bg-slate-50 text-slate-700",
-                    ].join(" ")}
-                    aria-hidden="true"
-                  >
-                    {isAll ? "🏖️" : category.icon}
-                  </span>
-
-                  <span className="truncate font-medium">
-                    {isAll
+              <div className="relative">
+                <div className="flex flex-nowrap sm:flex-wrap gap-2 sm:gap-3 overflow-x-auto sm:overflow-visible no-scrollbar py-1 pr-10 sm:pr-0">
+                  {displayCategories.map((category: Category) => {
+                    const active = category.id === selectedCategory;
+                    const isAll = category.id === "all";
+                    const label = isAll
                       ? isPT
                         ? "Todos"
                         : "All"
-                      : getCategoryLabel(category.id as CategoryId, isPT)}
-                  </span>
+                      : getCategoryLabel(category.id as CategoryId, isPT);
 
-                  {active && (
-                    <span className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-white/60" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                    return (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() => {
+                          if (isAll) {
+                            setSelectedCategory("all");
+                            setSelectedSubcategory("all");
+                          } else {
+                            setSelectedCategory(category.id as CategoryId);
+                            setSelectedSubcategory("all");
+                          }
+                        }}
+                        className={[
+                          "shrink-0 group rounded-2xl border px-3.5 py-2 transition flex items-center gap-2 text-xs font-semibold",
+                          active
+                            ? "border-sky-400/70 bg-linear-to-b from-white to-sky-50 text-slate-900 ring-2 ring-[#1F6FA6]/35 shadow-sm"
+                            : "border-slate-200/80 bg-white/70 hover:bg-white text-slate-700",
+                        ].join(" ")}
+                      >
+                        <span
+                          className={[
+                            "inline-flex items-center justify-center w-9 h-9 rounded-2xl border",
+                            active
+                              ? "border-sky-200 bg-sky-50"
+                              : "border-slate-200 bg-white",
+                          ].join(" ")}
+                          aria-hidden="true"
+                        >
+                          {isAll ? "🏖️" : category.icon}
+                        </span>
 
-          {selectedCategory !== "all" && currentSubcategories.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2 sm:gap-3 items-center">
-              <button
-                type="button"
-                onClick={() => setSelectedSubcategory("all")}
-                className={[
-                  subPillBase,
-                  subPillSize,
-                  "border hover:-translate-y-0.5 hover:shadow-md",
-                  selectedSubcategory === "all"
-                    ? "border-sky-500/80 bg-linear-to-b from-white to-sky-50 text-slate-900 ring-2 ring-[#1F6FA6]/70"
-                    : "border-[#1F6FA6]/70 bg-white/90 text-slate-700 hover:bg-white hover:border-sky-300",
-                ].join(" ")}
-              >
-                <span
-                  className={[
-                    "flex items-center justify-center w-6.5 h-6.5 rounded-full",
-                    selectedSubcategory === "all"
-                      ? "bg-sky-100 text-sky-900"
-                      : "bg-slate-50 text-slate-700",
-                  ].join(" ")}
+                        <span className="max-w-45 truncate">{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div
                   aria-hidden="true"
-                >
-                  🏖️
-                </span>
-                <span className="truncate font-medium">
-                  {isPT ? "Todos" : "All"}
-                </span>
-              </button>
+                  className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-white/90 to-transparent sm:hidden"
+                />
+              </div>
+            </div>
 
-              {currentSubcategories.map((sub: Subcategory) => {
-                const active = selectedSubcategory === sub.id;
+            {selectedCategory !== "all" && currentSubcategories.length > 0 && (
+              <div className="px-4 sm:px-6 py-4 sm:py-5">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div>
+                    <div className="text-xs font-semibold text-slate-800">
+                      {isPT ? "Subcategorias" : "Subcategories"}
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-slate-500">
+                      {isPT
+                        ? "Refine para encontrar ofertas específicas."
+                        : "Refine to find specific deals."}
+                    </div>
+                  </div>
 
-                return (
                   <button
-                    key={sub.id}
                     type="button"
-                    onClick={() => setSelectedSubcategory(sub.id)}
-                    className={[
-                      subPillBase,
-                      subPillSize,
-                      "border hover:-translate-y-0.5 hover:shadow-md",
-                      active
-                        ? "border-[#1F6FA6]/80 bg-linear-to-b from-white to-sky-50 text-slate-900 ring-2 ring-[#1F6FA6]/70"
-                        : "border-sky-200/70 bg-white/90 text-slate-700 hover:bg-white hover:border-sky-300",
-                    ].join(" ")}
+                    onClick={() => setSelectedSubcategory("all")}
+                    className="text-[11px] font-semibold text-slate-600 hover:text-slate-800 underline underline-offset-2"
                   >
-                    <span
-                      className={[
-                        "flex items-center justify-center w-6.5 h-6.5 rounded-full",
-                        active
-                          ? "bg-sky-100 text-sky-900"
-                          : "bg-slate-50 text-slate-700",
-                      ].join(" ")}
-                      aria-hidden="true"
-                    >
-                      {sub.icon}
-                    </span>
+                    {isPT ? "Limpar" : "Clear"}
+                  </button>
+                </div>
 
-                    <span className="truncate font-medium">
-                      {getSubcategoryLabel(
+                <div className="relative">
+                  <div className="flex gap-2 sm:gap-3 overflow-x-auto no-scrollbar py-1 pr-10">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedSubcategory("all")}
+                      className={[
+                        "shrink-0 rounded-2xl border px-3.5 py-2 transition flex items-center gap-2 text-xs font-semibold",
+                        selectedSubcategory === "all"
+                          ? "border-sky-400/70 bg-linear-to-b from-white to-sky-50 text-slate-900 ring-2 ring-[#1F6FA6]/35 shadow-sm"
+                          : "border-slate-200/80 bg-white/70 hover:bg-white text-slate-700",
+                      ].join(" ")}
+                    >
+                      <span
+                        className={[
+                          "inline-flex items-center justify-center w-9 h-9 rounded-2xl border",
+                          selectedSubcategory === "all"
+                            ? "border-sky-200 bg-sky-50"
+                            : "border-slate-200 bg-white",
+                        ].join(" ")}
+                        aria-hidden="true"
+                      >
+                        🏖️
+                      </span>
+                      <span className="truncate">{isPT ? "Todos" : "All"}</span>
+                    </button>
+
+                    {currentSubcategories.map((sub: Subcategory) => {
+                      const active = selectedSubcategory === sub.id;
+                      const label = getSubcategoryLabel(
                         selectedCategory as CategoryId,
                         sub.id,
                         isPT
-                      )}
-                    </span>
+                      );
 
-                    {active && (
-                      <span className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-white/60" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+                      return (
+                        <button
+                          key={sub.id}
+                          type="button"
+                          onClick={() => setSelectedSubcategory(sub.id)}
+                          className={[
+                            "shrink-0 rounded-2xl border px-3.5 py-2 transition flex items-center gap-2 text-xs font-semibold",
+                            active
+                              ? "border-sky-400/70 bg-linear-to-b from-white to-sky-50 text-slate-900 ring-2 ring-[#1F6FA6]/35 shadow-sm"
+                              : "border-slate-200/80 bg-white/70 hover:bg-white text-slate-700",
+                          ].join(" ")}
+                        >
+                          <span
+                            className={[
+                              "inline-flex items-center justify-center w-9 h-9 rounded-2xl border",
+                              active
+                                ? "border-sky-200 bg-sky-50"
+                                : "border-slate-200 bg-white",
+                            ].join(" ")}
+                            aria-hidden="true"
+                          >
+                            {sub.icon}
+                          </span>
+
+                          <span className="max-w-60 truncate">{label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-white/90 to-transparent sm:hidden"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div
+          aria-hidden="true"
+          className="pointer-events-none max-w-7xl mx-auto px-4"
+        >
+          <div className="h-px mt-6 bg-linear-to-r from-transparent via-slate-200/70 to-transparent" />
+        </div>
+      </section>
+
+      {/* ✅ RESULTS BAR (moved here: after categories, before grid) */}
+      <section className="max-w-7xl mx-auto px-4 -mt-2 pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="text-xs text-slate-600">
+            <span className="font-semibold text-slate-900">
+              {filteredOffers.length}
+            </span>{" "}
+            {isPT ? "resultado(s)" : "result(s)"}
+            <span className="text-slate-400"> • </span>
+            <span className="text-slate-600">
+              {activeCategoryLabel}
+              {activeSubcategoryLabel ? ` / ${activeSubcategoryLabel}` : ""}
+            </span>
+            {search.trim() && (
+              <>
+                <span className="text-slate-400"> • </span>
+                <span className="text-slate-600">
+                  {isPT ? "Pesquisa:" : "Search:"}{" "}
+                  <span className="font-semibold text-slate-800">
+                    “{search.trim()}”
+                  </span>
+                </span>
+              </>
+            )}
+          </div>
+
+          {(selectedCategory !== "all" ||
+            selectedSubcategory !== "all" ||
+            search.trim()) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedCategory("all");
+                setSelectedSubcategory("all");
+                setSearch("");
+              }}
+              className="self-start sm:self-auto text-[12px] font-semibold text-slate-600 hover:text-slate-900 underline underline-offset-2"
+            >
+              {isPT ? "Limpar filtros" : "Clear filters"}
+            </button>
           )}
         </div>
       </section>
 
       {/* OFFERS GRID */}
-      <section className="max-w-7xl mx-auto px-4 pt-6 pb-10">
+      <section className="max-w-7xl mx-auto px-4 pt-2 pb-10">
         {loadingOffers && filteredOffers.length === 0 && (
           <div className="bg-white/80 backdrop-blur rounded-2xl border border-slate-200 p-6 text-center text-sm text-slate-500">
             {isPT ? "A carregar ofertas..." : "Loading offers..."}

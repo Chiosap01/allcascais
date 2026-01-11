@@ -16,16 +16,6 @@ import {
 // Type-only imports
 import type { CategoryId, Category, Subcategory } from "../data/categories";
 
-/* ---------- SHARED PILL STYLES ---------- */
-
-const pillBase =
-  "relative flex flex-col items-center justify-center gap-1 text-center rounded-2xl border bg-white/90 shadow-sm px-2.5 py-2 text-[10px] sm:text-[11px] transform transition duration-150";
-const pillSize = "min-w-[76px] sm:min-w-[96px] md:min-w-[104px]";
-
-const subPillBase =
-  "relative flex flex-col items-center justify-center gap-1 text-center rounded-2xl border bg-white/90 shadow-sm px-2.5 py-1.5 text-[9.5px] sm:text-[11px] transform transition duration-150";
-const subPillSize = "min-w-[70px] sm:min-w-[90px] md:min-w-[96px]";
-
 /* ---------- OPENING HOURS TYPE (matches jsonb) ---------- */
 
 type OpeningHour = {
@@ -1044,8 +1034,6 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
 
 /* ---------- HOMEPAGE ---------- */
 
-type RatingFilter = "all" | "no-rating" | 1 | 2 | 3 | 4 | 5;
-
 const HomePage: React.FC = () => {
   const { language } = useLanguage();
   const isPT = language === "pt";
@@ -1054,9 +1042,7 @@ const HomePage: React.FC = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState<
     string | "all"
   >("all");
-  const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
 
-  // ✅ ADDED: Search state (same idea as Offers page)
   const [search, setSearch] = useState("");
 
   const [dbServices, setDbServices] = useState<Service[]>([]);
@@ -1092,13 +1078,6 @@ const HomePage: React.FC = () => {
       list = list.filter((s) => s.subcategoryId === selectedSubcategory);
     }
 
-    if (ratingFilter === "no-rating") {
-      list = list.filter((s) => !s.rating);
-    } else if (ratingFilter !== "all") {
-      list = list.filter((s) => (s.rating ?? 0) >= ratingFilter);
-    }
-
-    // ✅ ADDED: Search filter
     const q = search.trim().toLowerCase();
     if (q) {
       list = list.filter((s) => {
@@ -1124,15 +1103,7 @@ const HomePage: React.FC = () => {
     }
 
     return list;
-  }, [
-    allServices,
-    selectedCategory,
-    selectedSubcategory,
-    ratingFilter,
-    search,
-  ]);
-
-  const ratingOptions: RatingFilter[] = [5, 4, 3];
+  }, [allServices, selectedCategory, selectedSubcategory, search]);
 
   useEffect(() => {
     const fetchServices = async () => {
@@ -1231,286 +1202,344 @@ const HomePage: React.FC = () => {
     fetchServices();
   }, [isPT]);
 
+  const activeCategoryLabel =
+    selectedCategory === "all"
+      ? isPT
+        ? "Todos"
+        : "All"
+      : getCategoryLabel(selectedCategory as CategoryId, isPT);
+
+  const activeSubcategoryLabel =
+    selectedCategory !== "all" && selectedSubcategory !== "all"
+      ? getSubcategoryLabel(
+          selectedCategory as CategoryId,
+          selectedSubcategory,
+          isPT
+        )
+      : null;
+
   return (
     <div className="min-h-screen bg-transparent pb-10">
-      {/* HEADER / INTRO */}
-      <header className="max-w-7xl mx-auto px-4 pt-8 pb-4">
-        <h1 className="text-xl md:text-2xl font-bold text-slate-900 mb-2">
-          {isPT
-            ? "Serviços verificados em Cascais"
-            : "Trusted services in Cascais"}
-        </h1>
-        <p className="text-sm text-slate-600">
-          {isPT
-            ? "Encontre prestadores de confiança na linha de Cascais – de surf a saúde, de limpezas a transfers."
-            : "Discover local, trusted providers around Cascais – from surf and health to cleaning and transfers."}
-        </p>
-      </header>
+      {/* HERO + SEARCH */}
+      <section className="relative overflow-hidden border-b border-white/40 bg-linear-to-b from-white via-white/80 to-sky-50/60">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+        >
+          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-sky-200/35 blur-3xl" />
+          <div className="absolute -bottom-28 -left-20 h-80 w-80 rounded-full bg-amber-100/35 blur-3xl" />
+          <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-slate-200/70 to-transparent" />
+        </div>
 
-      {/* ✅ ADDED: SEARCH CARD (same style as offers page) */}
-      <section className="max-w-7xl mx-auto px-4 pb-4">
-        <div className="rounded-3xl border border-white/50 bg-white/70 backdrop-blur-md p-4 sm:p-5 shadow-sm">
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-              🔎
-            </span>
+        <div className="relative max-w-7xl mx-auto px-4 pt-10 sm:pt-12 pb-6 sm:pb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-end">
+            <div className="lg:col-span-7">
+              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-white/70 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                {isPT ? "Serviços verificados" : "Verified services"}
+              </div>
 
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={
-                isPT
-                  ? "Pesquisar por serviço, local, categoria..."
-                  : "Search by service, location, category..."
-              }
-              className="w-full rounded-2xl border border-slate-200 bg-white/90 px-10 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1F6FA6]/40"
-            />
+              <h1 className="mt-3 text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight text-slate-900">
+                {isPT ? "Serviços em Cascais" : "Trusted services in Cascais"}
+              </h1>
 
-            {search.trim() && (
-              <button
-                type="button"
-                onClick={() => setSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                aria-label={isPT ? "Limpar pesquisa" : "Clear search"}
-              >
-                ✕
-              </button>
-            )}
-          </div>
+              <p className="mt-2 text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl">
+                {isPT
+                  ? "Encontre prestadores de confiança na linha de Cascais — de saúde e bem-estar a casa, família e mobilidade."
+                  : "Find trusted local providers around Cascais — from health and wellness to home, family and mobility."}
+              </p>
 
-          <div className="mt-2 text-xs text-slate-500 flex items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-100 px-3 py-1">
-              ✨ {isPT ? "Dica:" : "Tip:"}{" "}
-              {isPT
-                ? "Experimente “fisioterapia”, “limpeza”, “surf”, “cabeleireiro”…"
-                : "Try “physio”, “cleaning”, “surf”, “hairdresser”…"}
-            </span>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="inline-flex items-center rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-[11px] font-medium text-slate-700">
+                  {isPT ? "Verificados" : "Verified"}
+                </span>
+                <span className="inline-flex items-center rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-[11px] font-medium text-slate-700">
+                  {isPT ? "Perto de si" : "Nearby"}
+                </span>
+                <span className="inline-flex items-center rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-[11px] font-medium text-slate-700">
+                  {isPT ? "Multi-idioma" : "Multi-language"}
+                </span>
+              </div>
+            </div>
 
-            <span className="ml-auto">
-              {filteredServices.length}{" "}
-              {isPT ? "serviço(s) encontrado(s)" : "service(s) found"}
-            </span>
+            {/* SEARCH CARD */}
+            <div className="lg:col-span-5 rounded-3xl border border-white/60 bg-white/70 backdrop-blur-md shadow-sm p-4 sm:p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">
+                    {isPT ? "Pesquisar serviços" : "Search services"}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    {isPT
+                      ? "Procure por serviço, local, categoria ou descrição."
+                      : "Search by service, location, category or description."}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3 relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                  🔎
+                </span>
+
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={
+                    isPT
+                      ? "Ex: fisioterapia, limpezas, surf, cabeleireiro…"
+                      : "E.g. physio, cleaning, surf, hairdresser…"
+                  }
+                  className="w-full rounded-2xl border border-slate-200 bg-white/90 px-10 pr-10 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 focus:border-[#1F6FA6]/40"
+                />
+
+                {search.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => setSearch("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+                    aria-label={isPT ? "Limpar pesquisa" : "Clear search"}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <div className="mt-3 text-[11px] text-slate-500">
+                {isPT
+                  ? "Dica: pesquise também por “Cascais”, “Estoril” ou “Carcavelos”."
+                  : "Tip: try searching for “Cascais”, “Estoril” or “Carcavelos” too."}
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* CATEGORY STRIP */}
-      <section
-        className="
-          relative
-          pt-4 pb-5
-          border-y border-sky-200/60
-          bg-white/75
-          backdrop-blur-md
-          shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]
-        "
-        aria-label={isPT ? "Categorias de ofertas" : "Offer categories"}
-      >
-        <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-white/60 via-white/20 to-transparent" />
+      <section className="relative -mt-2 pb-6" aria-label="Categories">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="rounded-3xl border border-white/60 bg-white/65 backdrop-blur-md shadow-sm overflow-hidden">
+            <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-white/50">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">
+                    {isPT ? "Categorias" : "Categories"}
+                  </div>
+                  <div className="mt-0.5 text-xs text-slate-500">
+                    {isPT
+                      ? "Filtre serviços por tipo."
+                      : "Filter services by type."}
+                  </div>
+                </div>
+              </div>
 
-        <div className="relative max-w-7xl mx-auto px-4">
-          <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
-            {displayCategories.map((category: Category) => {
-              const active = category.id === selectedCategory;
-              const isAll = category.id === "all";
-
-              const classes = [
-                pillBase,
-                pillSize,
-                "border",
-                "hover:-translate-y-0.5 hover:shadow-md",
-                active
-                  ? [
-                      "border-sky-500/80",
-                      "bg-gradient-to-b from-white to-sky-50",
-                      "text-slate-900",
-                      "ring-2 ring-[#1F6FA6]/70",
-                      "shadow-sm",
-                    ].join(" ")
-                  : [
-                      "border-sky-200/70",
-                      "bg-white/90",
-                      "text-slate-700",
-                      "hover:bg-white",
-                      "hover:border-sky-300",
-                    ].join(" "),
-              ].join(" ");
-
-              return (
-                <button
-                  key={category.id}
-                  type="button"
-                  onClick={() => {
-                    if (isAll) {
-                      setSelectedCategory("all");
-                      setSelectedSubcategory("all");
-                    } else {
-                      setSelectedCategory(category.id as CategoryId);
-                      setSelectedSubcategory("all");
-                    }
-                  }}
-                  className={classes}
-                >
-                  <span
-                    className={[
-                      "flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full",
-                      active
-                        ? "bg-sky-100 text-sky-900"
-                        : "bg-slate-50 text-slate-700",
-                    ].join(" ")}
-                    aria-hidden="true"
-                  >
-                    {isAll ? "🏖️" : category.icon}
-                  </span>
-
-                  <span className="truncate font-medium">
-                    {isAll
+              <div className="relative">
+                <div className="flex flex-nowrap sm:flex-wrap gap-2 sm:gap-3 overflow-x-auto sm:overflow-visible no-scrollbar py-1 pr-10 sm:pr-0">
+                  {displayCategories.map((category: Category) => {
+                    const active = category.id === selectedCategory;
+                    const isAll = category.id === "all";
+                    const label = isAll
                       ? isPT
                         ? "Todos"
                         : "All"
-                      : getCategoryLabel(category.id as CategoryId, isPT)}
-                  </span>
+                      : getCategoryLabel(category.id as CategoryId, isPT);
 
-                  {active && (
-                    <span className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-white/60" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                    return (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() => {
+                          if (isAll) {
+                            setSelectedCategory("all");
+                            setSelectedSubcategory("all");
+                          } else {
+                            setSelectedCategory(category.id as CategoryId);
+                            setSelectedSubcategory("all");
+                          }
+                        }}
+                        className={[
+                          "shrink-0 group rounded-2xl border px-3.5 py-2 transition flex items-center gap-2 text-xs font-semibold",
+                          active
+                            ? "border-sky-400/70 bg-linear-to-b from-white to-sky-50 text-slate-900 ring-2 ring-[#1F6FA6]/35 shadow-sm"
+                            : "border-slate-200/80 bg-white/70 hover:bg-white text-slate-700",
+                        ].join(" ")}
+                      >
+                        <span
+                          className={[
+                            "inline-flex items-center justify-center w-9 h-9 rounded-2xl border",
+                            active
+                              ? "border-sky-200 bg-sky-50"
+                              : "border-slate-200 bg-white",
+                          ].join(" ")}
+                          aria-hidden="true"
+                        >
+                          {isAll ? "🏖️" : category.icon}
+                        </span>
 
-          {selectedCategory !== "all" && currentSubcategories.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2 sm:gap-3 items-center">
-              <button
-                type="button"
-                onClick={() => setSelectedSubcategory("all")}
-                className={[
-                  subPillBase,
-                  subPillSize,
-                  "border hover:-translate-y-0.5 hover:shadow-md",
-                  selectedSubcategory === "all"
-                    ? "border-sky-500/80 bg-linear-to-b from-white to-sky-50 text-slate-900 ring-2 ring-[#1F6FA6]/70"
-                    : "border-[#1F6FA6]/70 bg-white/90 text-slate-700 hover:bg-white hover:border-sky-300",
-                ].join(" ")}
-              >
-                <span
-                  className={[
-                    "flex items-center justify-center w-6.5 h-6.5 rounded-full",
-                    selectedSubcategory === "all"
-                      ? "bg-sky-100 text-sky-900"
-                      : "bg-slate-50 text-slate-700",
-                  ].join(" ")}
+                        <span className="max-w-45 truncate">{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div
                   aria-hidden="true"
-                >
-                  🏖️
-                </span>
-                <span className="truncate font-medium">
-                  {isPT ? "Todos" : "All"}
-                </span>
-              </button>
+                  className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-white/90 to-transparent sm:hidden"
+                />
+              </div>
+            </div>
 
-              {currentSubcategories.map((sub: Subcategory) => {
-                const active = selectedSubcategory === sub.id;
+            {selectedCategory !== "all" && currentSubcategories.length > 0 && (
+              <div className="px-4 sm:px-6 py-4 sm:py-5">
+                <div className="flex items-center justify-between gap-3 mb-3">
+                  <div>
+                    <div className="text-xs font-semibold text-slate-800">
+                      {isPT ? "Subcategorias" : "Subcategories"}
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-slate-500">
+                      {isPT
+                        ? "Refine para encontrar serviços específicos."
+                        : "Refine to find specific services."}
+                    </div>
+                  </div>
 
-                return (
                   <button
-                    key={sub.id}
                     type="button"
-                    onClick={() => setSelectedSubcategory(sub.id)}
-                    className={[
-                      subPillBase,
-                      subPillSize,
-                      "border hover:-translate-y-0.5 hover:shadow-md",
-                      active
-                        ? "border-[#1F6FA6]/80 bg-linear-to-b from-white to-sky-50 text-slate-900 ring-2 ring-[#1F6FA6]/70"
-                        : "border-sky-200/70 bg-white/90 text-slate-700 hover:bg-white hover:border-sky-300",
-                    ].join(" ")}
+                    onClick={() => setSelectedSubcategory("all")}
+                    className="text-[11px] font-semibold text-slate-600 hover:text-slate-800 underline underline-offset-2"
                   >
-                    <span
-                      className={[
-                        "flex items-center justify-center w-6.5 h-6.5 rounded-full",
-                        active
-                          ? "bg-sky-100 text-sky-900"
-                          : "bg-slate-50 text-slate-700",
-                      ].join(" ")}
-                      aria-hidden="true"
-                    >
-                      {sub.icon}
-                    </span>
+                    {isPT ? "Limpar" : "Clear"}
+                  </button>
+                </div>
 
-                    <span className="truncate font-medium">
-                      {getSubcategoryLabel(
+                <div className="relative">
+                  <div className="flex gap-2 sm:gap-3 overflow-x-auto no-scrollbar py-1 pr-10">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedSubcategory("all")}
+                      className={[
+                        "shrink-0 rounded-2xl border px-3.5 py-2 transition flex items-center gap-2 text-xs font-semibold",
+                        selectedSubcategory === "all"
+                          ? "border-sky-400/70 bg-linear-to-b from-white to-sky-50 text-slate-900 ring-2 ring-[#1F6FA6]/35 shadow-sm"
+                          : "border-slate-200/80 bg-white/70 hover:bg-white text-slate-700",
+                      ].join(" ")}
+                    >
+                      <span
+                        className={[
+                          "inline-flex items-center justify-center w-9 h-9 rounded-2xl border",
+                          selectedSubcategory === "all"
+                            ? "border-sky-200 bg-sky-50"
+                            : "border-slate-200 bg-white",
+                        ].join(" ")}
+                        aria-hidden="true"
+                      >
+                        🏖️
+                      </span>
+                      <span className="truncate">{isPT ? "Todos" : "All"}</span>
+                    </button>
+
+                    {currentSubcategories.map((sub: Subcategory) => {
+                      const active = selectedSubcategory === sub.id;
+                      const label = getSubcategoryLabel(
                         selectedCategory as CategoryId,
                         sub.id,
                         isPT
-                      )}
-                    </span>
+                      );
 
-                    {active && (
-                      <span className="pointer-events-none absolute inset-0 rounded-2xl ring-1 ring-white/60" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+                      return (
+                        <button
+                          key={sub.id}
+                          type="button"
+                          onClick={() => setSelectedSubcategory(sub.id)}
+                          className={[
+                            "shrink-0 rounded-2xl border px-3.5 py-2 transition flex items-center gap-2 text-xs font-semibold",
+                            active
+                              ? "border-sky-400/70 bg-linear-to-b from-white to-sky-50 text-slate-900 ring-2 ring-[#1F6FA6]/35 shadow-sm"
+                              : "border-slate-200/80 bg-white/70 hover:bg-white text-slate-700",
+                          ].join(" ")}
+                        >
+                          <span
+                            className={[
+                              "inline-flex items-center justify-center w-9 h-9 rounded-2xl border",
+                              active
+                                ? "border-sky-200 bg-sky-50"
+                                : "border-slate-200 bg-white",
+                            ].join(" ")}
+                            aria-hidden="true"
+                          >
+                            {sub.icon}
+                          </span>
+
+                          <span className="max-w-60 truncate">{label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-linear-to-l from-white/90 to-transparent sm:hidden"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div
+          aria-hidden="true"
+          className="pointer-events-none max-w-7xl mx-auto px-4"
+        >
+          <div className="h-px mt-6 bg-linear-to-r from-transparent via-slate-200/70 to-transparent" />
+        </div>
+      </section>
+
+      {/* ✅ RESULTS BAR (after categories, before list) */}
+      <section className="max-w-7xl mx-auto px-4 -mt-2 pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="text-xs text-slate-600">
+            <span className="font-semibold text-slate-900">
+              {filteredServices.length}
+            </span>{" "}
+            {isPT ? "resultado(s)" : "result(s)"}
+            <span className="text-slate-400"> • </span>
+            <span className="text-slate-600">
+              {activeCategoryLabel}
+              {activeSubcategoryLabel ? ` / ${activeSubcategoryLabel}` : ""}
+            </span>
+            {search.trim() && (
+              <>
+                <span className="text-slate-400"> • </span>
+                <span className="text-slate-600">
+                  {isPT ? "Pesquisa:" : "Search:"}{" "}
+                  <span className="font-semibold text-slate-800">
+                    “{search.trim()}”
+                  </span>
+                </span>
+              </>
+            )}
+          </div>
+
+          {(selectedCategory !== "all" ||
+            selectedSubcategory !== "all" ||
+            search.trim()) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedCategory("all");
+                setSelectedSubcategory("all");
+                setSearch("");
+              }}
+              className="self-start sm:self-auto text-[12px] font-semibold text-slate-600 hover:text-slate-900 underline underline-offset-2"
+            >
+              {isPT ? "Limpar filtros" : "Clear filters"}
+            </button>
           )}
         </div>
       </section>
 
-      {/* RATING FILTER BAR */}
-      <section className="max-w-7xl mx-auto px-4 pt-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xs sm:text-sm text-slate-500">
-              {isPT ? "Avaliação mínima" : "Minimum rating"}
-            </span>
-
-            {ratingOptions.map((value: RatingFilter) => {
-              const active = ratingFilter === value;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setRatingFilter(value)}
-                  className={[
-                    "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-[11px] sm:text-xs font-medium",
-                    active
-                      ? "border-amber-400 bg-amber-50 text-amber-700"
-                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50",
-                  ].join(" ")}
-                >
-                  <span>{value}+</span>
-                  <span>⭐</span>
-                </button>
-              );
-            })}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setRatingFilter("no-rating")}
-            className={[
-              "inline-flex items-center rounded-full border px-3 py-1 text-[11px] sm:text-xs",
-              ratingFilter === "no-rating"
-                ? "border-slate-700 bg-slate-800 text-white"
-                : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50",
-            ].join(" ")}
-          >
-            {isPT ? "Sem avaliação" : "No rating"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setRatingFilter("all")}
-            className="ml-auto text-[11px] sm:text-xs text-slate-500 underline"
-          >
-            {isPT ? "Limpar filtro" : "Reset filter"}
-          </button>
-        </div>
-      </section>
-
       {/* SERVICES LIST */}
-      <section className="max-w-7xl mx-auto px-4 pt-6">
+      <section className="max-w-7xl mx-auto px-4 pt-2">
         {loadingServices && dbServices.length === 0 && (
           <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center text-xs text-slate-400">
             {isPT ? "A carregar serviços..." : "Loading services..."}

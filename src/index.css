@@ -36,3 +36,11 @@ body {
   background: rgba(248, 250, 252, 0.88);
   z-index: -1;
 }
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
