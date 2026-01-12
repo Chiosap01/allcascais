@@ -275,8 +275,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
   const linkedinUrl = socialUrl("linkedin", offer.linkedin);
   const hasAnySocial = instagramUrl || facebookUrl || tiktokUrl || linkedinUrl;
 
-  const isLongDescription = (offer.description || "").trim().length > 220;
-
   const initials =
     offer.serviceName?.charAt(0).toUpperCase() ||
     offer.title?.charAt(0).toUpperCase() ||
@@ -297,6 +295,37 @@ const OfferCard: React.FC<OfferCardProps> = ({
     offer.phone && offer.phone.trim()
       ? normalizePhoneForTel(offer.phone)
       : null;
+
+  /* ✅ NEW: detect when description is actually clamped/truncated */
+  const descRef = React.useRef<HTMLParagraphElement | null>(null);
+  const [isTruncated, setIsTruncated] = useState(false);
+
+  useEffect(() => {
+    const el = descRef.current;
+    if (!el) return;
+
+    const check = () => {
+      // If clamped, scrollHeight becomes larger than the visible clientHeight
+      setIsTruncated(el.scrollHeight > el.clientHeight + 1);
+    };
+
+    check();
+
+    // Most reliable across mobile/desktop (layout changes)
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(() => check());
+      ro.observe(el);
+    }
+
+    // Fallback / extra safety
+    window.addEventListener("resize", check);
+
+    return () => {
+      window.removeEventListener("resize", check);
+      ro?.disconnect();
+    };
+  }, [offer.description]);
 
   return (
     <article className="relative bg-white/80 backdrop-blur-md rounded-3xl border border-white/60 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
@@ -434,11 +463,16 @@ const OfferCard: React.FC<OfferCardProps> = ({
 
         {offer.description && (
           <div className="space-y-2">
-            <p className="text-sm text-slate-700 leading-relaxed line-clamp-3">
+            {/* ✅ keep your clamp */}
+            <p
+              ref={descRef}
+              className="text-sm text-slate-700 leading-relaxed line-clamp-3"
+            >
               {offer.description}
             </p>
 
-            {isLongDescription && (
+            {/* ✅ show button ONLY if actually truncated */}
+            {isTruncated && (
               <button
                 type="button"
                 onClick={() => setShowFullDescription(true)}

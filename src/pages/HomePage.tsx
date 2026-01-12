@@ -634,6 +634,9 @@ const RatingDetailsModal: React.FC<RatingDetailsModalProps> = ({
   );
 };
 
+// ✅ Replace ONLY the avatar block inside <ServiceCard /> HEADER
+// (the rest of your HomePage.tsx can stay exactly the same)
+
 /* ---------- SERVICE CARD COMPONENT ---------- */
 
 type ServiceCardProps = {
@@ -652,6 +655,9 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
 
   const [showContact, setShowContact] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
+
+  // ✅ NEW: image zoom modal
+  const [showAvatarZoom, setShowAvatarZoom] = useState(false);
 
   const localizeOpeningHoursText = (text?: string) => {
     if (!text) return "";
@@ -766,269 +772,338 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   const normalizedQuote = (service.quote || "").replace(/\s+/g, " ").trim();
   const isLongDescription = normalizedQuote.length > 140;
 
+  const closeAvatarZoom = () => setShowAvatarZoom(false);
+
   return (
-    <article className="bg-white rounded-3xl shadow-md border border-slate-200 overflow-hidden hover:shadow-lg transition">
-      {/* HEADER */}
-      <div className="p-4 pb-3 flex items-start gap-3 border-b border-slate-100">
-        <div className="w-11 h-11 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center text-sm font-semibold text-slate-700">
-          {service.avatarUrl ? (
-            <img
-              src={service.avatarUrl}
-              alt={service.name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <span>{avatarLetter}</span>
-          )}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-slate-900 truncate">
-                  {service.name}
-                </h3>
-
-                {isNew && (
-                  <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                    {isPT ? "Novo" : "New"}
+    <>
+      <article className="bg-white rounded-3xl shadow-md border border-slate-200 overflow-hidden hover:shadow-lg transition">
+        {/* HEADER */}
+        <div className="p-4 pb-3 flex items-start gap-3 border-b border-slate-100">
+          {/* ✅ UPDATED AVATAR: rounded-square + subtle frame + click to zoom */}
+          <button
+            type="button"
+            onClick={() => {
+              if (service.avatarUrl) setShowAvatarZoom(true);
+            }}
+            className={[
+              "group relative w-12 h-12 shrink-0",
+              "rounded-2xl overflow-hidden",
+              "bg-white border border-slate-200 shadow-sm",
+              "p-1",
+              service.avatarUrl
+                ? "cursor-zoom-in hover:shadow-md transition"
+                : "cursor-default",
+            ].join(" ")}
+            aria-label={isPT ? "Ver imagem do perfil" : "View profile image"}
+            disabled={!service.avatarUrl}
+          >
+            <div className="w-full h-full rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
+              {service.avatarUrl ? (
+                <>
+                  <img
+                    src={service.avatarUrl}
+                    alt={service.name}
+                    className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
+                    loading="lazy"
+                  />
+                  <span className="absolute right-1.5 bottom-1.5 rounded-full bg-white/90 border border-slate-200 text-[10px] px-2 py-0.5 text-slate-700 opacity-0 group-hover:opacity-100 transition">
+                    🔍
                   </span>
-                )}
-              </div>
-
-              <div className="mt-1 flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold text-slate-700 border border-slate-200">
-                  {getCategoryLabel(service.categoryId, isPT)}
+                </>
+              ) : (
+                <span className="text-sm font-semibold text-slate-700">
+                  {avatarLetter}
                 </span>
-
-                {service.subcategoryId && (
-                  <span className="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200">
-                    {getSubcategoryLabel(
-                      service.categoryId,
-                      service.subcategoryId,
-                      isPT
-                    )}
-                  </span>
-                )}
-              </div>
+              )}
             </div>
+          </button>
 
-            {service.languages.length > 0 && (
-              <div className="flex flex-wrap gap-1 text-base">
-                {service.languages.map((lang) => (
-                  <span key={lang}>{languageFlag(lang)}</span>
-                ))}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold text-slate-900 truncate">
+                    {service.name}
+                  </h3>
+
+                  {isNew && (
+                    <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                      {isPT ? "Novo" : "New"}
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold text-slate-700 border border-slate-200">
+                    {getCategoryLabel(service.categoryId, isPT)}
+                  </span>
+
+                  {service.subcategoryId && (
+                    <span className="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200">
+                      {getSubcategoryLabel(
+                        service.categoryId,
+                        service.subcategoryId,
+                        isPT
+                      )}
+                    </span>
+                  )}
+                </div>
               </div>
-            )}
-          </div>
 
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div>{renderStars(service.rating)}</div>
-
-              {service.workQuality != null && service.punctuality != null && (
-                <button
-                  type="button"
-                  onClick={() => onShowRatingDetails(service)}
-                  className="text-[11px] text-slate-500 underline underline-offset-2 hover:text-slate-700"
-                >
-                  {isPT ? "Ver avaliação" : "See rating"}
-                </button>
+              {service.languages.length > 0 && (
+                <div className="flex flex-wrap gap-1 text-base">
+                  {service.languages.map((lang) => (
+                    <span key={lang}>{languageFlag(lang)}</span>
+                  ))}
+                </div>
               )}
             </div>
 
-            {service.location && (
-              <div className="flex items-center gap-1 text-[11px] text-slate-500 truncate">
-                <span>📍</span>
-                <span className="truncate">{service.location}</span>
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div>{renderStars(service.rating)}</div>
+
+                {service.workQuality != null && service.punctuality != null && (
+                  <button
+                    type="button"
+                    onClick={() => onShowRatingDetails(service)}
+                    className="text-[11px] text-slate-500 underline underline-offset-2 hover:text-slate-700"
+                  >
+                    {isPT ? "Ver avaliação" : "See rating"}
+                  </button>
+                )}
               </div>
-            )}
+
+              {service.location && (
+                <div className="flex items-center gap-1 text-[11px] text-slate-500 truncate">
+                  <span>📍</span>
+                  <span className="truncate">{service.location}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* BODY */}
-      <div className="px-4 pt-3 pb-4 flex flex-col gap-3">
-        {service.quote && (
-          <div className="space-y-1">
-            <p
+        {/* BODY */}
+        <div className="px-4 pt-3 pb-4 flex flex-col gap-3">
+          {service.quote && (
+            <div className="space-y-1">
+              <p
+                className={[
+                  "text-xs sm:text-sm text-slate-800 font-semibold leading-relaxed",
+                  !showFullDescription ? "line-clamp-3" : "",
+                ].join(" ")}
+              >
+                {service.quote}
+              </p>
+
+              {isLongDescription && (
+                <button
+                  type="button"
+                  onClick={() => setShowFullDescription((v) => !v)}
+                  className="text-[11px] text-slate-500 underline underline-offset-2 hover:text-slate-700"
+                >
+                  {showFullDescription
+                    ? isPT
+                      ? "Mostrar menos"
+                      : "Show less"
+                    : isPT
+                    ? "Mostrar descrição completa"
+                    : "Show full description"}
+                </button>
+              )}
+            </div>
+          )}
+
+          {service.openingHoursText && (
+            <div className="inline-flex items-center rounded-full bg-slate-100 text-[11px] text-slate-700 px-3 py-1 mb-2">
+              <span className="mr-1">🕒</span>
+              <span>
+                {isPT ? "Horário:" : "Opening hours:"}{" "}
+                {localizeOpeningHoursText(service.openingHoursText)}
+              </span>
+            </div>
+          )}
+
+          {showContact && (
+            <div className="mt-1 rounded-2xl bg-slate-50 border border-slate-100 px-3 py-3 text-[11px] sm:text-xs space-y-2">
+              <div className="font-semibold text-slate-700 mb-1">
+                {isPT ? "Informações de contacto" : "Contact information"}
+              </div>
+
+              {service.phone && (
+                <div className="flex items-center gap-2">
+                  <span>📞</span>
+                  <a
+                    href={`tel:${service.phone.replace(/\s/g, "")}`}
+                    className="hover:underline"
+                  >
+                    {service.phone}
+                  </a>
+                </div>
+              )}
+
+              {service.email && (
+                <div className="flex items-center gap-2">
+                  <span>✉️</span>
+                  <a
+                    href={`mailto:${service.email}`}
+                    className="truncate text-sky-800 hover:underline"
+                  >
+                    {service.email}
+                  </a>
+                </div>
+              )}
+
+              {service.website && (
+                <div className="flex items-center gap-2">
+                  <span>🌐</span>
+                  <a
+                    href={`https://${service.website.replace(
+                      /^https?:\/\//,
+                      ""
+                    )}`}
+                    className="text-[#1F6FA6] underline"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {service.website}
+                  </a>
+                </div>
+              )}
+
+              {hasAnySocial && (
+                <div className="pt-2 mt-2 border-t border-slate-200 flex flex-wrap gap-3">
+                  {instagramUrl && (
+                    <a
+                      href={instagramUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 w-7 h-7"
+                    >
+                      <img
+                        src="assets/social-media/instagram.png"
+                        alt="Instagram"
+                        className="w-4 h-4 object-contain"
+                      />
+                    </a>
+                  )}
+                  {facebookUrl && (
+                    <a
+                      href={facebookUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 w-7 h-7"
+                    >
+                      <img
+                        src="assets/social-media/facebook.png"
+                        alt="Facebook"
+                        className="w-4 h-4 object-contain"
+                      />
+                    </a>
+                  )}
+                  {tiktokUrl && (
+                    <a
+                      href={tiktokUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 w-7 h-7"
+                    >
+                      <img
+                        src="assets/social-media/tiktok.png"
+                        alt="TikTok"
+                        className="w-4 h-4 object-contain"
+                      />
+                    </a>
+                  )}
+                  {linkedinUrl && (
+                    <a
+                      href={linkedinUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 w-7 h-7"
+                    >
+                      <img
+                        src="assets/social-media/linkedin.png"
+                        alt="LinkedIn"
+                        className="w-4 h-4 object-contain"
+                      />
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="mt-4 flex flex-col sm:flex-row gap-3">
+            <button
+              type="button"
+              onClick={() => setShowContact((v) => !v)}
               className={[
-                "text-xs sm:text-sm text-slate-800 font-semibold leading-relaxed",
-                !showFullDescription ? "line-clamp-3" : "",
+                "flex-1 rounded-full text-xs font-semibold py-2.5 border transition",
+                showContact
+                  ? "bg-slate-100 text-slate-800 border-slate-400 hover:bg-slate-200"
+                  : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50",
               ].join(" ")}
             >
-              {service.quote}
-            </p>
+              {showContact
+                ? isPT
+                  ? "Esconder contacto"
+                  : "Hide contact"
+                : isPT
+                ? "Mostrar contacto"
+                : "Show contact"}
+            </button>
 
-            {isLongDescription && (
-              <button
-                type="button"
-                onClick={() => setShowFullDescription((v) => !v)}
-                className="text-[11px] text-slate-500 underline underline-offset-2 hover:text-slate-700"
-              >
-                {showFullDescription
-                  ? isPT
-                    ? "Mostrar menos"
-                    : "Show less"
-                  : isPT
-                  ? "Mostrar descrição completa"
-                  : "Show full description"}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => onRate(service)}
+              className="flex-1 rounded-full bg-[#1F6FA6] text-white text-xs font-semibold py-2.5 shadow-sm hover:bg-sky-800 transition"
+            >
+              {isPT ? "Avaliar serviço" : "Rate service"}
+            </button>
           </div>
-        )}
+        </div>
+      </article>
 
-        {service.openingHoursText && (
-          <div className="inline-flex items-center rounded-full bg-slate-100 text-[11px] text-slate-700 px-3 py-1 mb-2">
-            <span className="mr-1">🕒</span>
-            <span>
-              {isPT ? "Horário:" : "Opening hours:"}{" "}
-              {localizeOpeningHoursText(service.openingHoursText)}
-            </span>
-          </div>
-        )}
+      {/* ✅ ZOOM MODAL */}
+      {showAvatarZoom && service.avatarUrl && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center px-4"
+          role="dialog"
+          aria-modal="true"
+          onClick={closeAvatarZoom}
+        >
+          <div
+            className="relative w-full max-w-3xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={closeAvatarZoom}
+              className="absolute -top-10 right-0 text-white/90 hover:text-white text-2xl"
+              aria-label={isPT ? "Fechar" : "Close"}
+            >
+              ×
+            </button>
 
-        {showContact && (
-          <div className="mt-1 rounded-2xl bg-slate-50 border border-slate-100 px-3 py-3 text-[11px] sm:text-xs space-y-2">
-            <div className="font-semibold text-slate-700 mb-1">
-              {isPT ? "Informações de contacto" : "Contact information"}
+            <div className="rounded-3xl overflow-hidden bg-white shadow-2xl border border-white/10">
+              <img
+                src={service.avatarUrl}
+                alt={service.name}
+                className="w-full h-auto object-contain bg-black"
+              />
             </div>
 
-            {service.phone && (
-              <div className="flex items-center gap-2">
-                <span>📞</span>
-                <a
-                  href={`tel:${service.phone.replace(/\s/g, "")}`}
-                  className="hover:underline"
-                >
-                  {service.phone}
-                </a>
-              </div>
-            )}
-
-            {service.email && (
-              <div className="flex items-center gap-2">
-                <span>✉️</span>
-                <a
-                  href={`mailto:${service.email}`}
-                  className="truncate text-sky-800 hover:underline"
-                >
-                  {service.email}
-                </a>
-              </div>
-            )}
-
-            {service.website && (
-              <div className="flex items-center gap-2">
-                <span>🌐</span>
-                <a
-                  href={`https://${service.website.replace(
-                    /^https?:\/\//,
-                    ""
-                  )}`}
-                  className="text-[#1F6FA6] underline"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {service.website}
-                </a>
-              </div>
-            )}
-
-            {hasAnySocial && (
-              <div className="pt-2 mt-2 border-t border-slate-200 flex flex-wrap gap-3">
-                {instagramUrl && (
-                  <a
-                    href={instagramUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 w-7 h-7"
-                  >
-                    <img
-                      src="assets/social-media/instagram.png"
-                      alt="Instagram"
-                      className="w-4 h-4 object-contain"
-                    />
-                  </a>
-                )}
-                {facebookUrl && (
-                  <a
-                    href={facebookUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 w-7 h-7"
-                  >
-                    <img
-                      src="assets/social-media/facebook.png"
-                      alt="Facebook"
-                      className="w-4 h-4 object-contain"
-                    />
-                  </a>
-                )}
-                {tiktokUrl && (
-                  <a
-                    href={tiktokUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 w-7 h-7"
-                  >
-                    <img
-                      src="assets/social-media/tiktok.png"
-                      alt="TikTok"
-                      className="w-4 h-4 object-contain"
-                    />
-                  </a>
-                )}
-                {linkedinUrl && (
-                  <a
-                    href={linkedinUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 w-7 h-7"
-                  >
-                    <img
-                      src="assets/social-media/linkedin.png"
-                      alt="LinkedIn"
-                      className="w-4 h-4 object-contain"
-                    />
-                  </a>
-                )}
-              </div>
-            )}
+            <div className="mt-3 text-center text-white/90 text-xs">
+              {isPT
+                ? "Toque fora da imagem para fechar."
+                : "Tap outside the image to close."}
+            </div>
           </div>
-        )}
-
-        <div className="mt-4 flex flex-col sm:flex-row gap-3">
-          <button
-            type="button"
-            onClick={() => setShowContact((v) => !v)}
-            className={[
-              "flex-1 rounded-full text-xs font-semibold py-2.5 border transition",
-              showContact
-                ? "bg-slate-100 text-slate-800 border-slate-400 hover:bg-slate-200"
-                : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50",
-            ].join(" ")}
-          >
-            {showContact
-              ? isPT
-                ? "Esconder contacto"
-                : "Hide contact"
-              : isPT
-              ? "Mostrar contacto"
-              : "Show contact"}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onRate(service)}
-            className="flex-1 rounded-full bg-[#1F6FA6] text-white text-xs font-semibold py-2.5 shadow-sm hover:bg-sky-800 transition"
-          >
-            {isPT ? "Avaliar serviço" : "Rate service"}
-          </button>
         </div>
-      </div>
-    </article>
+      )}
+    </>
   );
 };
 

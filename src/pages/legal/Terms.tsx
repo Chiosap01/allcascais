@@ -252,7 +252,7 @@ const Terms: React.FC = () => {
               <strong>
                 Sala B, 1.º andar esquerdo, Avenida Costa Pinto, n.º 60, União
                 das Freguesias de Cascais e Estoril, Concelho de Cascais,
-                Portugal.
+                Portugal
               </strong>
               .
             </>
@@ -264,7 +264,7 @@ const Terms: React.FC = () => {
               <strong>
                 Sala B, 1.º andar esquerdo, Avenida Costa Pinto, n.º 60, União
                 das Freguesias de Cascais e Estoril, Concelho de Cascais,
-                Portugal.
+                Portugal
               </strong>
               .
             </>
