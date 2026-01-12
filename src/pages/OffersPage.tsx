@@ -938,8 +938,8 @@ const OffersPage: React.FC = () => {
 
               <p className="mt-2 text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl">
                 {isPT
-                  ? "Descontos, pacotes especiais e campanhas sazonais dos prestadores verificados — para aproveitar o melhor da linha."
-                  : "Discounts, special packages and seasonal campaigns from verified providers — the best of the coast, for less."}
+                  ? "Descontos, pacotes especiais e campanhas sazonais dos prestadores verificados."
+                  : "Discounts, special packages and seasonal campaigns from verified providers — the best for less."}
               </p>
 
               <div className="mt-4 flex flex-wrap gap-2">

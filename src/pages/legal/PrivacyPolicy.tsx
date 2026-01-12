@@ -179,7 +179,9 @@ const PrivacyPolicy: React.FC = () => {
               explorado por <strong>Chiosa &amp; Chiosa, Lda</strong>, com
               morada em{" "}
               <strong>
-                Rua Antão Gonçalves, Nº 89, 3º D, 2750-152 Cascais
+                Sala B, 1.º andar esquerdo, Avenida Costa Pinto, n.º 60, União
+                das Freguesias de Cascais e Estoril, Concelho de Cascais,
+                Portugal.
               </strong>{" "}
               (“nós”, “AllCascais”).
             </>
@@ -189,7 +191,9 @@ const PrivacyPolicy: React.FC = () => {
               The <strong>AllCascais</strong> website is owned and operated by{" "}
               <strong>Chiosa &amp; Chiosa, Lda</strong>, located at{" "}
               <strong>
-                Rua Antão Gonçalves, Nº 89, 3º D, 2750-152 Cascais
+                Sala B, 1.º andar esquerdo, Avenida Costa Pinto, n.º 60, União
+                das Freguesias de Cascais e Estoril, Concelho de Cascais,
+                Portugal.
               </strong>{" "}
               (“we”, “AllCascais”).
             </>

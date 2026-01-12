@@ -14,8 +14,6 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
 import CookiesPolicy from "./pages/legal/CookiesPolicy";
 import Terms from "./pages/legal/Terms";
-import FeaturedCancel from "./pages/FeaturedCancel";
-import FeaturedSuccess from "./pages/FeaturedSuccess";
 
 const App: React.FC = () => {
   return (
@@ -39,8 +37,6 @@ const App: React.FC = () => {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/cookies" element={<CookiesPolicy />} />
           <Route path="/terms" element={<Terms />} />
-          <Route path="/featured/success" element={<FeaturedSuccess />} />
-          <Route path="/featured/cancel" element={<FeaturedCancel />} />
         </Routes>
       </MainLayout>
     </AuthProvider>

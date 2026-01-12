@@ -250,7 +250,9 @@ const Terms: React.FC = () => {
               A plataforma é operada por{" "}
               <strong>Chiosa &amp; Chiosa, Lda</strong>, com sede em{" "}
               <strong>
-                Rua Antão Gonçalves, Nº 89, 3º D, 2750-152 Cascais
+                Sala B, 1.º andar esquerdo, Avenida Costa Pinto, n.º 60, União
+                das Freguesias de Cascais e Estoril, Concelho de Cascais,
+                Portugal.
               </strong>
               .
             </>
@@ -260,7 +262,9 @@ const Terms: React.FC = () => {
               The platform is operated by{" "}
               <strong>Chiosa &amp; Chiosa, Lda</strong>, located at{" "}
               <strong>
-                Rua Antão Gonçalves, Nº 89, 3º D, 2750-152 Cascais
+                Sala B, 1.º andar esquerdo, Avenida Costa Pinto, n.º 60, União
+                das Freguesias de Cascais e Estoril, Concelho de Cascais,
+                Portugal.
               </strong>
               .
             </>
