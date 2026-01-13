@@ -14,6 +14,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
 import CookiesPolicy from "./pages/legal/CookiesPolicy";
 import Terms from "./pages/legal/Terms";
+import LivingGuidePage from "./pages/LivingGuidePage";
 
 const App: React.FC = () => {
   return (
@@ -37,6 +38,7 @@ const App: React.FC = () => {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/cookies" element={<CookiesPolicy />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/living/guides/:key" element={<LivingGuidePage />} />
         </Routes>
       </MainLayout>
     </AuthProvider>

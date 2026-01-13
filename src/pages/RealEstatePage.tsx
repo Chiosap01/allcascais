@@ -1,5 +1,5 @@
 // src/pages/RealEstatePage.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "../layouts/MainLayout";
 import { supabase } from "../supabase";
 import { useNavigate } from "react-router-dom";
@@ -221,12 +221,257 @@ const calcPricePerSqm = (p: Property) => {
   return Math.round((p.price / area) * 100) / 100;
 };
 
+type GuideKey = "buying" | "renting" | "costs" | "areas" | "owners" | "moving";
+
 const RealEstatePage: React.FC = () => {
   const { language } = useLanguage();
   const isPT = language === "pt";
 
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const filtersRef = useRef<HTMLDivElement | null>(null);
+
+  // “Get matched” mini-lead modal (no new pages needed)
+  const [showMatchModal, setShowMatchModal] = useState(false);
+  const [matchType, setMatchType] = useState<"buyer" | "owner">("buyer");
+  const [matchName, setMatchName] = useState("");
+  const [matchEmail, setMatchEmail] = useState("");
+  const [matchPhone, setMatchPhone] = useState("");
+  const [matchNotes, setMatchNotes] = useState("");
+
+  const [openGuide, setOpenGuide] = useState<GuideKey | null>(null);
+
+  const guides = useMemo(
+    () => [
+      {
+        key: "areas" as const,
+        title: isPT
+          ? "Zonas de Cascais (guia rápido)"
+          : "Cascais areas (quick guide)",
+        desc: isPT
+          ? "Escolha a zona certa: estilo, acessos e ambiente."
+          : "Pick the right area: vibe, access, and lifestyle.",
+        bullets: isPT
+          ? [
+              "Pense no seu dia-a-dia: praia, escolas, commute, tranquilidade.",
+              "Visite em horários diferentes (manhã, tarde, noite).",
+              "Compare estacionamento, ruído e acessos.",
+            ]
+          : [
+              "Optimize for your day-to-day: beach, schools, commute, quiet.",
+              "Visit at different times (morning, afternoon, evening).",
+              "Compare parking, noise, and access.",
+            ],
+      },
+      {
+        key: "buying" as const,
+        title: isPT ? "Comprar em Cascais" : "Buying in Cascais",
+        desc: isPT
+          ? "O essencial: critérios, documentos e passos."
+          : "The essentials: criteria, docs, and steps.",
+        bullets: isPT
+          ? [
+              "Defina 3 não-negociáveis (zona, tipologia, orçamento).",
+              "Peça sempre caderneta, licença de utilização, CE, e plantas.",
+              "Negocie com base em comparáveis (€/m²) e estado do imóvel.",
+            ]
+          : [
+              "Set 3 non-negotiables (area, type, budget).",
+              "Always request key docs (license, certificate, plans).",
+              "Negotiate using comparables (€/m²) and condition.",
+            ],
+      },
+      {
+        key: "renting" as const,
+        title: isPT ? "Arrendar em Cascais" : "Renting in Cascais",
+        desc: isPT
+          ? "Como evitar surpresas: contratos, cauções e prazos."
+          : "Avoid surprises: contracts, deposits, and timelines.",
+        bullets: isPT
+          ? [
+              "Confirme duração do contrato e condições de renovação.",
+              "Verifique despesas incluídas (condomínio, água, internet).",
+              "Faça inventário (fotos) no check-in.",
+            ]
+          : [
+              "Confirm contract duration and renewal terms.",
+              "Check what’s included (condo fees, water, internet).",
+              "Do an inventory (photos) at check-in.",
+            ],
+      },
+      {
+        key: "costs" as const,
+        title: isPT
+          ? "Custos reais (além do preço)"
+          : "Real costs (beyond price)",
+        desc: isPT
+          ? "Planeie: impostos, escritura, obras e manutenção."
+          : "Plan for taxes, closing, renovations, and upkeep.",
+        bullets: isPT
+          ? [
+              "Reserve margem para obras/pequenas reparações.",
+              "Considere custos anuais (IMI, condomínio, manutenção).",
+              "Pense no custo total (não só no preço).",
+            ]
+          : [
+              "Keep a buffer for repairs/renovations.",
+              "Consider yearly costs (tax, condo fees, maintenance).",
+              "Optimize for total cost, not only price.",
+            ],
+      },
+      {
+        key: "moving" as const,
+        title: isPT ? "Mudar-se para Cascais" : "Moving to Cascais",
+        desc: isPT
+          ? "Checklist de serviços e tarefas (rápido)."
+          : "A quick checklist of tasks and services.",
+        bullets: isPT
+          ? [
+              "Mudanças + limpeza + internet: marque com antecedência.",
+              "Se tem filhos: valide escolas e distâncias reais.",
+              "Crie a sua rede local (saúde, bem-estar, mobilidade).",
+            ]
+          : [
+              "Moving + cleaning + internet: book early.",
+              "If kids: validate schools and real distances.",
+              "Build your local network (health, wellness, mobility).",
+            ],
+      },
+      {
+        key: "owners" as const,
+        title: isPT
+          ? "Para proprietários: como vender melhor"
+          : "For owners: sell smarter",
+        desc: isPT
+          ? "Destaque-se com apresentação + narrativa local."
+          : "Stand out with presentation + local narrative.",
+        bullets: isPT
+          ? [
+              "Fotos + planta + descrição clara geram visitas qualificadas.",
+              "Posicione o imóvel: estilo de vida, ruas, proximidade a serviços.",
+              "Preço: alinhe com €/m² e estado real (não com “achismos”).",
+            ]
+          : [
+              "Photos + floorplan + clarity = better leads.",
+              "Position your home: lifestyle, streets, nearby services.",
+              "Pricing: align with €/m² and condition (not wishful thinking).",
+            ],
+      },
+    ],
+    [isPT]
+  );
+
+  const scrollToFilters = () => {
+    requestAnimationFrame(() => {
+      filtersRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  };
+
+  const openMatch = (type: "buyer" | "owner") => {
+    setMatchType(type);
+    setShowMatchModal(true);
+    setMatchNotes("");
+  };
+
+  const closeMatch = () => setShowMatchModal(false);
+
+  const submitMatch = async () => {
+    // basic validation
+    if (!matchName.trim() || !matchEmail.trim()) {
+      alert(isPT ? "Preencha nome e email." : "Please add name and email.");
+      return;
+    }
+
+    const payload = {
+      source: "real-estate", // keep different from living-guides if you want
+      page_url: window.location.href, // or your route if you prefer
+      language: isPT ? "pt" : "en",
+      match_type: matchType, // "buyer" | "owner"
+      name: matchName.trim(),
+      email: matchEmail.trim(),
+      phone: matchPhone.trim() || null,
+      notes: matchNotes.trim() || null,
+
+      // optional but useful: capture context
+      meta: {
+        filters: {
+          buyRent,
+          locationArea,
+          locationNeighborhood,
+          propertyType,
+          bedrooms,
+          bathrooms,
+          maxPrice,
+          minArea,
+          maxArea,
+          sortBy,
+        },
+      },
+    };
+
+    const openMailto = () => {
+      const subject =
+        matchType === "owner"
+          ? isPT
+            ? "AllCascais — Pedido (Proprietário)"
+            : "AllCascais — Owner request"
+          : isPT
+          ? "AllCascais — Pedido (Comprador/Arrendatário)"
+          : "AllCascais — Buyer/Renter request";
+
+      const bodyLines = [
+        matchType === "owner"
+          ? isPT
+            ? "Tipo: Proprietário"
+            : "Type: Owner"
+          : isPT
+          ? "Tipo: Comprador/Arrendatário"
+          : "Type: Buyer/Renter",
+        `Nome/Name: ${matchName || "—"}`,
+        `Email: ${matchEmail || "—"}`,
+        `Telefone/Phone: ${matchPhone || "—"}`,
+        "",
+        isPT ? "Notas:" : "Notes:",
+        matchNotes || "—",
+        "",
+        "Page:",
+        window.location.href,
+      ];
+
+      window.location.href = `mailto:info@allcascais.com?subject=${encodeURIComponent(
+        subject
+      )}&body=${encodeURIComponent(bodyLines.join("\n"))}`;
+    };
+
+    try {
+      const { error } = await supabase.from("leads").insert(payload);
+      if (error) throw error;
+
+      // success UX (simple)
+      alert(isPT ? "Pedido recebido ✅" : "Request received ✅");
+      setShowMatchModal(false);
+
+      // clear fields
+      setMatchName("");
+      setMatchEmail("");
+      setMatchPhone("");
+      setMatchNotes("");
+    } catch (err) {
+      console.error("Lead insert failed:", err);
+
+      alert(
+        isPT
+          ? "Não foi possível enviar automaticamente. Vamos abrir o seu email como alternativa."
+          : "Couldn’t submit automatically. We’ll open your email as a fallback."
+      );
+      openMailto();
+      setShowMatchModal(false);
+    }
+  };
 
   // Filters
   const [buyRent, setBuyRent] = useState<BuyRent>("all");
@@ -268,13 +513,13 @@ const RealEstatePage: React.FC = () => {
 
   // Scroll lock safety
   useEffect(() => {
-    const shouldLock = !!selectedProperty;
+    const shouldLock = !!selectedProperty || showMatchModal;
     if (shouldLock) document.body.style.overflow = "hidden";
     else document.body.style.overflow = "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [selectedProperty]);
+  }, [selectedProperty, showMatchModal]);
 
   useEffect(() => {
     setMaxPrice("any");
@@ -477,7 +722,6 @@ const RealEstatePage: React.FC = () => {
     }
 
     // IMPORTANT: Paid/featured sorting disabled for now (free platform)
-    // If you re-enable paid features later, you can restore the featuredUntil logic here.
 
     if (sortBy === "price-asc") list.sort((a, b) => a.price - b.price);
     else if (sortBy === "price-desc") list.sort((a, b) => b.price - a.price);
@@ -643,7 +887,7 @@ const RealEstatePage: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#FAF8F4] py-10">
         <div className="max-w-6xl mx-auto px-4 py-8 md:py-10">
-          <div className="h-28 rounded-2xl bg-white border border-slate-100 shadow-sm mb-8 animate-pulse" />
+          <div className="h-40 rounded-3xl bg-white border border-slate-100 shadow-sm mb-8 animate-pulse" />
           <div className="h-28 rounded-3xl bg-white border border-slate-100 shadow-sm mb-6 animate-pulse" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -760,9 +1004,9 @@ const RealEstatePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-transparent py-3">
       <div className="max-w-6xl mx-auto px-4 py-8 md:py-10">
-        {/* Featured partner */}
-        <div className="mb-6">
-          <div className="relative overflow-hidden rounded-2xl border border-slate-200 shadow-sm bg-slate-900">
+        {/* 🏡 Living in Cascais HERO (Top level framing) */}
+        <section className="mb-6">
+          <div className="relative overflow-hidden rounded-3xl border border-slate-200 shadow-sm bg-slate-900">
             <div
               className="absolute inset-0 bg-cover bg-center"
               style={{ backgroundImage: "url('/cascais-coast.png')" }}
@@ -773,64 +1017,193 @@ const RealEstatePage: React.FC = () => {
               aria-hidden="true"
               style={{
                 background:
-                  "linear-gradient(90deg, rgba(2,6,23,0.75) 0%, rgba(2,6,23,0.45) 60%, rgba(2,6,23,0.25) 100%)",
+                  "linear-gradient(90deg, rgba(2,6,23,0.78) 0%, rgba(2,6,23,0.55) 55%, rgba(2,6,23,0.25) 100%)",
               }}
             />
-
-            <div className="relative px-4 py-3 sm:px-6 sm:py-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="relative px-5 py-5 sm:px-8 sm:py-7">
+              <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    {isPT ? "Coleção em Destaque" : "Featured Collection"}
+                    {isPT ? "Viver em Cascais" : "Living in Cascais"}
                   </div>
 
-                  <div
-                    className="mt-1 text-lg sm:text-xl font-semibold text-white tracking-wide"
+                  <h1
+                    className="mt-2 text-2xl sm:text-3xl font-semibold text-white tracking-wide"
                     style={{ fontFamily: "'Playfair Display', serif" }}
                   >
-                    CHIOSS
+                    {isPT
+                      ? "Casas, zonas e serviços — no mesmo lugar."
+                      : "Homes and neighborhoods — in one place."}
+                  </h1>
+
+                  <p className="mt-2 text-sm sm:text-base text-white/85 max-w-2xl">
+                    {isPT
+                      ? "Descubra imóveis com contexto local: zonas, lifestyle e serviços úteis para o dia-a-dia em Cascais."
+                      : "Discover homes with local context: areas, lifestyle, and services that make moving (and living) easier in Cascais."}
+                  </p>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={scrollToFilters}
+                      className="inline-flex items-center justify-center rounded-full bg-white text-slate-900 px-4 py-2 text-xs sm:text-sm font-semibold shadow hover:bg-white/90 transition"
+                    >
+                      {isPT ? "Ver imóveis" : "Browse homes"}
+                      <span className="ml-2">→</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openMatch("buyer")}
+                      className="inline-flex items-center justify-center rounded-full bg-emerald-500 text-white px-4 py-2 text-xs sm:text-sm font-semibold shadow hover:bg-emerald-600 transition"
+                    >
+                      {isPT ? "Receber sugestões (24h)" : "Get matches (24h)"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => openMatch("owner")}
+                      className="inline-flex items-center justify-center rounded-full bg-white/10 backdrop-blur border border-white/20 text-white px-4 py-2 text-xs sm:text-sm font-semibold hover:bg-white/15 transition"
+                    >
+                      {isPT ? "Anunciar imóvel" : "List a property"}
+                    </button>
                   </div>
 
-                  <div className="mt-0.5 text-xs sm:text-sm text-white/80">
-                    {isPT
-                      ? "Vida costeira de luxo em Portugal"
-                      : "Luxury coastal living in Portugal"}
+                  <div className="mt-4 flex flex-wrap gap-2 text-[11px] text-white/75">
+                    <span className="inline-flex items-center rounded-full bg-black/20 border border-white/10 px-3 py-1">
+                      {isPT ? "Contexto local" : "Local context"}
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-black/20 border border-white/10 px-3 py-1">
+                      {isPT ? "Zonas & bairros" : "Areas & neighborhoods"}
+                    </span>
+                    <span className="inline-flex items-center rounded-full bg-black/20 border border-white/10 px-3 py-1">
+                      {isPT ? "Serviços úteis" : "Useful services"}
+                    </span>
                   </div>
                 </div>
 
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <button
-                    type="button"
-                    onClick={() => window.open("https://chioss.com", "_blank")}
-                    className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl bg-white text-slate-900 px-4 py-2 text-xs sm:text-sm font-semibold shadow hover:bg-white/90 transition"
-                  >
-                    {isPT ? "Ver coleção" : "View"}
-                    <span className="ml-2">→</span>
-                  </button>
+                {/* Your existing “Featured partner” block (kept, but framed as a collection) */}
+                <div className="w-full lg:w-95">
+                  <div className="rounded-2xl border border-white/15 bg-white/10 backdrop-blur p-4">
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/75">
+                      {isPT ? "Coleção em Destaque" : "Featured Collection"}
+                    </div>
+                    <div
+                      className="mt-1 text-lg font-semibold text-white tracking-wide"
+                      style={{ fontFamily: "'Playfair Display', serif" }}
+                    >
+                      CHIOSS
+                    </div>
+                    <div className="mt-1 text-xs text-white/75">
+                      {isPT
+                        ? "Vida costeira de luxo em Portugal"
+                        : "Luxury coastal living in Portugal"}
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={() => window.open("https://chioss.com", "_blank")}
-                    className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl bg-white/10 backdrop-blur border border-white/20 text-white px-4 py-2 text-xs sm:text-sm font-semibold hover:bg-white/15 transition"
-                  >
-                    {isPT ? "Estudo de Mercado" : "Market Study"}
-                  </button>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          window.open("https://chioss.com", "_blank")
+                        }
+                        className="flex-1 inline-flex items-center justify-center rounded-xl bg-white text-slate-900 px-4 py-2 text-xs font-semibold shadow hover:bg-white/90 transition"
+                      >
+                        {isPT ? "Ver coleção" : "View"}
+                        <span className="ml-2">→</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          window.open("https://chioss.com", "_blank")
+                        }
+                        className="flex-1 inline-flex items-center justify-center rounded-xl bg-white/10 border border-white/20 text-white px-4 py-2 text-xs font-semibold hover:bg-white/15 transition"
+                      >
+                        {isPT ? "Estudo" : "Study"}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Sticky filter bar */}
-        <section className="mb-6 sticky top-2 sm:top-3 z-20">
+        {/* Neighborhood Explorer (no new pages; sets filters + scrolls) */}
+        <section className="mb-6">
+          <div className="flex items-end justify-between gap-3 mb-3">
+            <div>
+              <h2 className="text-sm sm:text-base font-semibold text-slate-900">
+                {isPT ? "Explorar zonas" : "Explore areas"}
+              </h2>
+              <p className="mt-0.5 text-[11px] sm:text-xs text-slate-600">
+                {isPT
+                  ? "Clique numa zona para ver imóveis e refinar por bairro."
+                  : "Tap an area to browse homes and refine by neighborhood."}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setLocationArea("all");
+                setLocationNeighborhood("all");
+                scrollToFilters();
+              }}
+              className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 text-xs font-semibold px-3 py-2 hover:bg-slate-50 transition"
+            >
+              {isPT ? "Ver tudo" : "View all"}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {CASCAIS_AREAS.map((area) => {
+              const active = locationArea === area;
+              return (
+                <button
+                  key={area}
+                  type="button"
+                  onClick={() => {
+                    setLocationArea(area);
+                    setLocationNeighborhood("all");
+                    scrollToFilters();
+                  }}
+                  className={[
+                    "text-left rounded-2xl border px-4 py-4 shadow-sm transition",
+                    active
+                      ? "border-[#1F6FA6] bg-blue-50"
+                      : "border-slate-200 bg-white hover:bg-slate-50",
+                  ].join(" ")}
+                >
+                  <div className="text-xs font-semibold text-slate-900">
+                    {area}
+                  </div>
+                  <div className="mt-1 text-[11px] text-slate-600 line-clamp-2">
+                    {isPT
+                      ? "Ver imóveis e bairros."
+                      : "Browse homes, neighborhoods and nearby services."}
+                  </div>
+                  <div className="mt-3 text-[11px] font-semibold text-[#1F6FA6]">
+                    {isPT ? "Explorar →" : "Explore →"}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Sticky filter bar (kept, but now anchored as “Homes of Cascais”) */}
+        <section className="mb-6 sticky top-2 sm:top-3 z-20" ref={filtersRef}>
           <div className="bg-white/92 backdrop-blur rounded-3xl shadow-md border border-slate-100 px-3 sm:px-6 py-3 sm:py-4">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div>
                 <div className="text-xs font-semibold text-slate-700">
+                  {isPT ? "Homes of Cascais" : "Homes of Cascais"}
+                </div>
+                <div className="mt-0.5 text-[11px] text-slate-500">
                   {isPT
-                    ? "Pesquisar imóveis em Cascais"
-                    : "Search homes in Cascais"}
+                    ? "Filtre por zona/bairro e encontre o seu lugar."
+                    : "Filter by area/neighborhood and find your place."}
                 </div>
               </div>
 
@@ -1127,7 +1500,7 @@ const RealEstatePage: React.FC = () => {
           </div>
         </section>
 
-        {/* Results header + list CTA */}
+        {/* Results header + 2 CTAs (buyer + owner) */}
         <section className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold text-slate-800">
@@ -1160,13 +1533,29 @@ const RealEstatePage: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => openMatch("buyer")}
+              className="inline-flex items-center justify-center rounded-full bg-emerald-600 text-white text-xs sm:text-sm font-semibold px-4 sm:px-5 py-2 shadow hover:bg-emerald-700 transition"
+            >
+              {isPT ? "Receber sugestões" : "Get matches"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => openMatch("owner")}
+              className="inline-flex items-center justify-center rounded-full border border-[#1F6FA6] bg-white text-[#1F6FA6] text-xs sm:text-sm font-semibold px-4 sm:px-5 py-2 shadow-sm hover:bg-blue-50 transition"
+            >
+              {isPT ? "Sou proprietário" : "I'm an owner"}
+            </button>
+
             <button
               type="button"
               onClick={handleListPropertyClick}
-              className="inline-flex items-center justify-center rounded-full border border-[#1F6FA6] bg-white text-[#1F6FA6] text-xs sm:text-sm font-semibold px-4 sm:px-5 py-2 shadow-sm hover:bg-blue-50 transition"
+              className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 text-xs sm:text-sm font-semibold px-4 sm:px-5 py-2 shadow-sm hover:bg-slate-50 transition"
             >
-              {isPT ? "Anunciar o meu imóvel" : "List my property"}
+              {isPT ? "Anunciar (self-service)" : "List (self-serve)"}
             </button>
           </div>
         </section>
@@ -1232,6 +1621,7 @@ const RealEstatePage: React.FC = () => {
                   {property.description}
                 </p>
 
+                {/* Context row (adds “Living in Cascais” feel, not portal feel) */}
                 <div className="mt-1 text-[11px] text-slate-600 flex flex-wrap gap-2">
                   <span className="rounded-full bg-[#FAF8F4] border border-slate-200 px-2 py-0.5">
                     {formatTypeLabel(property.type, isPT)}
@@ -1294,8 +1684,8 @@ const RealEstatePage: React.FC = () => {
                   ? "Experimente remover zona/bairro, aumentar o preço máximo ou ajustar área."
                   : "Try removing area/neighborhood, increasing max price, or adjusting area."}
               </div>
-              {hasFilters && (
-                <div className="mt-4">
+              <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-center">
+                {hasFilters && (
                   <button
                     type="button"
                     onClick={clearFilters}
@@ -1303,14 +1693,261 @@ const RealEstatePage: React.FC = () => {
                   >
                     {isPT ? "Limpar filtros" : "Clear filters"}
                   </button>
-                </div>
-              )}
+                )}
+                <button
+                  type="button"
+                  onClick={() => openMatch("buyer")}
+                  className="inline-flex items-center justify-center rounded-full bg-emerald-600 text-white text-xs font-semibold px-5 py-2.5 shadow hover:bg-emerald-700"
+                >
+                  {isPT ? "Quero sugestões" : "Get matches"}
+                </button>
+              </div>
             </div>
           )}
         </section>
+
+        {/* Guides (in-page, so you don’t need new routes yet) */}
+        <section className="pb-6">
+          <div className="flex items-end justify-between gap-3 mb-3">
+            <div>
+              <h2 className="text-sm sm:text-base font-semibold text-slate-900">
+                {isPT ? "Guias rápidos" : "Quick guides"}
+              </h2>
+              <p className="mt-0.5 text-[11px] sm:text-xs text-slate-600">
+                {isPT
+                  ? "Conteúdo curto e útil — pensado para Cascais."
+                  : "Short, practical content — tailored for Cascais."}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {guides.map((g) => {
+              const isOpen = openGuide === g.key;
+              return (
+                <div
+                  key={g.key}
+                  className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+                >
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/living/guides/${g.key}`)}
+                    className="w-full text-left p-5 sm:p-6 hover:bg-slate-50 transition"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-semibold text-slate-900">
+                          {g.title}
+                        </div>
+                        <div className="mt-1 text-[11px] sm:text-xs text-slate-600">
+                          {g.desc}
+                        </div>
+                      </div>
+                      <div className="text-slate-400 text-lg leading-none">
+                        {isOpen ? "−" : "+"}
+                      </div>
+                    </div>
+                  </button>
+
+                  {isOpen && (
+                    <div className="px-5 sm:px-6 pb-5 sm:pb-6">
+                      <div className="rounded-2xl bg-[#FAF8F4] border border-slate-200 p-4">
+                        <ul className="list-disc pl-5 text-[11px] sm:text-xs text-slate-700 space-y-2">
+                          {g.bullets.map((b) => (
+                            <li key={b}>{b}</li>
+                          ))}
+                        </ul>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={() => openMatch("buyer")}
+                            className="inline-flex items-center justify-center rounded-full bg-emerald-600 text-white text-xs font-semibold px-4 py-2 shadow hover:bg-emerald-700 transition"
+                          >
+                            {isPT ? "Pedir ajuda (24h)" : "Get help (24h)"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setOpenGuide(null);
+                              scrollToFilters();
+                            }}
+                            className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 hover:bg-slate-50 transition"
+                          >
+                            {isPT ? "Voltar aos imóveis" : "Back to homes"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
       </div>
 
-      {/* PROPERTY DETAIL MODAL */}
+      {/* MATCH MODAL (buyer/owner) */}
+      {showMatchModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-2 sm:px-4">
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+          >
+            <div className="flex items-center justify-between px-5 sm:px-7 py-4 border-b border-slate-100 bg-slate-50/80">
+              <div>
+                <div className="text-[11px] font-semibold text-[#1F6FA6]">
+                  {matchType === "owner"
+                    ? isPT
+                      ? "Para proprietários"
+                      : "For owners"
+                    : isPT
+                    ? "Para compradores/arrendatários"
+                    : "For buyers/renters"}
+                </div>
+                <div className="text-sm sm:text-base font-semibold text-slate-900">
+                  {matchType === "owner"
+                    ? isPT
+                      ? "Quer destacar o seu imóvel em Cascais?"
+                      : "Want to feature your home in Cascais?"
+                    : isPT
+                    ? "Diga-nos o que procura (resposta em 24h)"
+                    : "Tell us what you need (reply in 24h)"}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={closeMatch}
+                className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
+                aria-label={isPT ? "Fechar" : "Close"}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-5 sm:p-7">
+              <div className="flex gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setMatchType("buyer")}
+                  className={[
+                    "flex-1 rounded-full border px-4 py-2 text-xs font-semibold transition",
+                    matchType === "buyer"
+                      ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                  ].join(" ")}
+                >
+                  {isPT ? "Quero comprar/arrendar" : "I want to buy/rent"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMatchType("owner")}
+                  className={[
+                    "flex-1 rounded-full border px-4 py-2 text-xs font-semibold transition",
+                    matchType === "owner"
+                      ? "border-[#1F6FA6] bg-blue-50 text-[#1F6FA6]"
+                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                  ].join(" ")}
+                >
+                  {isPT ? "Sou proprietário" : "I'm an owner"}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-semibold text-slate-600">
+                    {isPT ? "Nome" : "Name"}
+                  </label>
+                  <input
+                    value={matchName}
+                    onChange={(e) => setMatchName(e.target.value)}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 bg-white"
+                    placeholder={isPT ? "O seu nome" : "Your name"}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-semibold text-slate-600">
+                    Email
+                  </label>
+                  <input
+                    value={matchEmail}
+                    onChange={(e) => setMatchEmail(e.target.value)}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 bg-white"
+                    placeholder="email@exemplo.com"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1 sm:col-span-2">
+                  <label className="text-[11px] font-semibold text-slate-600">
+                    {isPT ? "Telefone (opcional)" : "Phone (optional)"}
+                  </label>
+                  <input
+                    value={matchPhone}
+                    onChange={(e) => setMatchPhone(e.target.value)}
+                    className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 bg-white"
+                    placeholder={isPT ? "+351 ..." : "+351 ..."}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1 sm:col-span-2">
+                  <label className="text-[11px] font-semibold text-slate-600">
+                    {matchType === "owner"
+                      ? isPT
+                        ? "Fale-nos do imóvel (zona, tipologia, objetivo)"
+                        : "Tell us about the home (area, type, goal)"
+                      : isPT
+                      ? "O que procura? (zona, orçamento, tipologia, timing)"
+                      : "What are you looking for? (area, budget, type, timing)"}
+                  </label>
+                  <textarea
+                    value={matchNotes}
+                    onChange={(e) => setMatchNotes(e.target.value)}
+                    className="rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 bg-white min-h-27.5"
+                    placeholder={
+                      matchType === "owner"
+                        ? isPT
+                          ? "Ex: Moradia T3 em Birre, vender em 2-3 meses..."
+                          : "e.g. T3 house in Birre, selling in 2-3 months..."
+                        : isPT
+                        ? "Ex: Arrendar T2 até €2.000/mês, perto de escolas..."
+                        : "e.g. Rent T2 up to €2,000/mo, near schools..."
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="mt-5 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                <div className="text-[11px] text-slate-500">
+                  {isPT
+                    ? "Ao enviar, irá abrir o seu e-mail com o pedido preenchido."
+                    : "Submitting will open your email client with the request pre-filled."}
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={closeMatch}
+                    className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 hover:bg-slate-50 transition"
+                  >
+                    {isPT ? "Cancelar" : "Cancel"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={submitMatch}
+                    className="inline-flex items-center justify-center rounded-full bg-[#1F6FA6] text-white text-xs font-semibold px-5 py-2 shadow hover:bg-[#195c8a] transition"
+                  >
+                    {isPT ? "Enviar pedido" : "Send request"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PROPERTY DETAIL MODAL (your existing modal kept) */}
       {selectedProperty && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm px-2 sm:px-4">
           <div
