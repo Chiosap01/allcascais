@@ -54,6 +54,129 @@ const toNumber = (v: string) => {
 
 const pct = (n: number) => (n * 100).toFixed(2).replace(/\.00$/, "") + "%";
 
+// ----------------------------
+// Premium UI helpers (glass + noise + buttons)
+// ----------------------------
+const cls = (...a: Array<string | undefined | false | null>) =>
+  a.filter(Boolean).join(" ");
+
+const GlassSurface = ({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => (
+  <div
+    className={cls(
+      "relative rounded-3xl border border-white/35 bg-white/86 backdrop-blur-md",
+      "shadow-[0_12px_40px_-20px_rgba(2,6,23,0.55)]",
+      "ring-1 ring-slate-900/5",
+      className
+    )}
+  >
+    {/* Soft noise texture */}
+    <div
+      className="pointer-events-none absolute inset-0 rounded-3xl opacity-[0.10]"
+      style={{
+        backgroundImage:
+          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.25'/%3E%3C/svg%3E\")",
+      }}
+    />
+    {/* Gradient sheen */}
+    <div className="pointer-events-none absolute inset-0 rounded-3xl bg-linear-to-b from-white/30 to-transparent" />
+    <div className="relative">{children}</div>
+  </div>
+);
+
+const ButtonBase =
+  "inline-flex items-center justify-center rounded-full font-semibold transition " +
+  "focus:outline-none focus:ring-2 focus:ring-cyan-400/80 focus:ring-offset-2 focus:ring-offset-white/40 " +
+  "active:translate-y-[1px] active:scale-[0.99]";
+
+const PrimaryBtn = ({
+  children,
+  className,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+  <button
+    {...props}
+    className={cls(
+      ButtonBase,
+      "bg-[#1F6FA6] text-white shadow-md shadow-slate-900/10",
+      "hover:bg-[#195c8a] hover:-translate-y-px",
+      "px-5 py-2.5 text-xs",
+      className
+    )}
+  >
+    {children}
+  </button>
+);
+
+const SuccessBtn = ({
+  children,
+  className,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+  <button
+    {...props}
+    className={cls(
+      ButtonBase,
+      "bg-emerald-600 text-white shadow-md shadow-emerald-900/10",
+      "hover:bg-emerald-700 hover:-translate-y-px",
+      "px-5 py-2.5 text-xs",
+      className
+    )}
+  >
+    {children}
+  </button>
+);
+
+const GhostBtn = ({
+  children,
+  className,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+  <button
+    {...props}
+    className={cls(
+      ButtonBase,
+      "bg-white/55 backdrop-blur-md border border-white/35 text-slate-800",
+      "hover:bg-white/70 hover:-translate-y-px",
+      "px-4 py-2 text-xs",
+      className
+    )}
+  >
+    {children}
+  </button>
+);
+
+const Pill = ({ children }: { children: React.ReactNode }) => (
+  <span
+    className={cls(
+      "inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold",
+      "bg-white/60 backdrop-blur-md border border-white/35 text-slate-800",
+      "shadow-sm shadow-slate-900/5"
+    )}
+  >
+    {children}
+  </span>
+);
+
+function toneStyles(tone?: GuideTone) {
+  if (tone === "warning")
+    return "border-amber-200/70 bg-amber-50/88 backdrop-blur-md shadow-[0_10px_32px_-20px_rgba(2,6,23,0.50)] ring-1 ring-slate-900/5";
+  if (tone === "tip")
+    return "border-emerald-200/70 bg-emerald-50/88 backdrop-blur-md shadow-[0_10px_32px_-20px_rgba(2,6,23,0.50)] ring-1 ring-slate-900/5";
+  if (tone === "checklist")
+    return "border-sky-200/70 bg-sky-50/88 backdrop-blur-md shadow-[0_10px_32px_-20px_rgba(2,6,23,0.50)] ring-1 ring-slate-900/5";
+  return "border-white/35 bg-white/86 backdrop-blur-md shadow-[0_10px_32px_-20px_rgba(2,6,23,0.50)] ring-1 ring-slate-900/5";
+}
+
+// ----------------------------
+// IMT / taxes
+// ----------------------------
+
 /**
  * IMT 2026 (Continente) – Cascais = Continente.
  * Uses marginal rates + "parcela a abater" for bracketed ranges,
@@ -144,6 +267,9 @@ function calcStampDutyMortgage(loanAmount: number, termYears: number) {
   return loan * 0.006;
 }
 
+// ----------------------------
+// Inputs
+// ----------------------------
 const NumField = ({
   label,
   value,
@@ -158,17 +284,17 @@ const NumField = ({
   suffix?: string;
 }) => (
   <div className="flex flex-col gap-1">
-    <label className="text-[11px] font-semibold text-slate-600">{label}</label>
+    <label className="text-[11px] font-semibold text-slate-800">{label}</label>
     <div className="relative">
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-slate-200 px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 bg-white"
+        className="w-full rounded-xl border border-white/45 bg-white/70 backdrop-blur-md px-3 py-2 pr-10 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/80 shadow-sm"
         inputMode="decimal"
       />
       {suffix ? (
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-600">
           {suffix}
         </div>
       ) : null}
@@ -188,23 +314,16 @@ const ToggleChip = ({
   <button
     type="button"
     onClick={onClick}
-    className={[
-      "rounded-full border px-3 py-1.5 text-[11px] font-semibold transition",
+    className={cls(
+      "rounded-full border px-3 py-1.5 text-[11px] font-semibold transition backdrop-blur-md",
       active
-        ? "border-emerald-600 bg-emerald-50 text-emerald-700"
-        : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-    ].join(" ")}
+        ? "border-emerald-500/60 bg-emerald-50/85 text-emerald-800 shadow-sm"
+        : "border-white/35 bg-white/55 text-slate-800 hover:bg-white/70"
+    )}
   >
     {label}
   </button>
 );
-
-function toneStyles(tone?: GuideTone) {
-  if (tone === "warning") return "border-amber-200 bg-amber-50/40";
-  if (tone === "tip") return "border-emerald-200 bg-emerald-50/40";
-  if (tone === "checklist") return "border-sky-200 bg-sky-50/40";
-  return "border-slate-200 bg-white";
-}
 
 // ----------------------------
 // Calculators
@@ -262,14 +381,12 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
     bankFees;
 
   return (
-    <div className="mt-4 rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div className="px-4 sm:px-5 py-3 border-b border-slate-100 bg-slate-50/70">
-        <div className="text-[11px] font-semibold text-slate-700 uppercase tracking-[0.14em]">
-          {isPT
-            ? "Calculadora de custo total (2026)"
-            : "Total-cost calculator (2026)"}
+    <GlassSurface className="mt-4 overflow-hidden">
+      <div className="px-4 sm:px-5 py-3 border-b border-white/25 bg-white/40 backdrop-blur-md">
+        <div className="text-[11px] font-semibold text-slate-900 uppercase tracking-[0.14em]">
+          {isPT ? "Calculadora de custo total (2026)" : "Total-cost (2026)"}
         </div>
-        <div className="mt-1 text-xs text-slate-600">
+        <div className="mt-1 text-xs text-slate-700">
           {isPT
             ? "Estimativa educativa com IMT 2026 (Continente), IS 0,8% e IS crédito. Confirme valores finais com solicitador/advogado."
             : "Educational estimate with 2026 IMT (Mainland), 0.8% stamp duty and mortgage stamp duty. Confirm final values with a solicitor/lawyer."}
@@ -287,13 +404,13 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
           />
 
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-semibold text-slate-600">
+            <label className="text-[11px] font-semibold text-slate-800">
               {isPT ? "Uso" : "Use"}
             </label>
             <select
               value={use}
               onChange={(e) => setUse(e.target.value as PurchaseUse)}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              className="rounded-xl border border-white/45 bg-white/70 backdrop-blur-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-400/80 shadow-sm"
             >
               <option value="hpp">
                 {isPT
@@ -307,13 +424,13 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-semibold text-slate-600">
+            <label className="text-[11px] font-semibold text-slate-800">
               {isPT ? "Comprador ≤35 (HPP)?" : "Buyer ≤35 (HPP)?"}
             </label>
             <select
               value={youngU35}
               onChange={(e) => setYoungU35(e.target.value as YesNo)}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              className="rounded-xl border border-white/45 bg-white/70 backdrop-blur-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-400/80 shadow-sm"
               disabled={use !== "hpp"}
               title={
                 use !== "hpp"
@@ -344,7 +461,7 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
           />
         </div>
 
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="mt-4 rounded-2xl border border-white/35 bg-white/55 backdrop-blur-md p-4 shadow-sm">
           <div className="text-xs font-semibold text-slate-900">
             {isPT ? "Custos típicos (editáveis)" : "Typical costs (editable)"}
           </div>
@@ -376,11 +493,11 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
           </div>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="mt-4 rounded-2xl border border-white/35 bg-white/55 backdrop-blur-md p-4 shadow-sm">
           <div className="text-xs font-semibold text-slate-900">
             {isPT ? "IMI (opcional)" : "IMI (optional)"}
           </div>
-          <div className="mt-1 text-[11px] text-slate-600">
+          <div className="mt-1 text-[11px] text-slate-700">
             {isPT
               ? "Para estimar IMI precisa do VPT (Valor Patrimonial Tributário)."
               : "To estimate IMI you need VPT (tax value)."}
@@ -393,8 +510,8 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
               onChange={setVptStr}
               suffix="€"
             />
-            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-              <div className="text-[11px] text-slate-500">
+            <div className="rounded-xl border border-white/35 bg-white/55 backdrop-blur-md px-3 py-2 shadow-sm">
+              <div className="text-[11px] text-slate-700">
                 {isPT ? "Taxa Cascais 2026" : "Cascais rate 2026"}
               </div>
               <div className="text-sm font-semibold text-slate-900">
@@ -409,7 +526,7 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
           </div>
 
           {vpt > 0 ? (
-            <div className="mt-3 text-xs text-slate-700">
+            <div className="mt-3 text-xs text-slate-800">
               {isPT ? "IMI estimado/ano:" : "Estimated IMI/year:"}{" "}
               <span className="font-semibold text-slate-900">
                 {eur(imi, isPT)}
@@ -421,18 +538,16 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-[11px] text-slate-500">
-                <th className="text-left font-semibold py-2">
-                  {isPT ? "Item" : "Item"}
-                </th>
+              <tr className="text-[11px] text-slate-700">
+                <th className="text-left font-semibold py-2">Item</th>
                 <th className="text-right font-semibold py-2">
                   {isPT ? "Estimativa" : "Estimate"}
                 </th>
               </tr>
             </thead>
             <tbody className="text-xs sm:text-sm">
-              <tr className="border-t border-slate-100">
-                <td className="py-2 text-slate-700 font-semibold">
+              <tr className="border-t border-white/25">
+                <td className="py-2 text-slate-800 font-semibold">
                   {isPT ? "Preço do imóvel" : "Home price"}
                 </td>
                 <td className="py-2 text-right text-slate-900 font-semibold">
@@ -440,10 +555,10 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
                 </td>
               </tr>
 
-              <tr className="border-t border-slate-100">
-                <td className="py-2 text-slate-700">
+              <tr className="border-t border-white/25">
+                <td className="py-2 text-slate-800">
                   IMT
-                  <div className="text-[11px] text-slate-500 mt-0.5">
+                  <div className="text-[11px] text-slate-700 mt-0.5">
                     {isPT
                       ? "Tabela 2026 (Continente)"
                       : "2026 table (Mainland)"}
@@ -454,8 +569,8 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
                 </td>
               </tr>
 
-              <tr className="border-t border-slate-100">
-                <td className="py-2 text-slate-700">
+              <tr className="border-t border-white/25">
+                <td className="py-2 text-slate-800">
                   {isPT ? "Imposto do Selo (0,8%)" : "Stamp Duty (0.8%)"}
                 </td>
                 <td className="py-2 text-right text-slate-900">
@@ -463,10 +578,10 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
                 </td>
               </tr>
 
-              <tr className="border-t border-slate-100">
-                <td className="py-2 text-slate-700">
+              <tr className="border-t border-white/25">
+                <td className="py-2 text-slate-800">
                   {isPT ? "IS sobre crédito" : "Mortgage stamp duty"}
-                  <div className="text-[11px] text-slate-500 mt-0.5">
+                  <div className="text-[11px] text-slate-700 mt-0.5">
                     {loan > 0
                       ? `${eur(loan, isPT)} · ${termYears || 0} ${
                           isPT ? "anos" : "yrs"
@@ -481,8 +596,8 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
                 </td>
               </tr>
 
-              <tr className="border-t border-slate-100">
-                <td className="py-2 text-slate-700">
+              <tr className="border-t border-white/25">
+                <td className="py-2 text-slate-800">
                   {isPT ? "Escritura/serviços" : "Notary/closing services"}
                 </td>
                 <td className="py-2 text-right text-slate-900">
@@ -490,8 +605,8 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
                 </td>
               </tr>
 
-              <tr className="border-t border-slate-100">
-                <td className="py-2 text-slate-700">
+              <tr className="border-t border-white/25">
+                <td className="py-2 text-slate-800">
                   {isPT ? "Registos" : "Registry"}
                 </td>
                 <td className="py-2 text-right text-slate-900">
@@ -499,8 +614,8 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
                 </td>
               </tr>
 
-              <tr className="border-t border-slate-100">
-                <td className="py-2 text-slate-700">
+              <tr className="border-t border-white/25">
+                <td className="py-2 text-slate-800">
                   {isPT ? "Solicitador/advogado" : "Solicitor/lawyer"}
                 </td>
                 <td className="py-2 text-right text-slate-900">
@@ -508,8 +623,8 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
                 </td>
               </tr>
 
-              <tr className="border-t border-slate-100">
-                <td className="py-2 text-slate-700">
+              <tr className="border-t border-white/25">
+                <td className="py-2 text-slate-800">
                   {isPT ? "Banco/avaliação/comissões" : "Bank/appraisal/fees"}
                 </td>
                 <td className="py-2 text-right text-slate-900">
@@ -517,12 +632,12 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
                 </td>
               </tr>
 
-              <tr className="border-t border-slate-100">
-                <td className="py-2 text-slate-700 font-semibold">
+              <tr className="border-t border-white/25">
+                <td className="py-2 text-slate-900 font-semibold">
                   {isPT
                     ? "Total estimado (1x, compra)"
                     : "Estimated total (one-off, purchase)"}
-                  <div className="text-[11px] text-slate-500 mt-0.5">
+                  <div className="text-[11px] text-slate-700 mt-0.5">
                     {isPT
                       ? "Não inclui IMI/ano (opcional acima)."
                       : "Excludes annual IMI (optional above)."}
@@ -536,13 +651,13 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
           </table>
         </div>
 
-        <div className="mt-3 text-[11px] text-slate-500">
+        <div className="mt-3 text-[11px] text-slate-700">
           {isPT
             ? "Nota: IMT/IS pagos antes da escritura. Valores finais dependem de VPT, regras em vigor e custos de entidades."
             : "Note: IMT/stamp duty are paid before closing. Final amounts depend on VPT, current rules and service costs."}
         </div>
       </div>
-    </div>
+    </GlassSurface>
   );
 }
 
@@ -589,14 +704,12 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
   const netAfterTax = proceedsBeforeTax - estimatedCGTax;
 
   return (
-    <div className="mt-4 rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-      <div className="px-4 sm:px-5 py-3 border-b border-slate-100 bg-slate-50/70">
-        <div className="text-[11px] font-semibold text-slate-700 uppercase tracking-[0.14em]">
-          {isPT
-            ? "Calculadora de venda (proprietários)"
-            : "Selling calculator (owners)"}
+    <GlassSurface className="mt-4 overflow-hidden">
+      <div className="px-4 sm:px-5 py-3 border-b border-white/25 bg-white/40 backdrop-blur-md">
+        <div className="text-[11px] font-semibold text-slate-900 uppercase tracking-[0.14em]">
+          {isPT ? "Calculadora de venda (proprietários)" : "Selling (owners)"}
         </div>
-        <div className="mt-1 text-xs text-slate-600">
+        <div className="mt-1 text-xs text-slate-700">
           {isPT
             ? "Estimativa de custos de venda + líquido. (Mais-valias é opcional e muito aproximado.)"
             : "Estimate selling costs + net proceeds. (Capital gains is optional and very rough.)"}
@@ -619,13 +732,13 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
           />
 
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] font-semibold text-slate-600">
+            <label className="text-[11px] font-semibold text-slate-800">
               {isPT ? "IVA na comissão?" : "VAT on fee?"}
             </label>
             <select
               value={includeVAT}
               onChange={(e) => setIncludeVAT(e.target.value as YesNo)}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              className="rounded-xl border border-white/45 bg-white/70 backdrop-blur-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-400/80 shadow-sm"
             >
               <option value="yes">{isPT ? "Sim (23%)" : "Yes (23%)"}</option>
               <option value="no">{isPT ? "Não" : "No"}</option>
@@ -654,13 +767,13 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
           />
         </div>
 
-        <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="mt-4 rounded-2xl border border-white/35 bg-white/55 backdrop-blur-md p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-xs font-semibold text-slate-900">
                 {isPT ? "Mais-valias (opcional)" : "Capital gains (optional)"}
               </div>
-              <div className="text-[11px] text-slate-600">
+              <div className="text-[11px] text-slate-700">
                 {isPT
                   ? "Depende de residência fiscal, reinvestimento, coeficientes, etc. Isto é só uma aproximação."
                   : "Depends on tax residency, reinvestment, coefficients, etc. This is only a rough estimate."}
@@ -670,7 +783,7 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
             <select
               value={wantCG}
               onChange={(e) => setWantCG(e.target.value as YesNo)}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm bg-white"
+              className="rounded-xl border border-white/45 bg-white/70 backdrop-blur-md px-3 py-2 text-sm text-slate-900 shadow-sm"
             >
               <option value="no">
                 {isPT ? "Não estimar" : "Don't estimate"}
@@ -711,8 +824,8 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
                 onChange={setTaxRateStr}
                 suffix="%"
               />
-              <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                <div className="text-[11px] text-slate-500">
+              <div className="rounded-xl border border-white/35 bg-white/55 backdrop-blur-md px-3 py-2 shadow-sm">
+                <div className="text-[11px] text-slate-700">
                   {isPT ? "Ganho (muito aproximado)" : "Gain (very rough)"}
                 </div>
                 <div className="text-sm font-semibold text-slate-900">
@@ -726,18 +839,16 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
         <div className="mt-4 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-[11px] text-slate-500">
-                <th className="text-left font-semibold py-2">
-                  {isPT ? "Item" : "Item"}
-                </th>
+              <tr className="text-[11px] text-slate-700">
+                <th className="text-left font-semibold py-2">Item</th>
                 <th className="text-right font-semibold py-2">
                   {isPT ? "Estimativa" : "Estimate"}
                 </th>
               </tr>
             </thead>
             <tbody className="text-xs sm:text-sm">
-              <tr className="border-t border-slate-100">
-                <td className="py-2 text-slate-700 font-semibold">
+              <tr className="border-t border-white/25">
+                <td className="py-2 text-slate-800 font-semibold">
                   {isPT ? "Preço de venda" : "Sale price"}
                 </td>
                 <td className="py-2 text-right text-slate-900 font-semibold">
@@ -745,10 +856,10 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
                 </td>
               </tr>
 
-              <tr className="border-t border-slate-100">
-                <td className="py-2 text-slate-700">
+              <tr className="border-t border-white/25">
+                <td className="py-2 text-slate-800">
                   {isPT ? "Comissão agência" : "Agency fee"}{" "}
-                  <span className="text-[11px] text-slate-500">
+                  <span className="text-[11px] text-slate-700">
                     ({pct(agencyPct)})
                   </span>
                 </td>
@@ -757,8 +868,8 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
                 </td>
               </tr>
 
-              <tr className="border-t border-slate-100">
-                <td className="py-2 text-slate-700">
+              <tr className="border-t border-white/25">
+                <td className="py-2 text-slate-800">
                   {isPT ? "IVA (se aplicável)" : "VAT (if applicable)"}
                 </td>
                 <td className="py-2 text-right text-slate-900">
@@ -766,8 +877,8 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
                 </td>
               </tr>
 
-              <tr className="border-t border-slate-100">
-                <td className="py-2 text-slate-700">
+              <tr className="border-t border-white/25">
+                <td className="py-2 text-slate-800">
                   {isPT ? "Crédito por liquidar" : "Mortgage payoff"}
                 </td>
                 <td className="py-2 text-right text-slate-900">
@@ -775,8 +886,8 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
                 </td>
               </tr>
 
-              <tr className="border-t border-slate-100">
-                <td className="py-2 text-slate-700">
+              <tr className="border-t border-white/25">
+                <td className="py-2 text-slate-800">
                   {isPT ? "Outros custos" : "Other costs"}
                 </td>
                 <td className="py-2 text-right text-slate-900">
@@ -785,11 +896,9 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
               </tr>
 
               {wantCG === "yes" ? (
-                <tr className="border-t border-slate-100">
-                  <td className="py-2 text-slate-700">
-                    {isPT
-                      ? "Mais-valias (estimativa)"
-                      : "Capital gains (estimate)"}
+                <tr className="border-t border-white/25">
+                  <td className="py-2 text-slate-800">
+                    {isPT ? "Mais-valias (estimativa)" : "Capital gains"}
                   </td>
                   <td className="py-2 text-right text-slate-900">
                     {eur(estimatedCGTax, isPT)}
@@ -797,8 +906,8 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
                 </tr>
               ) : null}
 
-              <tr className="border-t border-slate-100">
-                <td className="py-2 text-slate-700 font-semibold">
+              <tr className="border-t border-white/25">
+                <td className="py-2 text-slate-900 font-semibold">
                   {isPT ? "Líquido estimado" : "Estimated net"}
                 </td>
                 <td className="py-2 text-right text-slate-900 font-semibold">
@@ -809,13 +918,13 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
           </table>
         </div>
 
-        <div className="mt-3 text-[11px] text-slate-500">
+        <div className="mt-3 text-[11px] text-slate-700">
           {isPT
             ? "Nota: mais-valias depende do seu caso fiscal. Use como ordem de grandeza e valide com contabilista."
             : "Note: capital gains depends on your tax situation. Use as a rough magnitude and validate with an accountant."}
         </div>
       </div>
-    </div>
+    </GlassSurface>
   );
 }
 
@@ -854,8 +963,6 @@ const LivingGuidePage: React.FC = () => {
   const shareTitle = guide
     ? `${isPT ? "Guia:" : "Guide:"} ${t(guide.title)} — AllCascais`
     : "AllCascais";
-
-  const shareSnippet = guide ? `${shareTitle}\n\n${pageUrl}` : pageUrl;
 
   const copyToClipboard = async (text: string, okMsg: string) => {
     try {
@@ -985,7 +1092,6 @@ Timeline: ${ownerTimeline || "—"}`;
       meta,
     };
 
-    // Helper: mailto fallback
     const openMailto = () => {
       const metaText = buildMatchMeta();
       const subject = encodeURIComponent(
@@ -1029,8 +1135,6 @@ Timeline: ${ownerTimeline || "—"}`;
       setOwnerTimeline("");
     } catch (err) {
       console.error(err);
-
-      // If DB insert fails, fallback to email so you still capture the lead
       alert(
         isPT
           ? "Não foi possível enviar automaticamente. Vamos abrir o seu email para enviar o pedido."
@@ -1047,12 +1151,12 @@ Timeline: ${ownerTimeline || "—"}`;
     const stampDutyPurchase = Math.round(examplePrice * 0.008);
 
     return (
-      <div className="mt-4 rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="px-4 sm:px-5 py-3 border-b border-slate-100 bg-slate-50/70">
-          <div className="text-[11px] font-semibold text-slate-700 uppercase tracking-[0.14em]">
+      <GlassSurface className="mt-4 overflow-hidden">
+        <div className="px-4 sm:px-5 py-3 border-b border-white/25 bg-white/40 backdrop-blur-md">
+          <div className="text-[11px] font-semibold text-slate-900 uppercase tracking-[0.14em]">
             {isPT ? "Exemplo rápido (estimativa)" : "Quick example (estimate)"}
           </div>
-          <div className="mt-1 text-xs text-slate-600">
+          <div className="mt-1 text-xs text-slate-700">
             {isPT
               ? "Serve para entender a lógica do custo total. Confirme valores finais com solicitador/advogado."
               : "This helps you understand total-cost logic. Confirm final amounts with a solicitor/lawyer."}
@@ -1063,18 +1167,16 @@ Timeline: ${ownerTimeline || "—"}`;
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-[11px] text-slate-500">
-                  <th className="text-left font-semibold py-2">
-                    {isPT ? "Item" : "Item"}
-                  </th>
+                <tr className="text-[11px] text-slate-700">
+                  <th className="text-left font-semibold py-2">Item</th>
                   <th className="text-right font-semibold py-2">
                     {isPT ? "Exemplo" : "Example"}
                   </th>
                 </tr>
               </thead>
               <tbody className="text-xs sm:text-sm">
-                <tr className="border-t border-slate-100">
-                  <td className="py-2 text-slate-700 font-semibold">
+                <tr className="border-t border-white/25">
+                  <td className="py-2 text-slate-800 font-semibold">
                     {isPT ? "Preço do imóvel" : "Home price"}
                   </td>
                   <td className="py-2 text-right text-slate-900 font-semibold">
@@ -1082,8 +1184,8 @@ Timeline: ${ownerTimeline || "—"}`;
                   </td>
                 </tr>
 
-                <tr className="border-t border-slate-100">
-                  <td className="py-2 text-slate-700">
+                <tr className="border-t border-white/25">
+                  <td className="py-2 text-slate-800">
                     {isPT ? "Imposto de Selo (0,8%)" : "Stamp Duty (0.8%)"}
                   </td>
                   <td className="py-2 text-right text-slate-900">
@@ -1091,37 +1193,37 @@ Timeline: ${ownerTimeline || "—"}`;
                   </td>
                 </tr>
 
-                <tr className="border-t border-slate-100">
-                  <td className="py-2 text-slate-700">
+                <tr className="border-t border-white/25">
+                  <td className="py-2 text-slate-800">
                     {isPT ? "IMT (varia)" : "IMT (varies)"}
-                    <div className="text-[11px] text-slate-500 mt-0.5">
+                    <div className="text-[11px] text-slate-700 mt-0.5">
                       {isPT
                         ? "Depende de escalões, tipo de uso e regras em vigor."
                         : "Depends on bands, intended use, and current rules."}
                     </div>
                   </td>
-                  <td className="py-2 text-right text-slate-500">—</td>
+                  <td className="py-2 text-right text-slate-600">—</td>
                 </tr>
 
-                <tr className="border-t border-slate-100">
-                  <td className="py-2 text-slate-700">
+                <tr className="border-t border-white/25">
+                  <td className="py-2 text-slate-800">
                     {isPT
                       ? "Escritura/serviços (varia)"
                       : "Closing/services (varies)"}
                   </td>
-                  <td className="py-2 text-right text-slate-500">—</td>
+                  <td className="py-2 text-right text-slate-600">—</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          <div className="mt-3 text-[11px] text-slate-500">
+          <div className="mt-3 text-[11px] text-slate-700">
             {isPT
               ? "Dica: compare imóveis por custo total no 1º ano (não só pelo preço)."
               : "Tip: compare homes by total first-year cost (not only price)."}
           </div>
         </div>
-      </div>
+      </GlassSurface>
     );
   };
 
@@ -1135,27 +1237,24 @@ Timeline: ${ownerTimeline || "—"}`;
 
   if (!guide) {
     return (
-      <div className="min-h-screen bg-transparent py-6">
+      <div className="min-h-screen py-6">
+        <div className="fixed inset-0 -z-10 bg-linear-to-b from-white/35 via-white/15 to-white/30 backdrop-blur-[2px]" />
         <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="rounded-3xl border border-slate-200 bg-white shadow-sm p-6">
+          <GlassSurface className="p-6">
             <div className="text-sm font-semibold text-slate-900">
               {isPT ? "Guia não encontrado" : "Guide not found"}
             </div>
-            <div className="mt-2 text-xs text-slate-600">
+            <div className="mt-2 text-xs text-slate-700">
               {isPT
                 ? "Volte aos guias e escolha um tema."
                 : "Go back to the guides list and pick a topic."}
             </div>
             <div className="mt-4">
-              <button
-                type="button"
-                onClick={() => navigate("/living")}
-                className="inline-flex items-center justify-center rounded-full bg-[#1F6FA6] text-white text-xs font-semibold px-5 py-2.5 shadow hover:bg-[#195c8a]"
-              >
+              <PrimaryBtn type="button" onClick={() => navigate("/living")}>
                 {isPT ? "Voltar" : "Back"}
-              </button>
+              </PrimaryBtn>
             </div>
-          </div>
+          </GlassSurface>
         </div>
       </div>
     );
@@ -1173,7 +1272,10 @@ Timeline: ${ownerTimeline || "—"}`;
     guide.ctas.find((c) => c !== primaryCta);
 
   return (
-    <div className="min-h-screen bg-transparent py-3">
+    <div className="min-h-screen py-3">
+      {/* Veil global por cima da imagem de fundo */}
+      <div className="fixed inset-0 -z-10 bg-linear-to-b from-white/35 via-white/15 to-white/30 backdrop-blur-[2px]" />
+
       <div className="max-w-6xl mx-auto px-4 py-8 md:py-10">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
           {/* MAIN */}
@@ -1183,141 +1285,116 @@ Timeline: ${ownerTimeline || "—"}`;
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-900"
+                className="inline-flex items-center gap-2 text-xs font-semibold text-slate-800 hover:text-slate-950"
               >
                 ← {isPT ? "Voltar" : "Back"}
               </button>
 
-              <div className="mt-4 rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <GlassSurface className="mt-4 overflow-hidden">
                 <div
-                  className="px-5 py-5 sm:px-7 sm:py-6"
+                  className="relative px-5 py-5 sm:px-7 sm:py-6"
                   style={{
                     background:
-                      "linear-gradient(90deg, rgba(31,111,166,0.10) 0%, rgba(250,248,244,0.8) 55%, rgba(255,255,255,1) 100%)",
+                      "linear-gradient(90deg, rgba(31,111,166,0.18) 0%, rgba(250,248,244,0.92) 55%, rgba(255,255,255,0.96) 100%)",
                   }}
                 >
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    {isPT
-                      ? "🏡 Viver em Cascais · Guia"
-                      : "🏡 Living in Cascais · Guide"}
-                  </div>
+                  <div className="pointer-events-none absolute inset-0 bg-white/25" />
+                  <div className="relative">
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                      {isPT
+                        ? "🏡 Viver em Cascais · Guia"
+                        : "🏡 Living in Cascais · Guide"}
+                    </div>
 
-                  <h1
-                    className="mt-2 text-2xl sm:text-3xl font-semibold text-slate-900 tracking-wide"
-                    style={{ fontFamily: "'Playfair Display', serif" }}
-                  >
-                    {t(guide.title)}
-                  </h1>
-
-                  <p className="mt-2 text-sm text-slate-600">
-                    {t(guide.subtitle)}
-                  </p>
-
-                  <div className="mt-4 flex flex-wrap items-center gap-2">
-                    <span className="inline-flex items-center rounded-full bg-white border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-700">
-                      ⏱ {t(guide.readTime)}
-                    </span>
-
-                    {guide.updatedAt ? (
-                      <span className="inline-flex items-center rounded-full bg-white border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-700">
-                        🗓 {isPT ? "Atualizado" : "Updated"}{" "}
-                        {new Date(guide.updatedAt).toLocaleDateString(
-                          isPT ? "pt-PT" : "en-US",
-                          {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          }
-                        )}
-                      </span>
-                    ) : null}
-
-                    {guide.chips.map((c) => (
-                      <span
-                        key={c.en}
-                        className="inline-flex items-center rounded-full bg-[#FAF8F4] border border-slate-200 px-3 py-1 text-[11px] font-semibold text-slate-700"
-                      >
-                        {t(c)}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* Share controls */}
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        copyToClipboard(
-                          pageUrl,
-                          isPT ? "✅ Link copiado" : "✅ Link copied"
-                        )
-                      }
-                      className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 hover:bg-slate-50 transition"
+                    <h1
+                      className="mt-2 text-2xl sm:text-3xl font-semibold text-slate-900 tracking-wide"
+                      style={{ fontFamily: "'Playfair Display', serif" }}
                     >
-                      {isPT ? "Copiar link" : "Copy link"}
-                    </button>
+                      {t(guide.title)}
+                    </h1>
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        copyToClipboard(
-                          shareSnippet,
-                          isPT ? "✅ Resumo copiado" : "✅ Summary copied"
-                        )
-                      }
-                      className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 hover:bg-slate-50 transition"
-                    >
-                      {isPT ? "Copiar resumo" : "Copy summary"}
-                    </button>
+                    <p className="mt-2 text-sm text-slate-700">
+                      {t(guide.subtitle)}
+                    </p>
 
-                    {"share" in navigator ? (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            // @ts-ignore
-                            await navigator.share({
-                              title: shareTitle,
-                              text: shareTitle,
-                              url: pageUrl,
-                            });
-                          } catch {}
-                        }}
-                        className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 hover:bg-slate-50 transition"
-                      >
-                        {isPT ? "Partilhar" : "Share"}
-                      </button>
-                    ) : null}
+                    <div className="mt-4 flex flex-wrap items-center gap-2">
+                      <Pill>⏱ {t(guide.readTime)}</Pill>
 
-                    {/* NEW: Copy "sharePost" (FB group magnet) if present */}
-                    {guide.sharePost ? (
-                      <button
+                      {guide.updatedAt ? (
+                        <Pill>
+                          🗓 {isPT ? "Atualizado" : "Updated"}{" "}
+                          {new Date(guide.updatedAt).toLocaleDateString(
+                            isPT ? "pt-PT" : "en-US",
+                            { year: "numeric", month: "short", day: "numeric" }
+                          )}
+                        </Pill>
+                      ) : null}
+
+                      {guide.chips.map((c) => (
+                        <Pill key={c.en}>{t(c)}</Pill>
+                      ))}
+                    </div>
+
+                    {/* Share controls */}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <GhostBtn
                         type="button"
                         onClick={() =>
                           copyToClipboard(
-                            t(guide.sharePost!),
-                            isPT ? "✅ Post copiado" : "✅ Post copied"
+                            pageUrl,
+                            isPT ? "✅ Link copiado" : "✅ Link copied"
                           )
                         }
-                        className="inline-flex items-center justify-center rounded-full bg-emerald-600 text-white text-xs font-semibold px-4 py-2 hover:bg-emerald-700 transition"
-                        title={
-                          isPT
-                            ? "Copiar texto pronto para Facebook/WhatsApp"
-                            : "Copy a ready-to-post text for Facebook/WhatsApp"
-                        }
                       >
-                        {isPT ? "Copiar post" : "Copy post"}
-                      </button>
+                        {isPT ? "Copiar link" : "Copy link"}
+                      </GhostBtn>
+
+                      {"share" in navigator ? (
+                        <GhostBtn
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              // @ts-ignore
+                              await navigator.share({
+                                title: shareTitle,
+                                text: shareTitle,
+                                url: pageUrl,
+                              });
+                            } catch {}
+                          }}
+                        >
+                          {isPT ? "Partilhar" : "Share"}
+                        </GhostBtn>
+                      ) : null}
+
+                      {guide.sharePost ? (
+                        <SuccessBtn
+                          type="button"
+                          onClick={() =>
+                            copyToClipboard(
+                              t(guide.sharePost!),
+                              isPT ? "✅ Post copiado" : "✅ Post copied"
+                            )
+                          }
+                          title={
+                            isPT
+                              ? "Copiar texto pronto para Facebook/WhatsApp"
+                              : "Copy a ready-to-post text for Facebook/WhatsApp"
+                          }
+                        >
+                          {isPT ? "Copiar post" : "Copy post"}
+                        </SuccessBtn>
+                      ) : null}
+                    </div>
+
+                    {copiedMsg ? (
+                      <div className="mt-3 text-[11px] text-emerald-700 font-semibold">
+                        {copiedMsg}
+                      </div>
                     ) : null}
                   </div>
-
-                  {copiedMsg ? (
-                    <div className="mt-3 text-[11px] text-emerald-700 font-semibold">
-                      {copiedMsg}
-                    </div>
-                  ) : null}
                 </div>
-              </div>
+              </GlassSurface>
             </div>
 
             {/* Sections */}
@@ -1325,16 +1402,17 @@ Timeline: ${ownerTimeline || "—"}`;
               {guide.sections.map((s: any, idx: number) => (
                 <section
                   key={idx}
-                  className={`rounded-3xl border shadow-sm p-5 sm:p-7 ${toneStyles(
-                    s.tone
-                  )}`}
+                  className={cls(
+                    "rounded-3xl border p-5 sm:p-7",
+                    toneStyles(s.tone)
+                  )}
                 >
                   <h2 className="text-sm sm:text-base font-semibold text-slate-900">
                     {t(s.heading)}
                   </h2>
 
                   {s.body && (
-                    <p className="mt-2 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                    <p className="mt-2 text-xs sm:text-sm text-slate-700 leading-relaxed">
                       {t(s.body)}
                     </p>
                   )}
@@ -1344,7 +1422,7 @@ Timeline: ${ownerTimeline || "—"}`;
                       {s.bullets.map((b: any, i: number) => (
                         <li
                           key={i}
-                          className="flex gap-2 text-xs sm:text-sm text-slate-700"
+                          className="flex gap-2 text-xs sm:text-sm text-slate-800"
                         >
                           <span className="mt-1.5 inline-block w-1.5 h-1.5 rounded-full bg-[#1F6FA6]" />
                           <span>{t(b)}</span>
@@ -1361,7 +1439,7 @@ Timeline: ${ownerTimeline || "—"}`;
 
             {/* Templates */}
             {guide.templates?.length ? (
-              <div className="mt-6 rounded-3xl border border-slate-200 bg-white shadow-sm p-5 sm:p-7">
+              <GlassSurface className="mt-6 p-5 sm:p-7">
                 <div className="text-sm font-semibold text-slate-900">
                   {isPT ? "Templates (copiar/colar)" : "Templates (copy/paste)"}
                 </div>
@@ -1369,7 +1447,7 @@ Timeline: ${ownerTimeline || "—"}`;
                   {guide.templates.map((tpl, idx) => (
                     <div
                       key={idx}
-                      className="rounded-2xl border border-slate-200 bg-white p-4"
+                      className="rounded-2xl border border-white/35 bg-white/55 backdrop-blur-md p-4 shadow-sm"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div>
@@ -1377,12 +1455,12 @@ Timeline: ${ownerTimeline || "—"}`;
                             {t(tpl.title)}
                           </div>
                           {tpl.description ? (
-                            <div className="mt-1 text-[11px] text-slate-500">
+                            <div className="mt-1 text-[11px] text-slate-700">
                               {to(tpl.description)}
                             </div>
                           ) : null}
                         </div>
-                        <button
+                        <GhostBtn
                           type="button"
                           onClick={() =>
                             copyToClipboard(
@@ -1390,23 +1468,23 @@ Timeline: ${ownerTimeline || "—"}`;
                               isPT ? "✅ Copiado" : "✅ Copied"
                             )
                           }
-                          className="shrink-0 inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 hover:bg-slate-50"
+                          className="shrink-0"
                         >
                           {isPT ? "Copiar" : "Copy"}
-                        </button>
+                        </GhostBtn>
                       </div>
-                      <div className="mt-3 text-xs text-slate-700 whitespace-pre-line">
+                      <div className="mt-3 text-xs text-slate-800 whitespace-pre-line">
                         {t(tpl.copyText)}
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
+              </GlassSurface>
             ) : null}
 
             {/* FAQs */}
             {guide.faqs?.length ? (
-              <div className="mt-6 rounded-3xl border border-slate-200 bg-white shadow-sm p-5 sm:p-7">
+              <GlassSurface className="mt-6 p-5 sm:p-7">
                 <div className="text-sm font-semibold text-slate-900">
                   {isPT ? "Perguntas frequentes" : "FAQs"}
                 </div>
@@ -1414,31 +1492,31 @@ Timeline: ${ownerTimeline || "—"}`;
                   {guide.faqs.map((f, idx) => (
                     <details
                       key={idx}
-                      className="rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                      className="rounded-2xl border border-white/35 bg-white/55 backdrop-blur-md px-4 py-3 shadow-sm"
                     >
                       <summary className="cursor-pointer list-none">
                         <div className="flex items-center justify-between gap-3">
                           <div className="text-xs font-semibold text-slate-900">
                             {t(f.q)}
                           </div>
-                          <span className="text-slate-400">⌄</span>
+                          <span className="text-slate-600">⌄</span>
                         </div>
                       </summary>
-                      <div className="mt-2 text-xs sm:text-sm text-slate-600">
+                      <div className="mt-2 text-xs sm:text-sm text-slate-700">
                         {t(f.a)}
                       </div>
                     </details>
                   ))}
                 </div>
-              </div>
+              </GlassSurface>
             ) : null}
 
             {/* Bottom CTA card */}
-            <div className="mt-6 rounded-3xl border border-slate-200 bg-white shadow-sm p-5 sm:p-7">
+            <GlassSurface className="mt-6 p-5 sm:p-7">
               <div className="text-sm font-semibold text-slate-900">
                 {isPT ? "Próximo passo" : "Next step"}
               </div>
-              <div className="mt-1 text-xs text-slate-600">
+              <div className="mt-1 text-xs text-slate-700">
                 {isPT
                   ? "Se quiser, ajudamos a escolher opções e a planear o próximo passo."
                   : "If you want, we’ll help you shortlist options and plan your next step."}
@@ -1446,23 +1524,30 @@ Timeline: ${ownerTimeline || "—"}`;
 
               <div className="mt-4 flex flex-wrap gap-2">
                 {guide.ctas.map((c: any, i: number) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => handleCta(c.kind)}
-                    className={
-                      c.kind === "browseHomes"
-                        ? "inline-flex items-center justify-center rounded-full bg-[#1F6FA6] text-white text-xs font-semibold px-5 py-2.5 shadow hover:bg-[#195c8a]"
-                        : c.kind === "getMatched"
-                        ? "inline-flex items-center justify-center rounded-full bg-emerald-600 text-white text-xs font-semibold px-5 py-2.5 shadow hover:bg-emerald-700"
-                        : "inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-5 py-2.5 hover:bg-slate-50"
-                    }
-                  >
-                    {t(c.label)}
-                  </button>
+                  <React.Fragment key={i}>
+                    {c.kind === "browseHomes" ? (
+                      <PrimaryBtn
+                        type="button"
+                        onClick={() => handleCta(c.kind)}
+                      >
+                        {t(c.label)}
+                      </PrimaryBtn>
+                    ) : c.kind === "getMatched" ? (
+                      <SuccessBtn
+                        type="button"
+                        onClick={() => handleCta(c.kind)}
+                      >
+                        {t(c.label)}
+                      </SuccessBtn>
+                    ) : (
+                      <GhostBtn type="button" onClick={() => handleCta(c.kind)}>
+                        {t(c.label)}
+                      </GhostBtn>
+                    )}
+                  </React.Fragment>
                 ))}
               </div>
-            </div>
+            </GlassSurface>
 
             <div className="h-20 lg:hidden" />
           </div>
@@ -1470,50 +1555,50 @@ Timeline: ${ownerTimeline || "—"}`;
           {/* SIDEBAR */}
           <aside className="hidden lg:block">
             <div className="sticky top-4 space-y-4">
-              <div className="rounded-3xl border border-slate-200 bg-white shadow-sm p-5">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <GlassSurface className="p-5">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
                   {isPT ? "Próximo passo" : "Next step"}
                 </div>
                 <div className="mt-2 text-sm font-semibold text-slate-900">
                   {isPT ? "Quer ajuda em 24h?" : "Want help in 24h?"}
                 </div>
-                <div className="mt-2 text-xs text-slate-600">
+                <div className="mt-2 text-xs text-slate-700">
                   {isPT
                     ? "Shortlist personalizada + contexto local. Sem spam."
                     : "Curated shortlist + local context. No spam."}
                 </div>
 
                 <div className="mt-4 flex flex-col gap-2">
-                  <button
+                  <SuccessBtn
                     type="button"
                     onClick={() => openMatch("buyer")}
-                    className="inline-flex items-center justify-center rounded-full bg-emerald-600 text-white text-sm font-semibold px-5 py-2.5 shadow hover:bg-emerald-700"
+                    className="text-sm py-2.5"
                   >
                     {isPT ? "Receber recomendações" : "Get recommendations"}
-                  </button>
+                  </SuccessBtn>
 
-                  <button
+                  <GhostBtn
                     type="button"
                     onClick={() => openMatch("owner")}
-                    className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 text-sm font-semibold px-5 py-2.5 hover:bg-slate-50"
+                    className="text-sm py-2.5"
                   >
                     {isPT ? "Sou proprietário" : "I'm an owner"}
-                  </button>
+                  </GhostBtn>
 
                   {secondaryCta ? (
-                    <button
+                    <GhostBtn
                       type="button"
                       onClick={() => handleCta(secondaryCta.kind)}
-                      className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 text-sm font-semibold px-5 py-2.5 hover:bg-slate-50"
+                      className="text-sm py-2.5"
                     >
                       {t(secondaryCta.label)}
-                    </button>
+                    </GhostBtn>
                   ) : null}
                 </div>
-              </div>
+              </GlassSurface>
 
-              <div className="rounded-3xl border border-slate-200 bg-white shadow-sm p-5">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+              <GlassSurface className="p-5">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
                   {isPT ? "Mais guias" : "More guides"}
                 </div>
 
@@ -1525,16 +1610,16 @@ Timeline: ${ownerTimeline || "—"}`;
                         key={g.key}
                         type="button"
                         onClick={() => navigate(`/living/guides/${g.key}`)}
-                        className="text-left rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                        className="text-left rounded-2xl border border-white/35 bg-white/55 backdrop-blur-md px-4 py-3 text-xs font-semibold text-slate-800 hover:bg-white/70 shadow-sm transition"
                       >
                         <div className="text-slate-900">{t(g.title)}</div>
-                        <div className="mt-1 text-[11px] text-slate-500 line-clamp-1">
+                        <div className="mt-1 text-[11px] text-slate-700 line-clamp-1">
                           {t(g.subtitle)}
                         </div>
                       </button>
                     ))}
                 </div>
-              </div>
+              </GlassSurface>
             </div>
           </aside>
         </div>
@@ -1542,10 +1627,10 @@ Timeline: ${ownerTimeline || "—"}`;
 
       {/* MOBILE STICKY CTA BAR */}
       <div className="lg:hidden fixed left-0 right-0 bottom-0 z-50 px-3 pb-3">
-        <div className="rounded-3xl border border-slate-200 bg-white/95 backdrop-blur shadow-lg px-3 py-3">
+        <div className="rounded-3xl border border-white/35 bg-white/75 backdrop-blur-xl shadow-lg px-3 py-3 ring-1 ring-slate-900/10">
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
-              <div className="text-[11px] text-slate-500">
+              <div className="text-[11px] text-slate-700">
                 {isPT ? "Próximo passo" : "Next step"}
               </div>
               <div className="text-xs font-semibold text-slate-900 line-clamp-1">
@@ -1555,23 +1640,21 @@ Timeline: ${ownerTimeline || "—"}`;
 
             <div className="flex gap-2 shrink-0">
               {secondaryCta ? (
-                <button
+                <GhostBtn
                   type="button"
                   onClick={() => handleCta(secondaryCta.kind)}
-                  className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 hover:bg-slate-50"
                 >
                   {isPT ? "Ver" : "View"}
-                </button>
+                </GhostBtn>
               ) : null}
 
               {primaryCta ? (
-                <button
+                <SuccessBtn
                   type="button"
                   onClick={() => handleCta(primaryCta.kind)}
-                  className="inline-flex items-center justify-center rounded-full bg-emerald-600 text-white text-xs font-semibold px-4 py-2 shadow hover:bg-emerald-700"
                 >
                   {isPT ? "Quero ajuda" : "Get help"}
-                </button>
+                </SuccessBtn>
               ) : null}
             </div>
           </div>
@@ -1584,9 +1667,9 @@ Timeline: ${ownerTimeline || "—"}`;
           <div
             role="dialog"
             aria-modal="true"
-            className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+            className="bg-white/88 backdrop-blur-xl rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden border border-white/35 ring-1 ring-slate-900/10"
           >
-            <div className="flex items-center justify-between px-5 sm:px-7 py-4 border-b border-slate-100 bg-slate-50/80">
+            <div className="flex items-center justify-between px-5 sm:px-7 py-4 border-b border-white/25 bg-white/45 backdrop-blur-lg">
               <div>
                 <div className="text-[11px] font-semibold text-[#1F6FA6]">
                   {matchType === "owner"
@@ -1606,7 +1689,7 @@ Timeline: ${ownerTimeline || "—"}`;
                     ? "Diga-nos o que procura (resposta em 24h)"
                     : "Tell us what you need (reply in 24h)"}
                 </div>
-                <div className="mt-2 text-[11px] text-slate-600">
+                <div className="mt-2 text-[11px] text-slate-700">
                   ✅ {isPT ? "Resposta em 24h" : "Reply in 24h"} • ✅{" "}
                   {isPT ? "Sem spam" : "No spam"} • ✅{" "}
                   {isPT ? "Sem pressão" : "No pressure"}
@@ -1615,7 +1698,7 @@ Timeline: ${ownerTimeline || "—"}`;
               <button
                 type="button"
                 onClick={closeMatch}
-                className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200"
+                className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/60 backdrop-blur-md border border-white/35 text-slate-700 hover:bg-white/75 transition"
                 aria-label={isPT ? "Fechar" : "Close"}
               >
                 ✕
@@ -1624,11 +1707,11 @@ Timeline: ${ownerTimeline || "—"}`;
 
             <div className="p-5 sm:p-7 overflow-y-auto max-h-[80vh]">
               {submitStatus === "success" ? (
-                <div className="rounded-3xl border border-emerald-200 bg-emerald-50/40 p-6">
+                <div className="rounded-3xl border border-emerald-200/70 bg-emerald-50/88 backdrop-blur-md p-6 shadow-sm">
                   <div className="text-sm font-semibold text-slate-900">
                     {isPT ? "Pedido recebido ✅" : "Request received ✅"}
                   </div>
-                  <div className="mt-2 text-xs sm:text-sm text-slate-700">
+                  <div className="mt-2 text-xs sm:text-sm text-slate-800">
                     {isPT
                       ? "Obrigado! Vamos responder em 24h. Se preferir, pode falar connosco já:"
                       : "Thanks! We’ll reply within 24h. If you prefer, you can reach us directly:"}
@@ -1637,9 +1720,9 @@ Timeline: ${ownerTimeline || "—"}`;
                   <div className="mt-4 space-y-2 text-sm">
                     <a
                       href={`tel:${CONTACT_PHONE.replace(/\s+/g, "")}`}
-                      className="block rounded-2xl border border-slate-200 bg-white px-4 py-3 hover:bg-slate-50"
+                      className="block rounded-2xl border border-white/35 bg-white/60 backdrop-blur-md px-4 py-3 hover:bg-white/75 transition shadow-sm"
                     >
-                      <div className="text-[11px] text-slate-500">
+                      <div className="text-[11px] text-slate-700">
                         {isPT ? "Telefone" : "Phone"}
                       </div>
                       <div className="font-semibold text-slate-900">
@@ -1649,9 +1732,9 @@ Timeline: ${ownerTimeline || "—"}`;
 
                     <a
                       href={`mailto:${CONTACT_EMAIL}`}
-                      className="block rounded-2xl border border-slate-200 bg-white px-4 py-3 hover:bg-slate-50"
+                      className="block rounded-2xl border border-white/35 bg-white/60 backdrop-blur-md px-4 py-3 hover:bg-white/75 transition shadow-sm"
                     >
-                      <div className="text-[11px] text-slate-500">Email</div>
+                      <div className="text-[11px] text-slate-700">Email</div>
                       <div className="font-semibold text-slate-900">
                         {CONTACT_EMAIL}
                       </div>
@@ -1659,21 +1742,16 @@ Timeline: ${ownerTimeline || "—"}`;
                   </div>
 
                   <div className="mt-5 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-end">
-                    <button
+                    <PrimaryBtn
                       type="button"
                       onClick={() => navigate("/real-estate")}
-                      className="inline-flex items-center justify-center rounded-full bg-[#1F6FA6] text-white text-xs font-semibold px-5 py-2 shadow hover:bg-[#195c8a] transition"
                     >
                       {isPT ? "Continuar no site" : "Continue on website"}
-                    </button>
+                    </PrimaryBtn>
 
-                    <button
-                      type="button"
-                      onClick={closeMatch}
-                      className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-5 py-2 hover:bg-slate-50 transition"
-                    >
+                    <GhostBtn type="button" onClick={closeMatch}>
                       {isPT ? "Fechar" : "Close"}
-                    </button>
+                    </GhostBtn>
                   </div>
                 </div>
               ) : (
@@ -1682,24 +1760,24 @@ Timeline: ${ownerTimeline || "—"}`;
                     <button
                       type="button"
                       onClick={() => setMatchType("buyer")}
-                      className={[
-                        "flex-1 rounded-full border px-4 py-2 text-xs font-semibold transition",
+                      className={cls(
+                        "flex-1 rounded-full border px-4 py-2 text-xs font-semibold transition backdrop-blur-md",
                         matchType === "buyer"
-                          ? "border-emerald-600 bg-emerald-50 text-emerald-700"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-                      ].join(" ")}
+                          ? "border-emerald-500/60 bg-emerald-50/85 text-emerald-800 shadow-sm"
+                          : "border-white/35 bg-white/55 text-slate-800 hover:bg-white/70"
+                      )}
                     >
                       {isPT ? "Quero comprar/arrendar" : "I want to buy/rent"}
                     </button>
                     <button
                       type="button"
                       onClick={() => setMatchType("owner")}
-                      className={[
-                        "flex-1 rounded-full border px-4 py-2 text-xs font-semibold transition",
+                      className={cls(
+                        "flex-1 rounded-full border px-4 py-2 text-xs font-semibold transition backdrop-blur-md",
                         matchType === "owner"
-                          ? "border-[#1F6FA6] bg-blue-50 text-[#1F6FA6]"
-                          : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-                      ].join(" ")}
+                          ? "border-[#1F6FA6]/60 bg-blue-50/85 text-[#1F6FA6] shadow-sm"
+                          : "border-white/35 bg-white/55 text-slate-800 hover:bg-white/70"
+                      )}
                     >
                       {isPT ? "Sou proprietário" : "I'm an owner"}
                     </button>
@@ -1708,14 +1786,14 @@ Timeline: ${ownerTimeline || "—"}`;
                   {/* Quick selectors */}
                   {matchType === "buyer" ? (
                     <div className="mb-4">
-                      <div className="text-[11px] font-semibold text-slate-600">
+                      <div className="text-[11px] font-semibold text-slate-800">
                         {isPT
                           ? "Detalhes rápidos (1 clique)"
                           : "Quick details (1 click)"}
                       </div>
 
                       <div className="mt-2">
-                        <div className="text-[11px] text-slate-500 mb-1">
+                        <div className="text-[11px] text-slate-700 mb-1">
                           {isPT ? "Timing" : "Timing"}
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -1734,7 +1812,7 @@ Timeline: ${ownerTimeline || "—"}`;
                       </div>
 
                       <div className="mt-3">
-                        <div className="text-[11px] text-slate-500 mb-1">
+                        <div className="text-[11px] text-slate-700 mb-1">
                           {isPT ? "Tipo" : "Type"}
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -1753,7 +1831,7 @@ Timeline: ${ownerTimeline || "—"}`;
                       </div>
 
                       <div className="mt-3">
-                        <div className="text-[11px] text-slate-500 mb-1">
+                        <div className="text-[11px] text-slate-700 mb-1">
                           {isPT ? "Must-haves" : "Must-haves"}
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -1780,14 +1858,14 @@ Timeline: ${ownerTimeline || "—"}`;
                     </div>
                   ) : (
                     <div className="mb-4">
-                      <div className="text-[11px] font-semibold text-slate-600">
+                      <div className="text-[11px] font-semibold text-slate-800">
                         {isPT
                           ? "Detalhes rápidos (1 clique)"
                           : "Quick details (1 click)"}
                       </div>
 
                       <div className="mt-2">
-                        <div className="text-[11px] text-slate-500 mb-1">
+                        <div className="text-[11px] text-slate-700 mb-1">
                           {isPT ? "Objetivo" : "Goal"}
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -1806,7 +1884,7 @@ Timeline: ${ownerTimeline || "—"}`;
                       </div>
 
                       <div className="mt-3">
-                        <div className="text-[11px] text-slate-500 mb-1">
+                        <div className="text-[11px] text-slate-700 mb-1">
                           {isPT ? "Estado" : "Condition"}
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -1825,7 +1903,7 @@ Timeline: ${ownerTimeline || "—"}`;
                       </div>
 
                       <div className="mt-3">
-                        <div className="text-[11px] text-slate-500 mb-1">
+                        <div className="text-[11px] text-slate-700 mb-1">
                           {isPT ? "Prazo" : "Timeline"}
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -1847,43 +1925,43 @@ Timeline: ${ownerTimeline || "—"}`;
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1">
-                      <label className="text-[11px] font-semibold text-slate-600">
+                      <label className="text-[11px] font-semibold text-slate-800">
                         {isPT ? "Nome" : "Name"}
                       </label>
                       <input
                         value={matchName}
                         onChange={(e) => setMatchName(e.target.value)}
-                        className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 bg-white"
+                        className="rounded-xl border border-white/45 bg-white/70 backdrop-blur-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/80 shadow-sm"
                         placeholder={isPT ? "O seu nome" : "Your name"}
                       />
                     </div>
 
                     <div className="flex flex-col gap-1">
-                      <label className="text-[11px] font-semibold text-slate-600">
+                      <label className="text-[11px] font-semibold text-slate-800">
                         Email
                       </label>
                       <input
                         value={matchEmail}
                         onChange={(e) => setMatchEmail(e.target.value)}
-                        className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 bg-white"
+                        className="rounded-xl border border-white/45 bg-white/70 backdrop-blur-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/80 shadow-sm"
                         placeholder="email@exemplo.com"
                       />
                     </div>
 
                     <div className="flex flex-col gap-1 sm:col-span-2">
-                      <label className="text-[11px] font-semibold text-slate-600">
+                      <label className="text-[11px] font-semibold text-slate-800">
                         {isPT ? "Telefone (opcional)" : "Phone (optional)"}
                       </label>
                       <input
                         value={matchPhone}
                         onChange={(e) => setMatchPhone(e.target.value)}
-                        className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 bg-white"
+                        className="rounded-xl border border-white/45 bg-white/70 backdrop-blur-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/80 shadow-sm"
                         placeholder={isPT ? "+351 ..." : "+351 ..."}
                       />
                     </div>
 
                     <div className="flex flex-col gap-1 sm:col-span-2">
-                      <label className="text-[11px] font-semibold text-slate-600">
+                      <label className="text-[11px] font-semibold text-slate-800">
                         {matchType === "owner"
                           ? isPT
                             ? "Fale-nos do imóvel (zona, tipologia, objetivo)"
@@ -1895,34 +1973,26 @@ Timeline: ${ownerTimeline || "—"}`;
                       <textarea
                         value={matchNotes}
                         onChange={(e) => setMatchNotes(e.target.value)}
-                        className="rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-400 bg-white min-h-27.5"
+                        className="rounded-2xl border border-white/45 bg-white/70 backdrop-blur-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/80 shadow-sm min-h-27.5"
                       />
                     </div>
                   </div>
 
                   <div className="mt-5 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-                    <div className="text-[11px] text-slate-500">
+                    <div className="text-[11px] text-slate-700">
                       {isPT
                         ? "Ao enviar, o pedido é enviado automaticamente. Se falhar, abrimos o seu email como alternativa."
                         : "Submitting sends your request automatically. If it fails, we’ll open your email as a fallback."}
                     </div>
 
                     <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={closeMatch}
-                        className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 hover:bg-slate-50 transition"
-                      >
+                      <GhostBtn type="button" onClick={closeMatch}>
                         {isPT ? "Cancelar" : "Cancel"}
-                      </button>
+                      </GhostBtn>
 
-                      <button
-                        type="button"
-                        onClick={submitMatch}
-                        className="inline-flex items-center justify-center rounded-full bg-[#1F6FA6] text-white text-xs font-semibold px-5 py-2 shadow hover:bg-[#195c8a] transition"
-                      >
+                      <PrimaryBtn type="button" onClick={submitMatch}>
                         {isPT ? "Enviar pedido" : "Send request"}
-                      </button>
+                      </PrimaryBtn>
                     </div>
                   </div>
                 </>

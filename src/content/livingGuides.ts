@@ -78,10 +78,7 @@ export const LIVING_GUIDES: LivingGuide[] = [
     },
     readTime: { pt: "3–4 min", en: "3–4 min" },
     updatedAt: "2026-01-10",
-    chips: [
-      { pt: "✅ Checklist pronta", en: "✅ Ready checklist" },
-      { pt: "🚆 Comute Lisboa", en: "🚆 Lisbon commute" },
-    ],
+    chips: [{ pt: "✅ Checklist pronta", en: "✅ Ready checklist" }],
     audience: [
       {
         pt: "Está a mudar-se e não quer perder semanas em visitas inúteis.",
@@ -273,66 +270,6 @@ Thanks!`,
           {
             pt: "Quero mais espaço/garagem (e aceito carro): Alcabideche / São Domingos de Rana.",
             en: "More space/garage (OK with car): Alcabideche / São Domingos de Rana.",
-          },
-        ],
-      },
-
-      // NEW: Micro-area guide (the main requested upgrade)
-      {
-        heading: {
-          pt: "Zonas (micro-guia): Cascais → Carcavelos (o que muda mesmo)",
-          en: "Micro-area guide: Cascais → Carcavelos (what really changes)",
-        },
-        tone: "default",
-        bullets: [
-          {
-            pt: "💡 Regra rápida: quanto mais “linha do mar + estação”, mais caminhável e prático; quanto mais “interior”, mais espaço/garagem (e carro).",
-            en: "💡 Quick rule: the closer to the sea + train station, the more walkable and convenient; the more inland, the more space/garage (and car).",
-          },
-
-          {
-            pt: "Cascais (Centro/Marina) — Vibe: tudo a pé, vida social, restaurantes, serviços. Ideal para: quem quer ‘cidade de praia’ com rotina a pé. Casa típica: apartamentos + moradias mais antigas reabilitadas. Atenção: trânsito/estacionamento e barulho em épocas altas.",
-            en: "Cascais (Town center/Marina) — Vibe: walk-everywhere, social life, restaurants, services. Best for: beach-town living with daily convenience. Typical homes: apartments + renovated older houses. Watch-outs: traffic/parking and seasonal noise.",
-          },
-
-          {
-            pt: "Estoril — Vibe: residencial + clássico, acesso fácil à linha e à marginal. Ideal para: quem quer calma com proximidade de praia/passeio marítimo. Casa típica: apartamentos e moradias (misto). Atenção: algumas ruas têm ruído da marginal/estrada (vale o teste janelas abertas).",
-            en: "Estoril — Vibe: classic, residential, easy access to train + coastal road. Best for: calm living close to beach/promenade. Typical homes: mix of apartments and houses. Watch-outs: some streets pick up road noise (do the windows-open test).",
-          },
-
-          {
-            pt: "Monte Estoril — Vibe: mais ‘premium’, moradias/villas, vista e charme histórico. Ideal para: quem quer tranquilidade + prestígio + vistas. Casa típica: villas e apartamentos melhores, muitas vezes em zona de colina. Atenção: subidas (a pé pesa), preço e humidade/vento (manutenção perto do mar).",
-            en: "Monte Estoril — Vibe: more ‘premium’, villas, views, historic charm. Best for: quiet prestige + sea views. Typical homes: higher-end apartments and villas, often on the hillside. Watch-outs: hills (walking effort), pricing, and coastal humidity/wind maintenance.",
-          },
-
-          {
-            pt: "São João do Estoril — Vibe: bairro residencial com vida normal (menos turístico), perto de estação e praia. Ideal para: famílias e quem quer equilíbrio (calma + acessos). Casa típica: apartamentos e moradias em ruas mais tranquilas. Atenção: escolha rua com cuidado (diferenças grandes entre 2–3 quarteirões).",
-            en: "São João do Estoril — Vibe: everyday residential (less touristy), near train + beach. Best for: families and balance (calm + access). Typical homes: apartments + houses on quieter streets. Watch-outs: street-by-street differences can be huge.",
-          },
-
-          {
-            pt: "São Pedro do Estoril — Vibe: mais ‘surf/local’, descontraído, praia forte. Ideal para: quem quer mar e estilo simples, com boa ligação de comboio. Casa típica: apartamentos/pequenas moradias, alguns spots com vista. Atenção: vento forte e humidade; em certas zonas o estacionamento aperta no verão.",
-            en: "São Pedro do Estoril — Vibe: more ‘local/surf’, relaxed, strong beach identity. Best for: sea-first lifestyle with easy train access. Typical homes: apartments/smaller houses, some view spots. Watch-outs: wind + humidity; summer parking can get tight.",
-          },
-
-          {
-            pt: "Carcavelos — Vibe: mais jovem e ativo, praia grande, boa vida ‘surf + Lisboa’. Ideal para: quem quer estar mais perto de Lisboa e ter praia a sério. Casa típica: muitos apartamentos, algumas moradias. Atenção: picos de movimento na praia e em certas artérias (testar horários).",
-            en: "Carcavelos — Vibe: younger/active, big beach, great ‘surf + Lisbon’ combo. Best for: staying closer to Lisbon without losing proper beach life. Typical homes: many apartments, some houses. Watch-outs: beach crowd peaks + busy arteries (timing test matters).",
-          },
-
-          {
-            pt: "Parede — Vibe: mais ‘vila local’, tranquila, boa para rotina (café, comércio, praia menor). Ideal para: quem quer autenticidade e calma, ainda com comboio. Casa típica: apartamentos e moradias, ruas residenciais. Atenção: micro-localização (perto da linha pode ter ruído) e oferta varia muito.",
-            en: "Parede — Vibe: more ‘local town’, quieter, great for routines (cafés, shops, smaller beach). Best for: authenticity + calm with train access. Typical homes: apartments and houses on residential streets. Watch-outs: micro-location (rail line noise) and uneven inventory.",
-          },
-
-          {
-            pt: "Alcabideche — Vibe: interior, mais espaço, vida prática (carro), acesso rápido à A5 e a escolas/zonas comerciais. Ideal para: quem quer mais m², garagem e menos ‘tourist feel’. Casa típica: moradias/condomínios, mais recente em alguns pontos. Atenção: dependência de carro e tráfego em horas de ponta para sair/entrar.",
-            en: "Alcabideche — Vibe: inland, more space, practical car-based living, quick A5 access + schools/shopping. Best for: more m², garage, less tourist feel. Typical homes: houses/condos, newer pockets. Watch-outs: car dependency and peak-hour traffic.",
-          },
-
-          {
-            pt: "São Domingos de Rana — Vibe: residencial ‘famílias’, bom custo/benefício relativo, muita oferta interior. Ideal para: quem quer orçamento mais controlado e rotina de carro (escolas/serviços). Casa típica: muitos prédios residenciais + urbanizações. Atenção: não é ‘a pé para praia’; confirme tempos reais para tudo (escola/trabalho/saúde).",
-            en: "São Domingos de Rana — Vibe: family-oriented residential, better relative value, lots of inland inventory. Best for: tighter budgets + car-based routines (schools/services). Typical homes: residential buildings + developments. Watch-outs: not walk-to-beach; verify real timings for everything (school/work/health).",
           },
         ],
       },

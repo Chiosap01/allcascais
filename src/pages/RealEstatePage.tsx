@@ -1060,14 +1060,6 @@ const RealEstatePage: React.FC = () => {
                     >
                       {isPT ? "Receber sugestões (24h)" : "Get matches (24h)"}
                     </button>
-
-                    <button
-                      type="button"
-                      onClick={() => openMatch("owner")}
-                      className="inline-flex items-center justify-center rounded-full bg-white/10 backdrop-blur border border-white/20 text-white px-4 py-2 text-xs sm:text-sm font-semibold hover:bg-white/15 transition"
-                    >
-                      {isPT ? "Anunciar imóvel" : "List a property"}
-                    </button>
                   </div>
 
                   <div className="mt-4 flex flex-wrap gap-2 text-[11px] text-white/75">
@@ -1076,9 +1068,6 @@ const RealEstatePage: React.FC = () => {
                     </span>
                     <span className="inline-flex items-center rounded-full bg-black/20 border border-white/10 px-3 py-1">
                       {isPT ? "Zonas & bairros" : "Areas & neighborhoods"}
-                    </span>
-                    <span className="inline-flex items-center rounded-full bg-black/20 border border-white/10 px-3 py-1">
-                      {isPT ? "Serviços úteis" : "Useful services"}
                     </span>
                   </div>
                 </div>
@@ -1112,83 +1101,11 @@ const RealEstatePage: React.FC = () => {
                         {isPT ? "Ver coleção" : "View"}
                         <span className="ml-2">→</span>
                       </button>
-
-                      <button
-                        type="button"
-                        onClick={() =>
-                          window.open("https://chioss.com", "_blank")
-                        }
-                        className="flex-1 inline-flex items-center justify-center rounded-xl bg-white/10 border border-white/20 text-white px-4 py-2 text-xs font-semibold hover:bg-white/15 transition"
-                      >
-                        {isPT ? "Estudo" : "Study"}
-                      </button>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* Neighborhood Explorer (no new pages; sets filters + scrolls) */}
-        <section className="mb-6">
-          <div className="flex items-end justify-between gap-3 mb-3">
-            <div>
-              <h2 className="text-sm sm:text-base font-semibold text-slate-900">
-                {isPT ? "Explorar zonas" : "Explore areas"}
-              </h2>
-              <p className="mt-0.5 text-[11px] sm:text-xs text-slate-600">
-                {isPT
-                  ? "Clique numa zona para ver imóveis e refinar por bairro."
-                  : "Tap an area to browse homes and refine by neighborhood."}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setLocationArea("all");
-                setLocationNeighborhood("all");
-                scrollToFilters();
-              }}
-              className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 text-xs font-semibold px-3 py-2 hover:bg-slate-50 transition"
-            >
-              {isPT ? "Ver tudo" : "View all"}
-            </button>
-          </div>
-
-          <div className="grid grid-cols-3 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {CASCAIS_AREAS.map((area) => {
-              const active = locationArea === area;
-              return (
-                <button
-                  key={area}
-                  type="button"
-                  onClick={() => {
-                    setLocationArea(area);
-                    setLocationNeighborhood("all");
-                    scrollToFilters();
-                  }}
-                  className={[
-                    "text-left rounded-2xl border px-4 py-4 shadow-sm transition",
-                    active
-                      ? "border-[#1F6FA6] bg-blue-50"
-                      : "border-slate-200 bg-white hover:bg-slate-50",
-                  ].join(" ")}
-                >
-                  <div className="text-xs font-semibold text-slate-900">
-                    {area}
-                  </div>
-                  <div className="mt-1 text-[11px] text-slate-600 line-clamp-2">
-                    {isPT
-                      ? "Ver imóveis e bairros."
-                      : "Browse homes, neighborhoods and nearby services."}
-                  </div>
-                  <div className="mt-3 text-[11px] font-semibold text-[#1F6FA6]">
-                    {isPT ? "Explorar →" : "Explore →"}
-                  </div>
-                </button>
-              );
-            })}
           </div>
         </section>
 
@@ -1555,7 +1472,7 @@ const RealEstatePage: React.FC = () => {
               onClick={handleListPropertyClick}
               className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 text-xs sm:text-sm font-semibold px-4 sm:px-5 py-2 shadow-sm hover:bg-slate-50 transition"
             >
-              {isPT ? "Anunciar (self-service)" : "List (self-serve)"}
+              {isPT ? "Anunciar propriedade" : "List property"}
             </button>
           </div>
         </section>
