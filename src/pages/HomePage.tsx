@@ -891,6 +891,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
               <p
                 className={[
                   "text-xs sm:text-sm text-slate-800 font-semibold leading-relaxed",
+                  "whitespace-pre-line",
                   !showFullDescription ? "line-clamp-3" : "",
                 ].join(" ")}
               >

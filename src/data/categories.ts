@@ -86,6 +86,11 @@ export const SUBCATEGORIES: Partial<Record<CategoryId, Subcategory[]>> = {
     // ✅ NEW (kept only the truly hireable ones)
     { id: "window-cleaning", label: "Window Cleaning", icon: "🧽" },
     {
+      id: "sofa-upholstery-cleaning",
+      label: "Sofa & Upholstery Cleaning",
+      icon: "🛋️",
+    },
+    {
       id: "waterproofing-mold",
       label: "Waterproofing / Damp & Mold",
       icon: "🧱",
@@ -372,6 +377,8 @@ export const getSubcategoryLabel = (
         // ✅ NEW
         case "window-cleaning":
           return "Limpeza de Janelas";
+        case "sofa-upholstery-cleaning":
+          return "Limpeza de Sofás & Estofos (tecido/pele)";
         case "waterproofing-mold":
           return "Impermeabilização / Humidades & Bolor";
         case "interior-designer":
