@@ -378,7 +378,7 @@ export const getSubcategoryLabel = (
         case "window-cleaning":
           return "Limpeza de Janelas";
         case "sofa-upholstery-cleaning":
-          return "Limpeza de Sofás & Estofos (tecido/pele)";
+          return "Limpeza de Sofás & Estofos";
         case "waterproofing-mold":
           return "Impermeabilização / Humidades & Bolor";
         case "interior-designer":
