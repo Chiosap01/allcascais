@@ -4,6 +4,17 @@ import { useLanguage } from "../layouts/MainLayout";
 import { supabase } from "../supabase";
 import { useAuth } from "../context/AuthContext";
 import { toCdnUrl } from "../utils/cdn";
+import {
+  MapPin,
+  Clock,
+  Star,
+  StarOff,
+  Phone,
+  Mail,
+  Globe,
+  Search,
+  X,
+} from "lucide-react";
 
 // Value imports from categories.ts
 import {
@@ -685,8 +696,9 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   const renderStars = (rating?: number) => {
     if (rating == null) {
       return (
-        <span className="text-[11px] text-slate-400 italic">
-          {isPT ? "Sem avaliação" : "No rating yet"}
+        <span className="flex items-center gap-1 text-[11px] text-slate-400 italic">
+          <StarOff className="w-3.5 h-3.5" />
+          {isPT ? "Seja o primeiro a avaliar" : "Be the first to review"}
         </span>
       );
     }
@@ -694,9 +706,14 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
     const fullStars = Math.round(rating);
 
     return (
-      <div className="flex items-center gap-1 text-amber-400 text-xs">
+      <div className="flex items-center gap-1 text-amber-500 text-xs">
         {Array.from({ length: 5 }).map((_, i) => (
-          <span key={i}>{i < fullStars ? "★" : "☆"}</span>
+          <Star
+            key={i}
+            className={`w-4 h-4 ${
+              i < fullStars ? "fill-current" : "stroke-current"
+            }`}
+          />
         ))}
         <span className="ml-1 text-[11px] text-slate-500">
           {rating.toFixed(1)}{" "}
@@ -806,8 +823,8 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
                     className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.03]"
                     loading="lazy"
                   />
-                  <span className="absolute right-1.5 bottom-1.5 rounded-full bg-white/90 border border-slate-200 text-[10px] px-2 py-0.5 text-slate-700 opacity-0 group-hover:opacity-100 transition">
-                    🔍
+                  <span className="absolute right-1.5 bottom-1.5 rounded-full bg-white/90 border border-slate-200 p-1 text-slate-700 opacity-0 group-hover:opacity-100 transition">
+                    <Search className="w-3 h-3" />
                   </span>
                 </>
               ) : (
@@ -876,7 +893,8 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
 
               {service.location && (
                 <div className="flex items-center gap-1 text-[11px] text-slate-500 truncate">
-                  <span>📍</span>
+                  <MapPin className="w-3.5 h-3.5" />
+
                   <span className="truncate">{service.location}</span>
                 </div>
               )}
@@ -918,7 +936,8 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
 
           {service.openingHoursText && (
             <div className="inline-flex items-center rounded-full bg-slate-100 text-[11px] text-slate-700 px-3 py-1 mb-2">
-              <span className="mr-1">🕒</span>
+              <Clock className="w-3.5 h-3.5" />
+
               <span>
                 {isPT ? "Horário:" : "Opening hours:"}{" "}
                 {localizeOpeningHoursText(service.openingHoursText)}
@@ -934,7 +953,8 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
 
               {service.phone && (
                 <div className="flex items-center gap-2">
-                  <span>📞</span>
+                  <Phone className="w-4 h-4 text-slate-500" />
+
                   <a
                     href={`tel:${service.phone.replace(/\s/g, "")}`}
                     className="hover:underline"
@@ -946,7 +966,8 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
 
               {service.email && (
                 <div className="flex items-center gap-2">
-                  <span>✉️</span>
+                  <Mail className="w-4 h-4 text-slate-500" />
+
                   <a
                     href={`mailto:${service.email}`}
                     className="truncate text-sky-800 hover:underline"
@@ -958,7 +979,8 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
 
               {service.website && (
                 <div className="flex items-center gap-2">
-                  <span>🌐</span>
+                  <Globe className="w-4 h-4 text-slate-500" />
+
                   <a
                     href={`https://${service.website.replace(
                       /^https?:\/\//,
@@ -1052,7 +1074,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
                   ? "Esconder contacto"
                   : "Hide contact"
                 : isPT
-                ? "Mostrar contacto"
+                ? "Contactar profissional"
                 : "Show contact"}
             </button>
 
@@ -1355,7 +1377,7 @@ const HomePage: React.FC = () => {
 
               <div className="mt-3 relative">
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                  🔎
+                  <Search className="w-4 h-4" />
                 </span>
 
                 <input
@@ -1376,7 +1398,7 @@ const HomePage: React.FC = () => {
                     className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
                     aria-label={isPT ? "Limpar pesquisa" : "Clear search"}
                   >
-                    ✕
+                    <X className="w-4 h-4" />
                   </button>
                 )}
               </div>

@@ -5,6 +5,7 @@ import { useLanguage } from "../layouts/MainLayout";
 import { supabase } from "../supabase";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { MapPin, Phone, Mail, Globe, Search, X } from "lucide-react";
 
 import {
   CATEGORIES,
@@ -436,7 +437,8 @@ const OfferCard: React.FC<OfferCardProps> = ({
             )}
             {offer.location && (
               <span className="flex items-center gap-1">
-                <span>📍</span>
+                <MapPin className="w-3.5 h-3.5" />
+
                 <span>{offer.location}</span>
               </span>
             )}
@@ -594,7 +596,7 @@ const OfferCard: React.FC<OfferCardProps> = ({
                 onClick={() => setShowContact(false)}
                 className="rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold px-3 py-2 transition"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -604,7 +606,8 @@ const OfferCard: React.FC<OfferCardProps> = ({
                   href={`tel:${normalizePhoneForTel(offer.phone)}`}
                   className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 hover:bg-slate-100 transition overflow-hidden"
                 >
-                  <span>📞</span>
+                  <Phone className="w-4 h-4 text-slate-500" />
+
                   <span className="font-semibold text-slate-800 wrap-break-word">
                     {offer.phone}
                   </span>
@@ -617,7 +620,8 @@ const OfferCard: React.FC<OfferCardProps> = ({
                   className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 hover:bg-slate-100 transition overflow-hidden"
                   title={offer.contactEmail}
                 >
-                  <span>✉️</span>
+                  <Mail className="w-4 h-4 text-slate-500" />
+
                   <span className="font-semibold text-slate-800 break-all select-text">
                     {offer.contactEmail}
                   </span>
@@ -632,7 +636,8 @@ const OfferCard: React.FC<OfferCardProps> = ({
                   rel="noreferrer"
                   title={offer.website}
                 >
-                  <span>🌐</span>
+                  <Globe className="w-4 h-4 text-slate-500" />
+
                   <span className="font-semibold text-slate-800 break-all">
                     {offer.website}
                   </span>
@@ -766,7 +771,7 @@ const OfferCard: React.FC<OfferCardProps> = ({
                 onClick={() => setShowFullDescription(false)}
                 className="rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold px-3 py-2 transition"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -1006,7 +1011,7 @@ const OffersPage: React.FC = () => {
 
               <div className="mt-3 relative">
                 <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                  🔎
+                  <Search className="w-4 h-4" />
                 </span>
 
                 <input
@@ -1027,7 +1032,7 @@ const OffersPage: React.FC = () => {
                     className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
                     aria-label={isPT ? "Limpar pesquisa" : "Clear search"}
                   >
-                    ✕
+                    <X className="w-4 h-4" />
                   </button>
                 )}
               </div>
