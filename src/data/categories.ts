@@ -153,6 +153,7 @@ export const SUBCATEGORIES: Partial<Record<CategoryId, Subcategory[]>> = {
   ],
 
   "wellness-beauty": [
+    // wellness-beauty
     { id: "massage", label: "Massage", icon: "💆‍♀️" },
     { id: "yoga", label: "Yoga", icon: "🧘‍♀️" },
     { id: "pilates", label: "Pilates", icon: "🤸‍♀️" },
@@ -165,8 +166,12 @@ export const SUBCATEGORIES: Partial<Record<CategoryId, Subcategory[]>> = {
       icon: "💉",
     },
     { id: "nutritionist", label: "Nutritionist", icon: "🥗" },
-    { id: "physiotherapy", label: "Physiotherapy", icon: "🦵" },
+
+    // 🦴 body specialists (logical flow)
     { id: "osteopath", label: "Osteopath", icon: "🦴" },
+    { id: "chiropractor", label: "Chiropractor", icon: "🦴" },
+    { id: "physiotherapy", label: "Physiotherapy", icon: "🦵" },
+
     { id: "psychologist", label: "Psychologist", icon: "🧠" },
     { id: "acupuncture", label: "Acupuncture", icon: "🪡" },
     { id: "personal-training", label: "Personal Training", icon: "🏋️" },
@@ -501,6 +506,8 @@ export const getSubcategoryLabel = (
           return "Fisioterapia";
         case "osteopath":
           return "Osteopata";
+        case "chiropractor":
+          return "Quiroprático";
         case "psychologist":
           return "Psicólogo";
         case "acupuncture":
