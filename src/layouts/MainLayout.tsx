@@ -38,7 +38,7 @@ interface MainLayoutProps {
 }
 
 const MainLayout: FC<MainLayoutProps> = ({ children }) => {
-  const [language, setLanguage] = useState<LanguageCode>("en");
+  const [language, setLanguage] = useState<LanguageCode>("pt");
 
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
