@@ -623,7 +623,8 @@ const RealEstatePage: React.FC = () => {
             contact_phone
           `
           )
-          .eq("status", "active");
+          .eq("status", "active")
+          .order("created_at", { ascending: false });
 
         if (error) {
           console.error("Error loading properties from Supabase:", error);
