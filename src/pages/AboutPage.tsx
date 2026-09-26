@@ -14,7 +14,6 @@ import {
   Star,
   ArrowRight,
   CheckCircle2,
-  Quote,
   Building2,
   Sparkles,
 } from "lucide-react";
@@ -252,36 +251,6 @@ const AboutPage: React.FC = () => {
         ? "Em português e inglês. Feito para residentes e visitantes."
         : "In Portuguese and English. Made for residents and visitors.",
       color: "#F59E0B",
-    },
-  ];
-
-  const testimonials = [
-    {
-      id: "1",
-      quote: isPT
-        ? "Finalmente encontrei um eletricista que respondeu no mesmo dia. Nunca mais pedi favores no Facebook."
-        : "Finally found an electrician who replied the same day. No more asking favours on Facebook.",
-      name: "Sarah M.",
-      role: isPT ? "Expat no Estoril" : "Expat in Estoril",
-      avatar: "SM",
-    },
-    {
-      id: "2",
-      quote: isPT
-        ? "Publicar o meu serviço foi grátis e em duas semanas triplicaram os contactos."
-        : "Listing my service was free and in two weeks my contacts tripled.",
-      name: "João P.",
-      role: isPT ? "Prestador em Cascais" : "Provider in Cascais",
-      avatar: "JP",
-    },
-    {
-      id: "3",
-      quote: isPT
-        ? "Mudei-me há um mês e já usei o AllCascais três vezes. Funciona sempre."
-        : "Moved here a month ago and already used AllCascais three times. Always works.",
-      name: "Emma L.",
-      role: isPT ? "Nova residente" : "New resident",
-      avatar: "EL",
     },
   ];
 
