@@ -12,7 +12,6 @@ import {
   AlertCircle,
   MapPin,
   Mail,
-  Phone,
   Globe,
   Instagram,
   Facebook,
@@ -287,7 +286,6 @@ const ServiceProfilePage: React.FC = () => {
   const [loadingListing, setLoadingListing] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [touchedSteps, setTouchedSteps] = useState<Set<StepId>>(new Set());
 
   const currentSubcategories: Subcategory[] = useMemo(
     () =>
@@ -391,7 +389,6 @@ const ServiceProfilePage: React.FC = () => {
 
   const goToStep = (step: StepId) => {
     setErrorMsg(null);
-    setTouchedSteps((prev) => new Set(prev).add(currentStep));
     setCurrentStep(step);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -400,7 +397,6 @@ const ServiceProfilePage: React.FC = () => {
     const err = validateStep(currentStep);
     if (err) {
       setErrorMsg(err);
-      setTouchedSteps((prev) => new Set(prev).add(currentStep));
       return;
     }
     if (currentStep < 3) {

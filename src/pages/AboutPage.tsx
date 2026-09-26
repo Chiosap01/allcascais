@@ -11,7 +11,6 @@ import {
   Heart,
   Globe,
   MapPin,
-  Users,
   Star,
   ArrowRight,
   CheckCircle2,
@@ -24,7 +23,6 @@ import {
    DESIGN TOKENS
 --------------------------------------------------------- */
 const BRAND = "#1F6FA6";
-const BRAND_HOVER = "#195c8a";
 
 /* ---------------------------------------------------------
    TYPES

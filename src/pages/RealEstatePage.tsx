@@ -11,7 +11,6 @@ import {
   ChevronUp,
   ArrowUpDown,
   X,
-  Star,
   Sparkles,
   Bed,
   Bath,
