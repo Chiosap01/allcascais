@@ -449,43 +449,6 @@ const AboutPage: React.FC = () => {
       </section>
 
       {/* =========================================================
-          FOUNDER STORY — Cialdini: affinity
-      ========================================================== */}
-      <section className="max-w-3xl mx-auto px-4 -mt-10 sm:-mt-12 relative z-10">
-        <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-6 sm:p-8">
-          <div className="flex items-start gap-4">
-            <div className="shrink-0 w-12 h-12 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center">
-              <Quote className="w-5 h-5" style={{ color: BRAND }} />
-            </div>
-
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                {isPT ? "Porquê o AllCascais" : "Why AllCascais"}
-              </div>
-
-              <p className="text-sm sm:text-base text-slate-700 leading-relaxed">
-                {isPT
-                  ? "Cresci em Cascais. Vi a minha cidade tornar-se mais internacional, mais vibrante — mas também vi vizinhos recém-chegados a lutar para encontrar um eletricista, um dentista, uma limpeza de confiança. E vi profissionais locais que eu conhecia com a agenda vazia. Havia um fosso. Decidi construir a ponte."
-                  : "I grew up in Cascais. I watched my town become more international, more vibrant — but I also watched newly-arrived neighbours struggle to find an electrician, a dentist, a trustworthy cleaner. And I watched local professionals I knew with empty schedules. There was a gap. So I built the bridge."}
-              </p>
-
-              <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
-                <span
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
-                  style={{ backgroundColor: BRAND }}
-                >
-                  A
-                </span>
-                <span>
-                  {isPT ? "Fundador do AllCascais" : "Founder of AllCascais"}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* =========================================================
           STATS — Cialdini: concrete numbers
       ========================================================== */}
       <section className="max-w-5xl mx-auto px-4 pt-14 pb-10">
@@ -599,60 +562,6 @@ const AboutPage: React.FC = () => {
               </div>
             );
           })}
-        </div>
-      </section>
-
-      {/* =========================================================
-          TESTIMONIALS — social proof
-      ========================================================== */}
-      <section className="bg-slate-50 border-y border-slate-100">
-        <div className="max-w-5xl mx-auto px-4 py-16">
-          <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 text-amber-600 text-xs font-bold uppercase tracking-[0.15em] mb-3">
-              <Star className="w-4 h-4 fill-amber-500" />
-              {isPT ? "Histórias reais" : "Real stories"}
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
-              {isPT ? "O que dizem os residentes" : "What residents say"}
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {testimonials.map((t) => (
-              <div
-                key={t.id}
-                className="bg-white rounded-3xl border border-slate-100 p-6 hover:shadow-md transition"
-              >
-                <div className="flex items-center gap-1 mb-4">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className="w-4 h-4 text-amber-400 fill-amber-400"
-                    />
-                  ))}
-                </div>
-
-                <p className="text-sm text-slate-700 leading-relaxed mb-5">
-                  "{t.quote}"
-                </p>
-
-                <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
-                    style={{ backgroundColor: BRAND }}
-                  >
-                    {t.avatar}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-slate-900">
-                      {t.name}
-                    </div>
-                    <div className="text-xs text-slate-500">{t.role}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 

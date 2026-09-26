@@ -9,7 +9,7 @@ import RealEstatePage from "./pages/RealEstatePage";
 import OffersPage from "./pages/OffersPage";
 import AuthPage from "./pages/AuthPage";
 import ServiceListingPage from "./pages/ServiceProfilePage";
-import CreateOfferPage from "./pages/CreateOfferPage";
+import CreateOfferPage from "./pages/CreateOffersPage";
 import PropertyListingPage from "./pages/PropertyListingPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import PrivacyPolicy from "./pages/legal/PrivacyPolicy";

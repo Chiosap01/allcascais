@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "../layouts/MainLayout";
 import { supabase } from "../supabase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { CASCAIS_AREAS, NEIGHBORHOODS_BY_AREA } from "../constants/locations";
 import {
@@ -339,7 +339,17 @@ const RealEstatePage: React.FC = () => {
   const filtersRef = useRef<HTMLDivElement | null>(null);
 
   /* ---------- FILTERS ---------- */
+  const [searchParams] = useSearchParams();
   const [buyRent, setBuyRent] = useState<BuyRent>("all");
+
+  // Aplica ?buyRent= da URL (vindo da LandingPage)
+  useEffect(() => {
+    const buyRentParam = searchParams.get("buyRent");
+    if (buyRentParam === "buy" || buyRentParam === "rent") {
+      setBuyRent(buyRentParam);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [locationArea, setLocationArea] = useState<string>("all");
   const [locationNeighborhood, setLocationNeighborhood] =
     useState<string>("all");
