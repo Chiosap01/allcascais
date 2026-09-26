@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import { AuthProvider } from "./context/AuthContext";
+import NewHomePage from "./pages/LandingPage";
 import HomePage from "./pages/HomePage";
 import AboutPage from "./pages/AboutPage";
 import RealEstatePage from "./pages/RealEstatePage";
@@ -21,7 +22,8 @@ const App: React.FC = () => {
     <AuthProvider>
       <MainLayout>
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<NewHomePage />} />
+          <Route path="/services" element={<HomePage />} />
           <Route path="/offers" element={<OffersPage />} />
           <Route path="/real-estate" element={<RealEstatePage />} />
           <Route path="/about" element={<AboutPage />} />

@@ -1,11 +1,81 @@
 // src/pages/AuthPage.tsx
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { supabase } from "../supabase";
 import { useLanguage } from "../layouts/MainLayout";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User as UserIcon,
+  ArrowLeft,
+  CheckCircle2,
+  AlertCircle,
+  Star,
+  Users,
+  ShieldCheck,
+  Sparkles,
+  Loader2,
+  Check,
+} from "lucide-react";
+
+/* ---------------------------------------------------------
+   DESIGN TOKENS
+--------------------------------------------------------- */
+const BRAND = "#1F6FA6";
+const BRAND_HOVER = "#155A87";
 
 type Mode = "signin" | "signup";
 
+/* ---------------------------------------------------------
+   PASSWORD STRENGTH (Norman: feedback)
+--------------------------------------------------------- */
+type Strength = "weak" | "fair" | "good" | "strong";
+
+const getPasswordStrength = (
+  pwd: string
+): {
+  strength: Strength;
+  score: number; // 0-4
+  labelPt: string;
+  labelEn: string;
+  color: string;
+} => {
+  let score = 0;
+  if (pwd.length >= 8) score++;
+  if (/[A-Z]/.test(pwd)) score++;
+  if (/[0-9]/.test(pwd)) score++;
+  if (/[^A-Za-z0-9]/.test(pwd)) score++;
+
+  const map: Record<Strength, { pt: string; en: string; color: string }> = {
+    weak: { pt: "Fraca", en: "Weak", color: "#EF4444" },
+    fair: { pt: "Razoável", en: "Fair", color: "#F59E0B" },
+    good: { pt: "Boa", en: "Good", color: "#10B981" },
+    strong: { pt: "Forte", en: "Strong", color: "#059669" },
+  };
+
+  const strength: Strength =
+    score <= 1
+      ? "weak"
+      : score === 2
+      ? "fair"
+      : score === 3
+      ? "good"
+      : "strong";
+
+  return {
+    strength,
+    score,
+    labelPt: map[strength].pt,
+    labelEn: map[strength].en,
+    color: map[strength].color,
+  };
+};
+
+/* ---------------------------------------------------------
+   MAIN COMPONENT
+--------------------------------------------------------- */
 const AuthPage: React.FC = () => {
   const { language } = useLanguage();
   const isPT = language === "pt";
@@ -17,64 +87,84 @@ const AuthPage: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPwd, setConfirmPwd] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  // Forgot password state
   const [resetSent, setResetSent] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
-  const EyeIcon = ({ open }: { open: boolean }) => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className="h-4 w-4 text-slate-500"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      {open ? (
-        <>
-          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
-          <circle cx="12" cy="12" r="3" />
-        </>
-      ) : (
-        <>
-          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.71 18.71 0 0 1 5.11-5.79" />
-          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.64 18.64 0 0 1-2.87 4.19" />
-          <line x1="1" y1="1" x2="23" y2="23" />
-        </>
-      )}
-    </svg>
+  /* ---------- VALIDATION ---------- */
+  const emailValid = useMemo(
+    () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()),
+    [email]
   );
 
+  const passwordStrength = useMemo(
+    () => getPasswordStrength(password),
+    [password]
+  );
+
+  const passwordsMatch = useMemo(
+    () => password.length > 0 && password === confirmPwd,
+    [password, confirmPwd]
+  );
+
+  const canSubmit = useMemo(() => {
+    if (mode === "signin") {
+      return emailValid && password.length > 0;
+    }
+    return (
+      firstName.trim().length > 0 &&
+      emailValid &&
+      passwordStrength.score >= 2 &&
+      passwordsMatch &&
+      acceptedTerms
+    );
+  }, [
+    mode,
+    emailValid,
+    password,
+    firstName,
+    passwordStrength.score,
+    passwordsMatch,
+    acceptedTerms,
+  ]);
+
+  /* ---------- SWITCH MODE ---------- */
+  const switchMode = (newMode: Mode) => {
+    setMode(newMode);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    setResetSent(false);
+    setTouched({});
+  };
+
+  /* ---------- FORGOT PASSWORD ---------- */
   const handleForgotPassword = async () => {
     setErrorMsg(null);
     setSuccessMsg(null);
     setResetSent(false);
 
     const cleanEmail = email.trim();
-    if (!cleanEmail) {
+    if (!cleanEmail || !emailValid) {
       setErrorMsg(
-        isPT ? "Introduza o seu email primeiro." : "Enter your email first."
+        isPT
+          ? "Introduza um email válido primeiro."
+          : "Enter a valid email first."
       );
       return;
     }
 
     setLoading(true);
     try {
-      // Make sure you have this route and it is whitelisted in Supabase Auth Redirect URLs
       const redirectTo = `${window.location.origin}/reset-password`;
-
       const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
         redirectTo,
       });
-
       if (error) throw error;
 
       setResetSent(true);
@@ -91,11 +181,30 @@ const AuthPage: React.FC = () => {
     }
   };
 
+  /* ---------- SUBMIT ---------- */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
     setResetSent(false);
+
+    // Mark all as touched for validation
+    setTouched({
+      firstName: true,
+      email: true,
+      password: true,
+      confirmPwd: true,
+    });
+
+    if (!canSubmit) {
+      setErrorMsg(
+        isPT
+          ? "Preencha todos os campos corretamente."
+          : "Please fill in all fields correctly."
+      );
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -109,16 +218,6 @@ const AuthPage: React.FC = () => {
         setSuccessMsg(isPT ? "Sessão iniciada!" : "Signed in!");
         navigate("/");
       } else {
-        if (password !== confirmPwd) {
-          setErrorMsg(
-            isPT
-              ? "As palavras-passe não coincidem."
-              : "Passwords do not match."
-          );
-          setLoading(false);
-          return;
-        }
-
         const redirectTo = `${window.location.origin}/service-listing`;
 
         const { error } = await supabase.auth.signUp({
@@ -152,7 +251,7 @@ const AuthPage: React.FC = () => {
             ? "Conta criada! Confirme o seu email."
             : "Account created! Please confirm your email."
         );
-        setMode("signin");
+        switchMode("signin");
       }
     } catch (err: any) {
       console.error(err);
@@ -162,11 +261,12 @@ const AuthPage: React.FC = () => {
     }
   };
 
+  /* ---------- LABELS ---------- */
   const title =
     mode === "signin"
       ? isPT
-        ? "Iniciar sessão"
-        : "Sign in"
+        ? "Bem-vindo de volta"
+        : "Welcome back"
       : isPT
       ? "Criar conta"
       : "Create account";
@@ -174,349 +274,598 @@ const AuthPage: React.FC = () => {
   const subtitle =
     mode === "signin"
       ? isPT
-        ? "Entre na sua conta AllCascais"
-        : "Sign in to your AllCascais account"
+        ? "Entre na sua conta AllCascais."
+        : "Sign in to your AllCascais account."
       : isPT
-      ? "Junte-se à comunidade AllCascais"
-      : "Join the AllCascais community";
+      ? "Junte-se à comunidade de Cascais."
+      : "Join the Cascais community.";
 
-  const AZULEJO = {
-    primary: "bg-[#1F6FA6]",
-    primaryHover: "hover:bg-[#155A87]",
-    ring: "focus:ring-[#1F6FA6]/35",
-    text: "text-[#1F6FA6]",
-    border: "border-[#1F6FA6]/30",
-  };
+  const showFieldError = (field: string) => touched[field];
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* Background image */}
-      <div
-        className="absolute inset-0 bg-center bg-cover"
-        style={{ backgroundImage: "url('/background.png')" }}
-        aria-hidden="true"
-      />
+    <div className="min-h-screen bg-slate-50 flex items-stretch">
+      {/* =========================================================
+          LEFT: FORM
+      ========================================================== */}
+      <div className="w-full lg:w-1/2 flex flex-col">
+        {/* Top bar */}
+        <div className="px-4 sm:px-8 pt-6">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 transition"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            {isPT ? "Voltar ao início" : "Back to home"}
+          </button>
+        </div>
 
-      {/* Porcelain wash overlay */}
-      <div className="absolute inset-0" aria-hidden="true" />
-
-      {/* Content */}
-      <div className="relative min-h-screen flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-xl">
-          {/* Brand header */}
-          <div className="text-center mb-5">
-            <div className="inline-flex items-center justify-center w-18 h-18 rounded-2xl bg-white/85 border border-slate-200 shadow-sm overflow-hidden">
-              <img
-                src="/logo.png"
-                alt="AllCascais"
-                className="w-full h-full object-contain p-0"
-                draggable={false}
-              />
-            </div>
-
-            <h1 className="mt-3 text-2xl sm:text-3xl font-bold text-slate-900">
-              {title}
-            </h1>
-            <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
-          </div>
-
-          {/* Card */}
-          <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-xl border border-slate-200/70 overflow-hidden">
-            {/* Tabs */}
-            <div className="grid grid-cols-2 border-b border-slate-200/70">
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("signin");
-                  setErrorMsg(null);
-                  setSuccessMsg(null);
-                  setResetSent(false);
-                }}
-                className={[
-                  "py-3 text-sm font-semibold transition",
-                  mode === "signin"
-                    ? "bg-[#1F6FA6] text-white"
-                    : "bg-white/70 text-slate-700 hover:bg-white",
-                ].join(" ")}
-              >
-                {isPT ? "Iniciar sessão" : "Sign in"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("signup");
-                  setErrorMsg(null);
-                  setSuccessMsg(null);
-                  setResetSent(false);
-                }}
-                className={[
-                  "py-3 text-sm font-semibold transition",
-                  mode === "signup"
-                    ? "bg-[#1F6FA6] text-white"
-                    : "bg-white/70 text-slate-700 hover:bg-white",
-                ].join(" ")}
-              >
-                {isPT ? "Criar conta" : "Create account"}
-              </button>
-            </div>
-
-            {/* Form */}
-            <form
-              onSubmit={handleSubmit}
-              className="px-7 sm:px-8 py-6 space-y-4"
-            >
-              {mode === "signup" && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      {isPT ? "Primeiro nome" : "First name"}
-                    </label>
-                    <input
-                      type="text"
-                      className={[
-                        "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm",
-                        "focus:outline-none focus:ring-4",
-                        AZULEJO.ring,
-                      ].join(" ")}
-                      placeholder={isPT ? "Primeiro nome" : "First name"}
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      {isPT ? "Apelido" : "Last name"}
-                    </label>
-                    <input
-                      type="text"
-                      className={[
-                        "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm",
-                        "focus:outline-none focus:ring-4",
-                        AZULEJO.ring,
-                      ].join(" ")}
-                      placeholder={isPT ? "Apelido" : "Last name"}
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  {isPT ? "Endereço de email" : "Email address"}
-                </label>
-                <input
-                  type="email"
-                  className={[
-                    "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm",
-                    "focus:outline-none focus:ring-4",
-                    AZULEJO.ring,
-                  ].join(" ")}
-                  placeholder={isPT ? "O seu email" : "Your email"}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoComplete="email"
+        {/* Form container */}
+        <div className="flex-1 flex items-center justify-center px-4 sm:px-8 py-8">
+          <div className="w-full max-w-md">
+            {/* Brand */}
+            <div className="text-center mb-6">
+              <Link to="/" className="inline-block">
+                <img
+                  src="/logo.png"
+                  alt="AllCascais"
+                  className="h-14 w-auto mx-auto"
+                  draggable={false}
                 />
+              </Link>
+
+              <h1 className="mt-4 text-2xl sm:text-3xl font-bold text-slate-900">
+                {title}
+              </h1>
+              <p className="mt-1.5 text-sm text-slate-600">{subtitle}</p>
+            </div>
+
+            {/* Card */}
+            <div className="bg-white rounded-3xl shadow-lg border border-slate-200 overflow-hidden">
+              {/* Tabs */}
+              <div className="grid grid-cols-2 border-b border-slate-100">
+                {(["signin", "signup"] as const).map((tab) => {
+                  const active = mode === tab;
+                  return (
+                    <button
+                      key={tab}
+                      type="button"
+                      onClick={() => switchMode(tab)}
+                      className={[
+                        "py-3.5 text-sm font-semibold transition relative",
+                        active
+                          ? "text-slate-900"
+                          : "text-slate-500 hover:text-slate-800",
+                      ].join(" ")}
+                    >
+                      {tab === "signin"
+                        ? isPT
+                          ? "Iniciar sessão"
+                          : "Sign in"
+                        : isPT
+                        ? "Criar conta"
+                        : "Create account"}
+                      {active && (
+                        <span
+                          className="absolute bottom-0 left-0 right-0 h-[3px]"
+                          style={{ backgroundColor: BRAND }}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* Password */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  {isPT ? "Palavra-passe" : "Password"}
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    className={[
-                      "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm",
-                      "focus:outline-none focus:ring-4",
-                      AZULEJO.ring,
-                    ].join(" ")}
-                    placeholder={isPT ? "A sua palavra-passe" : "Your password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    autoComplete={
-                      mode === "signin" ? "current-password" : "new-password"
-                    }
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute inset-y-0 right-2 flex items-center justify-center px-1"
-                    aria-label={
-                      showPassword ? "Hide password" : "Show password"
-                    }
-                  >
-                    <EyeIcon open={showPassword} />
-                  </button>
-                </div>
-              </div>
+              {/* Form */}
+              <form
+                onSubmit={handleSubmit}
+                className="px-6 sm:px-8 py-6 space-y-4"
+                noValidate
+              >
+                {/* Signup: names */}
+                {mode === "signup" && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                        {isPT ? "Primeiro nome" : "First name"}
+                      </label>
+                      <div className="relative">
+                        <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          onBlur={() =>
+                            setTouched((t) => ({ ...t, firstName: true }))
+                          }
+                          className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-4 transition"
+                          style={{ ["--tw-ring-color" as any]: `${BRAND}22` }}
+                          placeholder={isPT ? "Maria" : "Jane"}
+                          autoComplete="given-name"
+                        />
+                      </div>
+                    </div>
 
-              {/* Confirm password */}
-              {mode === "signup" && (
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                        {isPT ? "Apelido" : "Last name"}
+                      </label>
+                      <input
+                        type="text"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-4 transition"
+                        style={{ ["--tw-ring-color" as any]: `${BRAND}22` }}
+                        placeholder={isPT ? "Silva" : "Doe"}
+                        autoComplete="family-name"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Email */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    {isPT ? "Confirmar palavra-passe" : "Confirm password"}
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                    {isPT ? "Email" : "Email"}
                   </label>
                   <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                     <input
-                      type={showConfirmPwd ? "text" : "password"}
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      onBlur={() => setTouched((t) => ({ ...t, email: true }))}
                       className={[
-                        "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 pr-10 text-sm",
-                        "focus:outline-none focus:ring-4",
-                        AZULEJO.ring,
+                        "w-full rounded-xl border bg-white pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-4 transition",
+                        showFieldError("email") && email && !emailValid
+                          ? "border-red-300"
+                          : "border-slate-200",
                       ].join(" ")}
-                      placeholder={
-                        isPT ? "Repita a palavra-passe" : "Repeat password"
+                      style={{ ["--tw-ring-color" as any]: `${BRAND}22` }}
+                      placeholder={isPT ? "o.seu@email.com" : "you@email.com"}
+                      autoComplete="email"
+                    />
+                    {email && emailValid && (
+                      <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
+                    )}
+                  </div>
+                  {showFieldError("email") && email && !emailValid && (
+                    <p className="mt-1 text-[11px] text-red-600 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      {isPT ? "Email inválido." : "Invalid email."}
+                    </p>
+                  )}
+                </div>
+
+                {/* Password */}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                    {isPT ? "Palavra-passe" : "Password"}
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onBlur={() =>
+                        setTouched((t) => ({ ...t, password: true }))
                       }
-                      value={confirmPwd}
-                      onChange={(e) => setConfirmPwd(e.target.value)}
-                      required
-                      autoComplete="new-password"
+                      className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-4 transition"
+                      style={{ ["--tw-ring-color" as any]: `${BRAND}22` }}
+                      placeholder={
+                        isPT ? "Mínimo 8 caracteres" : "At least 8 characters"
+                      }
+                      autoComplete={
+                        mode === "signin" ? "current-password" : "new-password"
+                      }
                     />
                     <button
                       type="button"
-                      onClick={() => setShowConfirmPwd((v) => !v)}
-                      className="absolute inset-y-0 right-2 flex items-center justify-center px-1"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute inset-y-0 right-2 flex items-center justify-center px-1.5 text-slate-400 hover:text-slate-700 transition"
                       aria-label={
-                        showConfirmPwd ? "Hide password" : "Show password"
+                        showPassword
+                          ? isPT
+                            ? "Esconder"
+                            : "Hide"
+                          : isPT
+                          ? "Mostrar"
+                          : "Show"
                       }
                     >
-                      <EyeIcon open={showConfirmPwd} />
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
-                </div>
-              )}
 
-              {/* Messages */}
-              {errorMsg && (
-                <div className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-                  {errorMsg}
-                </div>
-              )}
-              {successMsg && (
-                <div className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
-                  {successMsg}
-                  {resetSent && (
-                    <div className="mt-1 text-[11px] text-emerald-700">
-                      {isPT
-                        ? "Verifique a caixa de entrada e o spam."
-                        : "Check your inbox and spam folder."}
+                  {/* Password strength (signup only) */}
+                  {mode === "signup" && password.length > 0 && (
+                    <div className="mt-2">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-300"
+                            style={{
+                              width: `${(passwordStrength.score / 4) * 100}%`,
+                              backgroundColor: passwordStrength.color,
+                            }}
+                          />
+                        </div>
+                        <span
+                          className="text-[10px] font-bold uppercase tracking-wider"
+                          style={{ color: passwordStrength.color }}
+                        >
+                          {isPT
+                            ? passwordStrength.labelPt
+                            : passwordStrength.labelEn}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[10px] text-slate-500">
+                        {isPT
+                          ? "Use 8+ caracteres, maiúsculas, números e símbolos."
+                          : "Use 8+ chars, uppercase, numbers and symbols."}
+                      </p>
                     </div>
                   )}
                 </div>
-              )}
 
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={loading}
-                className={[
-                  "w-full rounded-xl text-white text-sm font-semibold py-3 shadow-md transition",
-                  AZULEJO.primary,
-                  AZULEJO.primaryHover,
-                  "disabled:opacity-60 disabled:cursor-not-allowed",
-                ].join(" ")}
-              >
-                {loading
-                  ? isPT
-                    ? "A processar..."
-                    : "Processing..."
-                  : mode === "signin"
-                  ? isPT
-                    ? "Iniciar sessão"
-                    : "Sign in"
-                  : isPT
-                  ? "Criar conta"
-                  : "Create account"}
-              </button>
-
-              {/* Forgot password */}
-              {mode === "signin" && (
-                <button
-                  type="button"
-                  className={`text-xs ${AZULEJO.text} hover:underline disabled:opacity-60`}
-                  onClick={handleForgotPassword}
-                  disabled={loading}
-                >
-                  {isPT ? "Esqueceu-se da palavra-passe?" : "Forgot password?"}
-                </button>
-              )}
-
-              {/* Footer */}
-              <p className="text-[11px] text-slate-600 text-center pt-2">
-                {mode === "signin" ? (
-                  <>
-                    {isPT ? "Novo na AllCascais?" : "New to AllCascais?"}{" "}
-                    <button
-                      type="button"
-                      className={`${AZULEJO.text} underline underline-offset-2`}
-                      onClick={() => {
-                        setMode("signup");
-                        setErrorMsg(null);
-                        setSuccessMsg(null);
-                        setResetSent(false);
-                      }}
-                    >
-                      {isPT ? "Criar conta" : "Create an account"}
-                    </button>
-                    .
-                  </>
-                ) : (
-                  <>
-                    {isPT ? "Já tem conta?" : "Already have an account?"}{" "}
-                    <button
-                      type="button"
-                      className={`${AZULEJO.text} underline underline-offset-2`}
-                      onClick={() => {
-                        setMode("signin");
-                        setErrorMsg(null);
-                        setSuccessMsg(null);
-                        setResetSent(false);
-                      }}
-                    >
-                      {isPT ? "Iniciar sessão" : "Sign in"}
-                    </button>
-                    .
-                  </>
+                {/* Confirm password (signup) */}
+                {mode === "signup" && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                      {isPT ? "Confirmar palavra-passe" : "Confirm password"}
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                      <input
+                        type={showConfirmPwd ? "text" : "password"}
+                        value={confirmPwd}
+                        onChange={(e) => setConfirmPwd(e.target.value)}
+                        onBlur={() =>
+                          setTouched((t) => ({ ...t, confirmPwd: true }))
+                        }
+                        className={[
+                          "w-full rounded-xl border bg-white pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-4 transition",
+                          showFieldError("confirmPwd") &&
+                          confirmPwd &&
+                          !passwordsMatch
+                            ? "border-red-300"
+                            : "border-slate-200",
+                        ].join(" ")}
+                        style={{ ["--tw-ring-color" as any]: `${BRAND}22` }}
+                        placeholder={isPT ? "Repita" : "Repeat"}
+                        autoComplete="new-password"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPwd((v) => !v)}
+                        className="absolute inset-y-0 right-2 flex items-center justify-center px-1.5 text-slate-400 hover:text-slate-700 transition"
+                        aria-label={
+                          showConfirmPwd
+                            ? isPT
+                              ? "Esconder"
+                              : "Hide"
+                            : isPT
+                            ? "Mostrar"
+                            : "Show"
+                        }
+                      >
+                        {showConfirmPwd ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                      {confirmPwd && passwordsMatch && (
+                        <CheckCircle2 className="absolute right-10 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
+                      )}
+                    </div>
+                    {showFieldError("confirmPwd") &&
+                      confirmPwd &&
+                      !passwordsMatch && (
+                        <p className="mt-1 text-[11px] text-red-600 flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" />
+                          {isPT
+                            ? "As palavras-passe não coincidem."
+                            : "Passwords do not match."}
+                        </p>
+                      )}
+                  </div>
                 )}
-              </p>
-            </form>
+
+                {/* Terms (signup) */}
+                {mode === "signup" && (
+                  <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={acceptedTerms}
+                      onChange={(e) => setAcceptedTerms(e.target.checked)}
+                      className="mt-0.5 rounded border-slate-300 text-[#1F6FA6] focus:ring-[#1F6FA6]/30"
+                    />
+                    <span className="text-[11px] text-slate-600 leading-relaxed">
+                      {isPT ? (
+                        <>
+                          Concordo com os{" "}
+                          <Link
+                            to="/terms"
+                            className="font-semibold underline underline-offset-2"
+                            style={{ color: BRAND }}
+                          >
+                            termos
+                          </Link>{" "}
+                          e a{" "}
+                          <Link
+                            to="/privacy"
+                            className="font-semibold underline underline-offset-2"
+                            style={{ color: BRAND }}
+                          >
+                            política de privacidade
+                          </Link>
+                          .
+                        </>
+                      ) : (
+                        <>
+                          I agree to the{" "}
+                          <Link
+                            to="/terms"
+                            className="font-semibold underline underline-offset-2"
+                            style={{ color: BRAND }}
+                          >
+                            terms
+                          </Link>{" "}
+                          and{" "}
+                          <Link
+                            to="/privacy"
+                            className="font-semibold underline underline-offset-2"
+                            style={{ color: BRAND }}
+                          >
+                            privacy policy
+                          </Link>
+                          .
+                        </>
+                      )}
+                    </span>
+                  </label>
+                )}
+
+                {/* Messages */}
+                {errorMsg && (
+                  <div className="flex items-start gap-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{errorMsg}</span>
+                  </div>
+                )}
+                {successMsg && (
+                  <div className="flex items-start gap-2 text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5">
+                    <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                    <div>
+                      <div>{successMsg}</div>
+                      {resetSent && (
+                        <div className="mt-1 text-[11px] text-emerald-700">
+                          {isPT
+                            ? "Verifique a caixa de entrada e o spam."
+                            : "Check your inbox and spam folder."}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Submit */}
+                <button
+                  type="submit"
+                  disabled={loading || !canSubmit}
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl text-white text-sm font-semibold py-3 shadow-md transition disabled:opacity-60 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: BRAND }}
+                  onMouseEnter={(e) => {
+                    if (!loading && canSubmit)
+                      e.currentTarget.style.backgroundColor = BRAND_HOVER;
+                  }}
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.backgroundColor = BRAND)
+                  }
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      {isPT ? "A processar..." : "Processing..."}
+                    </>
+                  ) : mode === "signin" ? (
+                    isPT ? (
+                      "Iniciar sessão"
+                    ) : (
+                      "Sign in"
+                    )
+                  ) : isPT ? (
+                    "Criar conta"
+                  ) : (
+                    "Create account"
+                  )}
+                </button>
+
+                {/* Forgot password */}
+                {mode === "signin" && (
+                  <div className="text-center pt-1">
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      disabled={loading}
+                      className="text-xs font-semibold hover:underline disabled:opacity-60 transition"
+                      style={{ color: BRAND }}
+                    >
+                      {isPT
+                        ? "Esqueceu-se da palavra-passe?"
+                        : "Forgot password?"}
+                    </button>
+                  </div>
+                )}
+
+                {/* Switch mode footer */}
+                <p className="text-[11px] text-slate-600 text-center pt-2">
+                  {mode === "signin" ? (
+                    <>
+                      {isPT ? "Novo no AllCascais?" : "New to AllCascais?"}{" "}
+                      <button
+                        type="button"
+                        className="font-semibold underline underline-offset-2"
+                        style={{ color: BRAND }}
+                        onClick={() => switchMode("signup")}
+                      >
+                        {isPT ? "Criar conta" : "Create account"}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {isPT ? "Já tem conta?" : "Already have an account?"}{" "}
+                      <button
+                        type="button"
+                        className="font-semibold underline underline-offset-2"
+                        style={{ color: BRAND }}
+                        onClick={() => switchMode("signin")}
+                      >
+                        {isPT ? "Iniciar sessão" : "Sign in"}
+                      </button>
+                    </>
+                  )}
+                </p>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================
+          RIGHT: SOCIAL PROOF PANEL (desktop only)
+      ========================================================== */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-slate-900">
+        {/* Background image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url('/casc.jpg')" }}
+          aria-hidden="true"
+        />
+
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/90 via-slate-900/70 to-slate-900/90" />
+        <div
+          className="absolute -top-32 -right-32 w-96 h-96 rounded-full blur-3xl"
+          style={{ backgroundColor: `${BRAND}33` }}
+        />
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-emerald-500/15 blur-3xl" />
+
+        {/* Content */}
+        <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16 py-12 text-white w-full">
+          {/* Badge */}
+          <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 backdrop-blur px-3 py-1.5 text-[11px] font-semibold self-start mb-6">
+            <Sparkles className="w-3.5 h-3.5 text-sky-300" />
+            <span>{isPT ? "Comunidade de Cascais" : "Cascais community"}</span>
           </div>
 
-          {/* Small note */}
-          <p className="mt-5 text-center text-[11px] text-slate-600">
+          {/* Headline */}
+          <h2 className="text-3xl xl:text-4xl font-bold leading-tight mb-5">
             {isPT ? (
               <>
-                Ao continuar, concorda com os{" "}
-                <a className="underline" href="/terms">
-                  termos
-                </a>{" "}
-                e a{" "}
-                <a className="underline" href="/privacy">
-                  política de privacidade
-                </a>
-                .
+                Encontra profissionais
+                <br />
+                <span className="text-sky-200">de confiança.</span>
               </>
             ) : (
               <>
-                By continuing, you agree to our{" "}
-                <a className="underline" href="/terms">
-                  terms
-                </a>{" "}
-                and{" "}
-                <a className="underline" href="/privacy">
-                  privacy policy
-                </a>
-                .
+                Find trusted
+                <br />
+                <span className="text-sky-200">professionals.</span>
               </>
             )}
+          </h2>
+
+          <p className="text-sm xl:text-base text-white/75 leading-relaxed mb-8 max-w-md">
+            {isPT
+              ? "Verificados pela comunidade. Em português ou inglês. Sem intermediários."
+              : "Community-verified. In English or Portuguese. No middlemen."}
           </p>
+
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4 mb-8 max-w-md">
+            <div>
+              <div className="flex items-center gap-1">
+                <Star className="w-4 h-4 text-amber-300 fill-amber-300" />
+                <span className="text-xl font-bold">4.8</span>
+              </div>
+              <div className="text-[11px] text-white/60 mt-0.5">
+                {isPT ? "Avaliação média" : "Average rating"}
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-1">
+                <Users className="w-4 h-4 text-sky-300" />
+                <span className="text-xl font-bold">140+</span>
+              </div>
+              <div className="text-[11px] text-white/60 mt-0.5">
+                {isPT ? "Profissionais" : "Professionals"}
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-1">
+                <ShieldCheck className="w-4 h-4 text-emerald-300" />
+                <span className="text-xl font-bold">100%</span>
+              </div>
+              <div className="text-[11px] text-white/60 mt-0.5">
+                {isPT ? "Verificados" : "Verified"}
+              </div>
+            </div>
+          </div>
+
+          {/* Testimonial */}
+          <div className="max-w-md rounded-2xl border border-white/15 bg-white/5 backdrop-blur p-5">
+            <div className="flex items-center gap-1 mb-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                  key={i}
+                  className="w-3.5 h-3.5 text-amber-300 fill-amber-300"
+                />
+              ))}
+            </div>
+            <p className="text-sm text-white/85 leading-relaxed mb-4">
+              {isPT
+                ? '"Encontrei um canalizador que falava inglês em 10 minutos. Salvou o meu domingo."'
+                : '"Found an English-speaking plumber in 10 minutes. Saved my Sunday."'}
+            </p>
+            <div className="flex items-center gap-2.5">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                style={{ backgroundColor: BRAND }}
+              >
+                SM
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-white">Sarah M.</div>
+                <div className="text-[10px] text-white/60">
+                  {isPT ? "Expat no Estoril" : "Expat in Estoril"}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Trust chips */}
+          <div className="mt-8 flex flex-wrap gap-2">
+            {[
+              isPT ? "Grátis para residentes" : "Free for residents",
+              isPT ? "PT / EN" : "PT / EN",
+              isPT ? "Sem taxas escondidas" : "No hidden fees",
+            ].map((chip) => (
+              <span
+                key={chip}
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-medium text-white/75"
+              >
+                <Check className="w-3 h-3 text-emerald-300" />
+                {chip}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </div>

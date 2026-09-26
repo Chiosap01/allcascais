@@ -1,7 +1,34 @@
+// src/pages/AboutPage.tsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "../layouts/MainLayout";
+import {
+  ChevronDown,
+  ChevronUp,
+  Search,
+  MessageCircle,
+  ShieldCheck,
+  Heart,
+  Globe,
+  MapPin,
+  Users,
+  Star,
+  ArrowRight,
+  CheckCircle2,
+  Quote,
+  Building2,
+  Sparkles,
+} from "lucide-react";
 
+/* ---------------------------------------------------------
+   DESIGN TOKENS
+--------------------------------------------------------- */
+const BRAND = "#1F6FA6";
+const BRAND_HOVER = "#195c8a";
+
+/* ---------------------------------------------------------
+   TYPES
+--------------------------------------------------------- */
 type WeatherState = {
   temperature: number;
   windspeed: number;
@@ -13,72 +40,110 @@ type WeatherMeta = {
   iconPath: string;
 };
 
+/* ---------------------------------------------------------
+   WEATHER
+--------------------------------------------------------- */
 const mapWeatherCode = (code: number, isPT: boolean): WeatherMeta => {
-  // Open-Meteo / WMO codes
-  if (code === 0) {
+  if (code === 0)
     return {
       label: isPT ? "Céu limpo" : "Clear sky",
       iconPath: "/icons/sun.png",
     };
-  }
-  if (code === 1 || code === 2) {
+  if (code === 1 || code === 2)
     return {
       label: isPT ? "Maioritariamente limpo" : "Mostly clear",
       iconPath: "/icons/partly.png",
     };
-  }
-  if (code === 3) {
+  if (code === 3)
     return {
       label: isPT ? "Nublado" : "Overcast",
       iconPath: "/icons/cloud.png",
     };
-  }
-  if (code === 45 || code === 48) {
+  if (code === 45 || code === 48)
+    return { label: isPT ? "Nevoeiro" : "Foggy", iconPath: "/icons/fog.png" };
+  if (code >= 51 && code <= 67)
     return {
-      label: isPT ? "Nevoeiro" : "Foggy",
-      iconPath: "/icons/fog.png",
-    };
-  }
-  if (code >= 51 && code <= 67) {
-    return {
-      label: isPT ? "Chuvisco / Chuva fraca" : "Drizzle / Light rain",
+      label: isPT ? "Chuvisco" : "Drizzle",
       iconPath: "/icons/rain.png",
     };
-  }
-  if (code >= 71 && code <= 77) {
+  if (code >= 71 && code <= 77)
     return {
       label: isPT ? "Neve" : "Snow",
       iconPath: "/icons/weather-cloud.png",
     };
-  }
-  if ((code >= 80 && code <= 82) || (code >= 61 && code <= 69)) {
+  if ((code >= 80 && code <= 82) || (code >= 61 && code <= 69))
     return {
       label: isPT ? "Aguaceiros" : "Rain showers",
       iconPath: "/icons/rain.png",
     };
-  }
-  if (code >= 95 && code <= 99) {
+  if (code >= 95 && code <= 99)
     return {
       label: isPT ? "Trovoada" : "Thunderstorm",
       iconPath: "/icons/thunder.png",
     };
-  }
-
   return {
     label: isPT ? "Meteorologia em Cascais" : "Cascais weather",
     iconPath: "/icons/partly.png",
   };
 };
 
+/* ---------------------------------------------------------
+   FAQ ITEM (accordion — Krug)
+--------------------------------------------------------- */
+type FaqItemProps = {
+  question: string;
+  answer: string;
+  isOpen: boolean;
+  onToggle: () => void;
+};
+
+const FaqItem: React.FC<FaqItemProps> = ({
+  question,
+  answer,
+  isOpen,
+  onToggle,
+}) => (
+  <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden transition-shadow hover:shadow-sm">
+    <button
+      type="button"
+      onClick={onToggle}
+      className="w-full text-left px-5 py-4 flex items-center justify-between gap-4 hover:bg-slate-50 transition"
+      aria-expanded={isOpen}
+    >
+      <span className="text-sm font-semibold text-slate-900 pr-2">
+        {question}
+      </span>
+      <span className="shrink-0 w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 transition">
+        {isOpen ? (
+          <ChevronUp className="w-3.5 h-3.5" />
+        ) : (
+          <ChevronDown className="w-3.5 h-3.5" />
+        )}
+      </span>
+    </button>
+
+    {isOpen && (
+      <div className="px-5 pb-5 -mt-1">
+        <div className="text-sm text-slate-600 leading-relaxed pt-1">
+          {answer}
+        </div>
+      </div>
+    )}
+  </div>
+);
+
+/* ---------------------------------------------------------
+   MAIN COMPONENT
+--------------------------------------------------------- */
 const AboutPage: React.FC = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const isPT = language === "pt";
 
+  /* ---------- WEATHER ---------- */
   const [weather, setWeather] = useState<WeatherState | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
 
-  // Fetch live weather for Cascais (Open-Meteo, no API key)
   useEffect(() => {
     const fetchWeather = async () => {
       try {
@@ -99,27 +164,174 @@ const AboutPage: React.FC = () => {
         setWeatherLoading(false);
       }
     };
-
     fetchWeather();
   }, []);
 
-  const handleGoToServices = () => {
-    navigate("/"); // Services / Home route
-  };
+  /* ---------- FAQ ACCORDION STATE ---------- */
+  const [openFaq, setOpenFaq] = useState<string | null>(null);
+  const toggleFaq = (id: string) =>
+    setOpenFaq((prev) => (prev === id ? null : id));
 
-  const handleGoToCreateServices = () => {
-    navigate("/service-listing"); // Services / Home route
-  };
+  /* ---------- HANDLERS ---------- */
+  const handleGoToServices = () => navigate("/services");
+  const handleGoToCreateServices = () => navigate("/service-listing");
 
   const handleEmergencyClick = () => {
     const message = isPT
       ? "Números de emergência:\nPolícia: 112\nAmbulância: 112\nBombeiros: 112\n\nLigar 112 agora?"
       : "Emergency Numbers:\nPolice: 112\nAmbulance: 112\nFire Department: 112\n\nCall 112 now?";
-
     if (window.confirm(message)) {
       window.location.href = "tel:112";
     }
   };
+
+  /* ---------- CONTENT ---------- */
+  const stats = [
+    {
+      value: "140+",
+      label: isPT ? "Profissionais locais" : "Local professionals",
+    },
+    {
+      value: "1.200+",
+      label: isPT ? "Serviços concluídos" : "Jobs completed",
+    },
+    {
+      value: "4.8",
+      label: isPT ? "Avaliação média" : "Average rating",
+      icon: "star",
+    },
+    {
+      value: "PT / EN",
+      label: isPT ? "Dois idiomas" : "Two languages",
+    },
+  ];
+
+  const steps = [
+    {
+      icon: Search,
+      title: isPT ? "Descubra" : "Discover",
+      desc: isPT
+        ? "Pesquise por serviço, zona ou categoria."
+        : "Search by service, area, or category.",
+    },
+    {
+      icon: MessageCircle,
+      title: isPT ? "Contacte" : "Contact",
+      desc: isPT
+        ? "Fale diretamente com o profissional, sem intermediários."
+        : "Talk directly with the professional, no middlemen.",
+    },
+    {
+      icon: CheckCircle2,
+      title: isPT ? "Avalie" : "Review",
+      desc: isPT
+        ? "Partilhe a sua experiência e ajude a comunidade."
+        : "Share your experience and help the community.",
+    },
+  ];
+
+  const values = [
+    {
+      icon: ShieldCheck,
+      title: isPT ? "Confiança" : "Trust",
+      desc: isPT
+        ? "Cada prestador é verificado pela comunidade antes de aparecer."
+        : "Every provider is community-verified before appearing.",
+      color: "#1F6FA6",
+    },
+    {
+      icon: Heart,
+      title: isPT ? "Local" : "Local",
+      desc: isPT
+        ? "Do centro histórico ao Guincho — tudo focado em Cascais."
+        : "From the historic centre to Guincho — all focused on Cascais.",
+      color: "#10B981",
+    },
+    {
+      icon: Globe,
+      title: isPT ? "Inclusivo" : "Inclusive",
+      desc: isPT
+        ? "Em português e inglês. Feito para residentes e visitantes."
+        : "In Portuguese and English. Made for residents and visitors.",
+      color: "#F59E0B",
+    },
+  ];
+
+  const testimonials = [
+    {
+      id: "1",
+      quote: isPT
+        ? "Finalmente encontrei um eletricista que respondeu no mesmo dia. Nunca mais pedi favores no Facebook."
+        : "Finally found an electrician who replied the same day. No more asking favours on Facebook.",
+      name: "Sarah M.",
+      role: isPT ? "Expat no Estoril" : "Expat in Estoril",
+      avatar: "SM",
+    },
+    {
+      id: "2",
+      quote: isPT
+        ? "Publicar o meu serviço foi grátis e em duas semanas triplicaram os contactos."
+        : "Listing my service was free and in two weeks my contacts tripled.",
+      name: "João P.",
+      role: isPT ? "Prestador em Cascais" : "Provider in Cascais",
+      avatar: "JP",
+    },
+    {
+      id: "3",
+      quote: isPT
+        ? "Mudei-me há um mês e já usei o AllCascais três vezes. Funciona sempre."
+        : "Moved here a month ago and already used AllCascais three times. Always works.",
+      name: "Emma L.",
+      role: isPT ? "Nova residente" : "New resident",
+      avatar: "EL",
+    },
+  ];
+
+  const faqs = [
+    {
+      id: "find",
+      q: isPT
+        ? "Como encontro um profissional de confiança?"
+        : "How do I find a trusted professional?",
+      a: isPT
+        ? "Explore a secção de Serviços. Todos os prestadores são verificados pela comunidade — pode ver classificações, comentários e zonas de atuação antes de contactar."
+        : "Browse the Services section. All providers are community-verified — check ratings, reviews, and service areas before contacting.",
+    },
+    {
+      id: "free",
+      q: isPT ? "A plataforma é gratuita?" : "Is the platform free?",
+      a: isPT
+        ? "Sim. Procurar e contactar serviços é totalmente gratuito para residentes. Para profissionais, publicar é grátis — sem taxas de intermediários."
+        : "Yes. Searching and contacting services is completely free for residents. For professionals, listing is free — no middleman fees.",
+    },
+    {
+      id: "trust",
+      q: isPT
+        ? "Como são verificados os prestadores?"
+        : "How are providers verified?",
+      a: isPT
+        ? "Cada prestador é revisto manualmente antes de aparecer. Além disso, a própria comunidade avalia o trabalho e a pontualidade em cada serviço."
+        : "Each provider is manually reviewed before appearing. Beyond that, the community rates work quality and punctuality on every job.",
+    },
+    {
+      id: "payments",
+      q: isPT
+        ? "O AllCascais processa pagamentos?"
+        : "Does AllCascais handle payments?",
+      a: isPT
+        ? "Não. O AllCascais liga diretamente o cliente ao profissional. Pagamento e condições são combinados diretamente entre as partes."
+        : "No. AllCascais connects the client directly to the professional. Payment and terms are agreed directly between both parties.",
+    },
+    {
+      id: "business",
+      q: isPT
+        ? "Tenho um negócio. Como publico?"
+        : "I run a business. How do I list?",
+      a: isPT
+        ? 'Clique em "Publicar o meu serviço" e preencha o perfil em 3 passos rápidos. Fica visível na secção de Serviços imediatamente.'
+        : 'Click "List my service" and fill in the profile in 3 quick steps. It appears in the Services section immediately.',
+    },
+  ];
 
   const weatherMeta =
     weather && !weatherLoading
@@ -137,449 +349,445 @@ const AboutPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-transparent">
-      {/* HERO + WEATHER */}
+      {/* =========================================================
+          HERO — mission-driven, single primary CTA
+      ========================================================== */}
       <section className="relative">
-        {/* Background image */}
         <div
-          className="h-160 sm:h-175 w-full bg-cover bg-center"
+          className="h-[520px] sm:h-[560px] w-full bg-cover bg-center"
           style={{ backgroundImage: "url('/cascais-about.jpg')" }}
         />
 
-        {/* Dark gradient overlay */}
-        <div className="absolute inset-0 bg-linear-to-b from-slate-900/15 via-slate-900/60 to-slate-900/85" />
+        {/* Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/30 via-slate-900/65 to-slate-900/90" />
 
-        {/* Content + weather card */}
+        {/* Content */}
         <div className="absolute inset-0">
-          <div className="max-w-5xl mx-auto px-4 h-full flex flex-col justify-between py-10">
-            {/* Top content */}
+          <div className="max-w-4xl mx-auto px-4 h-full flex flex-col justify-center py-10">
             <div className="text-center text-white">
-              {/* Top pill */}
-              <div className="inline-flex items-center justify-center rounded-full bg-teal-500/90 px-4 py-1.5 text-xs sm:text-sm font-medium shadow-md mb-4 sm:mb-6">
-                <span className="mr-2">🌊</span>
+              {/* Badge */}
+              <div
+                className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold shadow-md mb-6"
+                style={{ backgroundColor: `${BRAND}E6` }}
+              >
+                <MapPin className="w-3.5 h-3.5" />
                 <span>
                   {isPT
-                    ? "Exclusivo para residentes e visitantes de Cascais"
-                    : "Exclusive for Cascais Residents & Visitors"}
+                    ? "Feito em Cascais, para Cascais"
+                    : "Made in Cascais, for Cascais"}
                 </span>
               </div>
 
-              <h1 className="text-[26px] sm:text-4xl md:text-5xl font-extrabold leading-tight mb-3">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight mb-4">
                 {isPT ? (
                   <>
-                    Encontre Serviços Locais <br className="hidden sm:block" />
-                    de Confiança em Cascais
+                    Tudo o que precisas,
+                    <br className="hidden sm:block" />
+                    <span className="text-sky-200">ao lado de casa.</span>
                   </>
                 ) : (
                   <>
-                    Find Trusted Local <br className="hidden sm:block" />
-                    Services in Cascais
+                    Everything you need,
+                    <br className="hidden sm:block" />
+                    <span className="text-sky-200">right next door.</span>
                   </>
                 )}
               </h1>
 
-              <p className="text-sm sm:text-lg text-slate-100 mb-3">
+              <p className="max-w-2xl mx-auto text-sm sm:text-base text-white/85 leading-relaxed mb-8">
                 {isPT
-                  ? "Prestadores verificados. Remuneração justa. Confiança da comunidade."
-                  : "Verified providers. Fair wages. Community trust."}
+                  ? "AllCascais liga residentes e visitantes a profissionais locais verificados — sem intermediários, em português e inglês."
+                  : "AllCascais connects residents and visitors with verified local professionals — no middlemen, in Portuguese and English."}
               </p>
 
-              <p className="max-w-2xl mx-auto text-xs sm:text-base text-slate-100/90 mb-6">
-                {isPT
-                  ? "Ligue-se a prestadores de serviços locais verificados em Cascais – de pequenos serviços a luxo – todos recomendados pela comunidade."
-                  : "Connect with verified local service providers in Cascais – from handymen to luxury services – all vetted by your community."}
-              </p>
-
-              {/* CTA buttons */}
-              <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 px-2 mb-4">
+              {/* Primary CTA + secondary */}
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <button
                   type="button"
                   onClick={handleGoToServices}
-                  className="w-full max-w-xs inline-flex items-center justify-center rounded-full border border-white/70 bg-yellow-400/70 px-7 py-4 text-sm sm:text-base font-semibold text-slate-900 shadow-lg hover:bg-yellow-400 hover:shadow-xl hover:-translate-y-0.5 transition"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-white text-slate-900 px-7 py-3.5 text-sm font-bold shadow-lg hover:bg-slate-50 hover:-translate-y-0.5 transition"
                 >
-                  <span className="mr-2">🔍</span>
-                  {isPT ? "Procurar serviços" : "Find Services"}
+                  <Search className="w-4 h-4" />
+                  {isPT ? "Explorar serviços" : "Explore services"}
                 </button>
 
                 <button
                   type="button"
                   onClick={handleGoToCreateServices}
-                  className="w-full max-w-xs inline-flex items-center justify-center rounded-full border border-white/70 bg-white/10 px-7 py-4 text-sm sm:text-base font-semibold text-white shadow-md backdrop-blur hover:bg-white/20 hover:-translate-y-0.5 transition"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full border border-white/40 bg-white/10 backdrop-blur px-7 py-3.5 text-sm font-semibold text-white hover:bg-white/20 transition"
                 >
-                  🙍‍♂️ {isPT ? "Meu Perfil" : "My Profile"}
+                  <Sparkles className="w-4 h-4" />
+                  {isPT ? "Publicar o meu serviço" : "List my service"}
                 </button>
+              </div>
+            </div>
+          </div>
 
+          {/* Weather card — bottom, discreet */}
+          <div className="absolute bottom-4 right-4 sm:bottom-6 sm:right-6">
+            <div className="bg-white/85 backdrop-blur-md rounded-2xl shadow-lg px-4 py-3 flex items-center gap-3 border border-white/60">
+              <div className="h-9 w-9 flex items-center justify-center shrink-0">
+                <img
+                  src={weatherMeta.iconPath}
+                  alt={weatherMeta.label}
+                  className="h-full w-full object-contain"
+                />
+              </div>
+              <div>
+                <div className="text-base font-bold text-slate-900 leading-tight">
+                  {weatherLoading
+                    ? "—"
+                    : weather
+                    ? `${Math.round(weather.temperature)}°C`
+                    : "N/A"}
+                </div>
+                <div className="text-[10px] text-slate-500 leading-tight">
+                  {weatherMeta.label} · Cascais
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
+          FOUNDER STORY — Cialdini: affinity
+      ========================================================== */}
+      <section className="max-w-3xl mx-auto px-4 -mt-10 sm:-mt-12 relative z-10">
+        <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-6 sm:p-8">
+          <div className="flex items-start gap-4">
+            <div className="shrink-0 w-12 h-12 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center">
+              <Quote className="w-5 h-5" style={{ color: BRAND }} />
+            </div>
+
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                {isPT ? "Porquê o AllCascais" : "Why AllCascais"}
+              </div>
+
+              <p className="text-sm sm:text-base text-slate-700 leading-relaxed">
+                {isPT
+                  ? "Cresci em Cascais. Vi a minha cidade tornar-se mais internacional, mais vibrante — mas também vi vizinhos recém-chegados a lutar para encontrar um eletricista, um dentista, uma limpeza de confiança. E vi profissionais locais que eu conhecia com a agenda vazia. Havia um fosso. Decidi construir a ponte."
+                  : "I grew up in Cascais. I watched my town become more international, more vibrant — but I also watched newly-arrived neighbours struggle to find an electrician, a dentist, a trustworthy cleaner. And I watched local professionals I knew with empty schedules. There was a gap. So I built the bridge."}
+              </p>
+
+              <div className="mt-4 flex items-center gap-2 text-xs text-slate-500">
+                <span
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-xs"
+                  style={{ backgroundColor: BRAND }}
+                >
+                  A
+                </span>
+                <span>
+                  {isPT ? "Fundador do AllCascais" : "Founder of AllCascais"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
+          STATS — Cialdini: concrete numbers
+      ========================================================== */}
+      <section className="max-w-5xl mx-auto px-4 pt-14 pb-10">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+          {stats.map((s) => (
+            <div key={s.label} className="text-center">
+              <div className="flex items-center justify-center gap-1">
+                {s.icon === "star" && (
+                  <Star className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 fill-amber-400" />
+                )}
+                <span
+                  className="text-2xl sm:text-3xl font-bold"
+                  style={{ color: BRAND }}
+                >
+                  {s.value}
+                </span>
+              </div>
+              <div className="text-xs sm:text-sm text-slate-500 mt-1">
+                {s.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* =========================================================
+          HOW IT WORKS — 3 steps, simple
+      ========================================================== */}
+      <section className="bg-white border-y border-slate-100">
+        <div className="max-w-5xl mx-auto px-4 py-16">
+          <div className="text-center mb-10">
+            <div
+              className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] mb-3"
+              style={{ color: BRAND }}
+            >
+              <Sparkles className="w-4 h-4" />
+              {isPT ? "Como funciona" : "How it works"}
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
+              {isPT ? "Simples, rápido, direto." : "Simple, fast, direct."}
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-8">
+            {steps.map((step, i) => {
+              const Icon = step.icon;
+              return (
+                <div key={step.title} className="text-center sm:text-left">
+                  <div className="flex items-center justify-center sm:justify-start gap-3 mb-3">
+                    <div
+                      className="w-11 h-11 rounded-2xl flex items-center justify-center text-white shadow-sm"
+                      style={{ backgroundColor: BRAND }}
+                    >
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <span
+                      className="text-xs font-bold uppercase tracking-wider"
+                      style={{ color: BRAND }}
+                    >
+                      {isPT ? `Passo ${i + 1}` : `Step ${i + 1}`}
+                    </span>
+                  </div>
+                  <h3 className="text-base font-bold text-slate-900 mb-1.5">
+                    {step.title}
+                  </h3>
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    {step.desc}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
+          VALUES — 3 pillars
+      ========================================================== */}
+      <section className="max-w-5xl mx-auto px-4 py-16">
+        <div className="text-center mb-10">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
+            {isPT ? "Os nossos princípios" : "Our principles"}
+          </h2>
+          <p className="mt-3 text-sm sm:text-base text-slate-600 max-w-xl mx-auto">
+            {isPT
+              ? "Três valores que guiam tudo o que fazemos no AllCascais."
+              : "Three values that guide everything we do at AllCascais."}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+          {values.map((v) => {
+            const Icon = v.icon;
+            return (
+              <div
+                key={v.title}
+                className="bg-white rounded-3xl border border-slate-100 p-6 hover:shadow-md hover:-translate-y-0.5 transition-all"
+              >
+                <div
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
+                  style={{ backgroundColor: `${v.color}15` }}
+                >
+                  <Icon className="w-6 h-6" style={{ color: v.color }} />
+                </div>
+                <h3 className="text-base font-bold text-slate-900 mb-2">
+                  {v.title}
+                </h3>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  {v.desc}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* =========================================================
+          TESTIMONIALS — social proof
+      ========================================================== */}
+      <section className="bg-slate-50 border-y border-slate-100">
+        <div className="max-w-5xl mx-auto px-4 py-16">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 text-amber-600 text-xs font-bold uppercase tracking-[0.15em] mb-3">
+              <Star className="w-4 h-4 fill-amber-500" />
+              {isPT ? "Histórias reais" : "Real stories"}
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
+              {isPT ? "O que dizem os residentes" : "What residents say"}
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {testimonials.map((t) => (
+              <div
+                key={t.id}
+                className="bg-white rounded-3xl border border-slate-100 p-6 hover:shadow-md transition"
+              >
+                <div className="flex items-center gap-1 mb-4">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className="w-4 h-4 text-amber-400 fill-amber-400"
+                    />
+                  ))}
+                </div>
+
+                <p className="text-sm text-slate-700 leading-relaxed mb-5">
+                  "{t.quote}"
+                </p>
+
+                <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
+                    style={{ backgroundColor: BRAND }}
+                  >
+                    {t.avatar}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-slate-900">
+                      {t.name}
+                    </div>
+                    <div className="text-xs text-slate-500">{t.role}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
+          FAQ — accordion (Krug: progressive disclosure)
+      ========================================================== */}
+      <section className="max-w-3xl mx-auto px-4 py-16">
+        <div className="text-center mb-10">
+          <div
+            className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] mb-3"
+            style={{ color: BRAND }}
+          >
+            <MessageCircle className="w-4 h-4" />
+            {isPT ? "Perguntas frequentes" : "Frequently asked questions"}
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">
+            {isPT
+              ? "Tudo o que precisa de saber."
+              : "Everything you need to know."}
+          </h2>
+          <p className="text-sm sm:text-base text-slate-600 max-w-xl mx-auto">
+            {isPT
+              ? "Respostas rápidas sobre como usar o AllCascais — para quem procura e para quem oferece serviços."
+              : "Quick answers on how to use AllCascais — for those seeking and offering services."}
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {faqs.map((f) => (
+            <FaqItem
+              key={f.id}
+              question={f.q}
+              answer={f.a}
+              isOpen={openFaq === f.id}
+              onToggle={() => toggleFaq(f.id)}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* =========================================================
+          EMERGENCY + CONTACT — single footer band
+      ========================================================== */}
+      <section className="max-w-5xl mx-auto px-4 pb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {/* Emergency */}
+          <div className="rounded-3xl bg-red-50 border border-red-100 p-6">
+            <div className="flex items-start gap-4">
+              <div className="shrink-0 w-11 h-11 rounded-2xl bg-red-500 text-white flex items-center justify-center shadow-sm">
+                <span className="text-lg font-bold">🚨</span>
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-red-900 mb-1">
+                  {isPT ? "Emergência em Portugal?" : "Emergency in Portugal?"}
+                </h3>
+                <p className="text-xs text-red-800/80 leading-relaxed mb-3">
+                  {isPT
+                    ? "O número 112 funciona em todo o país para polícia, ambulância e bombeiros."
+                    : "112 works everywhere in the country for police, ambulance, and fire department."}
+                </p>
                 <button
                   type="button"
                   onClick={handleEmergencyClick}
-                  className="w-full max-w-xs inline-flex items-center justify-center rounded-full border border-white/70 bg-red-500/70 px-7 py-4 text-sm sm:text-base font-semibold text-white shadow-lg hover:bg-red-600 hover:-translate-y-0.5 transition"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-red-500 text-white text-xs font-semibold px-4 py-2 shadow-sm hover:bg-red-600 transition"
                 >
-                  🚨 {isPT ? "Emergência" : "Emergency"}
+                  {isPT ? "Ligar 112" : "Call 112"}
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
+          </div>
 
-            {/* Bottom weather card */}
-            <div className="flex justify-center">
-              <div className="bg-white/80 rounded-2xl shadow-lg px-6 py-4 text-left text-slate-800 flex items-center gap-4 w-full max-w-md">
-                {/* circle with PNG icon */}
-                <div className="h-10 w-10 rounded-full bg-transparent flex items-center justify-center overflow-hidden">
-                  <img
-                    src={weatherMeta.iconPath}
-                    alt={weatherMeta.label}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-
-                <div className="flex-1">
-                  <div className="text-xl font-semibold">
-                    {weatherLoading
-                      ? "—"
-                      : weather
-                      ? `${Math.round(weather.temperature)}°C`
-                      : "N/A"}
-                  </div>
-                  <div className="text-xs text-slate-500 -mt-0.5">
-                    {weatherMeta.label} · Cascais
-                  </div>
-                  <div className="mt-1 flex items-center justify-between text-[11px] text-slate-500">
-                    <span>
-                      {isPT ? "Sensação" : "Feels like"}{" "}
-                      {weather && !weatherLoading
-                        ? `${Math.round(weather.temperature + 1)}°C`
-                        : "—"}
-                    </span>
-                    <span>
-                      {weather && !weatherLoading
-                        ? `${Math.round(weather.windspeed)} km/h ${
-                            isPT ? "vento" : "wind"
-                          }`
-                        : "—"}
-                    </span>
-                  </div>
-                </div>
+          {/* Contact */}
+          <div className="rounded-3xl bg-slate-900 text-white p-6">
+            <div className="flex items-start gap-4">
+              <div className="shrink-0 w-11 h-11 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center">
+                <MessageCircle className="w-5 h-5 text-sky-300" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white mb-1">
+                  {isPT ? "Sugestões ou dúvidas?" : "Suggestions or questions?"}
+                </h3>
+                <p className="text-xs text-white/70 leading-relaxed mb-3">
+                  {isPT
+                    ? "Estamos sempre a melhorar o AllCascais com base no feedback da comunidade."
+                    : "We're always improving AllCascais based on community feedback."}
+                </p>
+                <a
+                  href="mailto:info@allcascais.com"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-white text-slate-900 text-xs font-semibold px-4 py-2 shadow-sm hover:bg-slate-100 transition"
+                >
+                  info@allcascais.com
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </a>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ABOUT CONTENT */}
-      <section className="max-w-5xl mx-auto px-4 pb-10 md:pb-14 mt-6 sm:mt-8">
-        {/* Section intro */}
-        <div className="text-center mb-10 md:mb-12">
-          <div className="inline-flex items-center rounded-full bg-teal-50 px-3 py-1 text-[11px] font-medium text-teal-700 border border-teal-100 mb-3">
-            <span className="mr-1.5">⭐</span>
-            <span>
-              {isPT
-                ? "Feito por e para a comunidade de Cascais"
-                : "Built for the Cascais community"}
-            </span>
-          </div>
-          <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mb-3">
-            {isPT
-              ? "Serviços locais de confiança, num só lugar"
-              : "Trusted local services, all in one place"}
+      {/* =========================================================
+          BOTTOM CTA — one clear action
+      ========================================================== */}
+      <section className="max-w-5xl mx-auto px-4 pb-16">
+        <div className="rounded-3xl bg-gradient-to-br from-sky-50 via-white to-emerald-50 border border-slate-200 p-8 sm:p-10 text-center">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-3">
+            {isPT ? "Pronto para começar?" : "Ready to get started?"}
           </h2>
-          <p className="max-w-2xl mx-auto text-sm md:text-base text-slate-600">
+          <p className="text-sm sm:text-base text-slate-600 max-w-lg mx-auto mb-6">
             {isPT
-              ? "Do primeiro contacto à recomendação final, queremos que a experiência seja simples, transparente e acolhedora — tanto para residentes como para prestadores de serviços."
-              : "From first contact to final recommendation, we want the experience to feel simple, transparent, and welcoming — for both residents and service providers."}
+              ? "Explorar serviços é grátis. Publicar o seu também."
+              : "Browsing services is free. Listing yours is too."}
           </p>
-        </div>
 
-        {/* 3 feature cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6 mb-10">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 hover:shadow-md hover:-translate-y-0.5 transition">
-            <div className="h-10 w-10 rounded-full bg-teal-50 flex items-center justify-center mb-3">
-              <img
-                src="/icons/verified.png"
-                alt={isPT ? "Prestadores verificados" : "Verified providers"}
-                className="h-6 w-6"
-              />
-            </div>
-            <h3 className="font-semibold mb-2 text-slate-900">
-              {isPT ? "Prestadores verificados" : "Verified providers"}
-            </h3>
-            <p className="text-sm text-slate-600">
-              {isPT
-                ? "Cada prestador é verificado manualmente para garantir qualidade, fiabilidade e preços justos."
-                : "Every provider is manually checked and reviewed to ensure quality, reliability, and fair pricing."}
-            </p>
-          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={handleGoToServices}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full text-white px-6 py-3 text-sm font-bold shadow-md transition hover:opacity-95"
+              style={{ backgroundColor: BRAND }}
+            >
+              <Search className="w-4 h-4" />
+              {isPT ? "Explorar serviços" : "Explore services"}
+            </button>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 hover:shadow-md hover:-translate-y-0.5 transition">
-            <div className="h-10 w-10 rounded-full bg-amber-50 flex items-center justify-center mb-3">
-              <img
-                src="/icons/fair-play.png"
-                alt={
-                  isPT
-                    ? "Preços justos e transparentes"
-                    : "Fair, transparent rates"
-                }
-                className="h-6 w-6"
-              />
-            </div>
-            <h3 className="font-semibold mb-2 text-slate-900">
-              {isPT
-                ? "Preços justos e transparentes"
-                : "Fair, transparent rates"}
-            </h3>
-            <p className="text-sm text-slate-600">
-              {isPT
-                ? "Sem taxas escondidas. Tem acesso a informação clara para escolher o serviço certo com confiança."
-                : "No hidden fees. You see clear information so you can choose the right service with confidence."}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 hover:shadow-md hover:-translate-y-0.5 transition">
-            <div className="h-10 w-10 rounded-full bg-sky-50 flex items-center justify-center mb-3">
-              <img
-                src="/icons/focused.png"
-                alt={isPT ? "Focado em Cascais" : "Focused on Cascais"}
-                className="h-6 w-6"
-              />
-            </div>
-            <h3 className="font-semibold mb-2 text-slate-900">
-              {isPT ? "Focado em Cascais" : "Focused on Cascais"}
-            </h3>
-            <p className="text-sm text-slate-600">
-              {isPT
-                ? "Do centro histórico ao Guincho, focamo-nos apenas em Cascais e zonas próximas para manter tudo verdadeiramente local."
-                : "From the historic centre to Guincho, we focus only on Cascais and nearby areas to keep it truly local."}
-            </p>
-          </div>
-        </div>
-
-        {/* Two-column: What is + How it works */}
-        <div className="grid md:grid-cols-2 gap-8 items-start mb-10">
-          {/* What is AllCascais */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 md:p-6">
-            <h2 className="text-lg md:text-xl font-bold mb-3 text-slate-900">
-              {isPT ? "O que é a AllCascais?" : "What is AllCascais?"}
-            </h2>
-            <p className="text-sm md:text-base text-slate-600 mb-3">
-              {isPT
-                ? "A AllCascais é um diretório selecionado de serviços locais de confiança. Nasceu com um objetivo simples: tornar mais fácil e seguro para residentes e visitantes encontrarem pessoas de confiança em Cascais – sem pesquisas intermináveis ou adivinhações."
-                : "AllCascais is a curated directory of trusted local services. It started with a simple goal: make it easy and safe for residents and visitors to find reliable people in Cascais – without endless searching or guessing."}
-            </p>
-            <p className="text-sm md:text-base text-slate-600 mb-4">
-              {isPT
-                ? "Combinamos recomendações da comunidade, verificação manual e categorias claras para chegar rapidamente a empresas de limpeza, pequenos arranjos, explicadores, bem-estar, restaurantes e muito mais – tudo num só lugar."
-                : "We combine community recommendations, manual verification and clear categories so you can quickly reach cleaners, handymen, tutors, wellness professionals, restaurants and more – all in one place."}
-            </p>
-
-            <ul className="space-y-2 text-sm text-slate-600">
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-emerald-500">✓</span>
-                <span>
-                  {isPT
-                    ? "Pensado para o dia-a-dia real de quem vive ou passa tempo em Cascais."
-                    : "Designed for real day-to-day life in Cascais."}
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-emerald-500">✓</span>
-                <span>
-                  {isPT
-                    ? "Equilíbrio entre serviços essenciais e experiências premium."
-                    : "Balance between everyday essentials and premium experiences."}
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="mt-0.5 text-emerald-500">✓</span>
-                <span>
-                  {isPT
-                    ? "Com foco em relações duradouras entre residentes e prestadores."
-                    : "Focused on long-term relationships between residents and providers."}
-                </span>
-              </li>
-            </ul>
-          </div>
-
-          {/* How it works timeline */}
-          <div className="bg-slate-900 rounded-2xl shadow-sm text-slate-50 p-5 md:p-6">
-            <h3 className="font-semibold text-base md:text-lg mb-4">
-              {isPT ? "Como funciona" : "How it works"}
-            </h3>
-            <ol className="space-y-4 text-sm md:text-base">
-              <li className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <div className="h-7 w-7 rounded-full bg-teal-500 flex items-center justify-center text-xs font-bold">
-                    1
-                  </div>
-                  <div className="flex-1 w-px bg-teal-500/30 mt-1" />
-                </div>
-                <div>
-                  <p className="font-semibold mb-0.5">
-                    {isPT ? "Descubra o que precisa" : "Discover what you need"}
-                  </p>
-                  <p className="text-slate-200/80 text-xs md:text-sm">
-                    {isPT
-                      ? "Navegue pelas categorias ou pesquise uma necessidade específica — limpeza, arranjos, babysitting, aulas, bem-estar e mais."
-                      : "Browse categories or search for a specific need — cleaning, repairs, babysitting, classes, wellness, and more."}
-                  </p>
-                </div>
-              </li>
-
-              <li className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <div className="h-7 w-7 rounded-full bg-teal-500 flex items-center justify-center text-xs font-bold">
-                    2
-                  </div>
-                  <div className="flex-1 w-px bg-teal-500/30 mt-1" />
-                </div>
-                <div>
-                  <p className="font-semibold mb-0.5">
-                    {isPT
-                      ? "Compare prestadores de confiança"
-                      : "Compare trusted providers"}
-                  </p>
-                  <p className="text-slate-200/80 text-xs md:text-sm">
-                    {isPT
-                      ? "Veja perfis, avaliações, áreas de atuação e contactos diretos, sem taxas ou intermediários."
-                      : "Check profiles, reviews, service areas, and direct contacts, with no extra platform fees or middlemen."}
-                  </p>
-                </div>
-              </li>
-
-              <li className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <div className="h-7 w-7 rounded-full bg-teal-500 flex items-center justify-center text-xs font-bold">
-                    3
-                  </div>
-                  <div className="flex-1 w-px bg-teal-500/30 mt-1" />
-                </div>
-                <div>
-                  <p className="font-semibold mb-0.5">
-                    {isPT
-                      ? "Contacte, combine e avalie"
-                      : "Contact, book, and review"}
-                  </p>
-                  <p className="text-slate-200/80 text-xs md:text-sm">
-                    {isPT
-                      ? "Contacte diretamente o prestador, combine tudo ao seu ritmo e partilhe depois a sua experiência para apoiar a comunidade."
-                      : "Contact providers directly, agree everything at your own pace, then share your experience to support the community."}
-                  </p>
-                </div>
-              </li>
-
-              <li className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <div className="h-7 w-7 rounded-full bg-teal-500 flex items-center justify-center text-xs font-bold">
-                    4
-                  </div>
-                </div>
-                <div>
-                  <p className="font-semibold mb-0.5">
-                    {isPT
-                      ? "Construa relações de confiança"
-                      : "Build long-term trust"}
-                  </p>
-                  <p className="text-slate-200/80 text-xs md:text-sm">
-                    {isPT
-                      ? "Quando encontra alguém de confiança, pode voltar a contactá-lo sempre que precisar — sem voltar a começar do zero."
-                      : "When you find someone you trust, you can reach out again whenever you need — no need to start from zero each time."}
-                  </p>
-                </div>
-              </li>
-            </ol>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ SECTION */}
-      <section className="max-w-5xl mx-auto px-4 pb-14">
-        <div className="text-center mb-8 md:mb-10">
-          <div className="inline-flex items-center rounded-full bg-sky-50 px-3 py-1 text-[11px] font-medium text-sky-700 border border-sky-100 mb-3">
-            <span className="mr-1.5">💬</span>
-            <span>
-              {isPT
-                ? "Tem dúvidas? Estamos aqui para ajudar."
-                : "Questions? We’re here to help."}
-            </span>
-          </div>
-          <h2 className="text-xl md:text-2xl font-bold mb-2 text-slate-900">
-            {isPT ? "Perguntas Frequentes" : "Frequently Asked Questions"}
-          </h2>
-          <p className="max-w-2xl mx-auto text-sm md:text-base text-slate-600">
-            {isPT
-              ? "Veja algumas das perguntas mais comuns sobre como usar a AllCascais — tanto para quem procura serviços como para quem os presta."
-              : "Here are some of the most common questions about using AllCascais — whether you’re looking for services or offering them."}
-          </p>
-        </div>
-
-        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-5 md:p-7">
-          <div className="grid md:grid-cols-3 gap-6 md:gap-7">
-            {/* Card 1 */}
-            <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4 md:p-5 hover:shadow-sm hover:-translate-y-0.5 transition">
-              <div className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-[#1F6FA6] mb-2 border border-sky-100">
-                {isPT ? "Encontrar profissionais" : "Finding professionals"}
-              </div>
-              <h3 className="font-semibold mb-2 text-slate-900 text-sm md:text-base">
-                {isPT
-                  ? "Como encontro um profissional de confiança em Cascais?"
-                  : "How do I find a trusted handyman in Cascais?"}
-              </h3>
-              <p className="text-xs md:text-sm text-slate-600">
-                {isPT
-                  ? "Explore a nossa secção de Serviços, onde todos os prestadores são verificados pela comunidade. Veja classificações, comentários e zonas de atuação para escolher com confiança."
-                  : "Browse our Services section where all providers are verified by community members. Check ratings, reviews, and service areas so you can choose with confidence."}
-              </p>
-            </div>
-
-            {/* Card 2 */}
-            <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4 md:p-5 hover:shadow-sm hover:-translate-y-0.5 transition">
-              <div className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-emerald-700 mb-2 border border-emerald-100">
-                {isPT ? "Para residentes" : "For residents"}
-              </div>
-              <h3 className="font-semibold mb-2 text-slate-900 text-sm md:text-base">
-                {isPT
-                  ? "A plataforma é gratuita para residentes?"
-                  : "Is this platform free for residents?"}
-              </h3>
-              <p className="text-xs md:text-sm text-slate-600">
-                {isPT
-                  ? "Sim! Procurar e contactar serviços é totalmente gratuito. Apoiamos os profissionais locais ligando-os diretamente aos residentes, sem taxas de intermediários."
-                  : "Yes! Searching and contacting services is completely free. We support local professionals by connecting them directly with residents, with no middleman fees."}
-              </p>
-            </div>
-
-            {/* Card 3 */}
-            <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4 md:p-5 hover:shadow-sm hover:-translate-y-0.5 transition">
-              <div className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[10px] font-semibold text-amber-700 mb-2 border border-amber-100">
-                {isPT ? "Imobiliário" : "Real Estate"}
-              </div>
-              <h3 className="font-semibold mb-2 text-slate-900 text-sm md:text-base">
-                {isPT
-                  ? "Como posso evitar taxas de plataformas como o Airbnb?"
-                  : "How do I avoid Airbnb fees for rentals?"}
-              </h3>
-              <p className="text-xs md:text-sm text-slate-600">
-                {isPT
-                  ? "A nossa secção de Imobiliário liga-o diretamente a proprietários e gestores locais em Cascais, ajudando a evitar taxas de plataformas e processos de reserva complexos."
-                  : "Our Real Estate section connects you directly with local owners and managers in Cascais, helping you avoid platform fees and complicated booking processes."}
-              </p>
-            </div>
-          </div>
-
-          {/* Bottom helper text / CTA */}
-          <div className="mt-7 pt-5 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-3 text-[11px] md:text-sm">
-            <p className="text-slate-500 text-center md:text-left">
-              {isPT
-                ? "Não encontrou a resposta que procurava? Estamos sempre a melhorar a AllCascais com base no feedback da comunidade."
-                : "Didn’t find the answer you were looking for? We’re constantly improving AllCascais based on community feedback."}
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <span className="text-slate-400">
-                {isPT ? "Sugestões ou dúvidas?" : "Suggestions or questions?"}
-              </span>
-              <span className="inline-flex items-center rounded-full bg-slate-900 text-white px-3 py-1.5 text-[11px] font-medium shadow-sm">
-                ✉️{" "}
-                <span className="ml-1.5">
-                  {isPT ? "info@allcascais.com" : "info@allcascais.com"}
-                </span>
-              </span>
-            </div>
+            <button
+              type="button"
+              onClick={handleGoToCreateServices}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-white border border-slate-200 text-slate-800 px-6 py-3 text-sm font-semibold hover:bg-slate-50 transition"
+            >
+              <Building2 className="w-4 h-4" />
+              {isPT ? "Publicar o meu serviço" : "List my service"}
+            </button>
           </div>
         </div>
       </section>
