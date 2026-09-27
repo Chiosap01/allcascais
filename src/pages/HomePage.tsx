@@ -17,7 +17,6 @@ import {
   X,
   ChevronDown,
   ArrowUpDown,
-  ShieldCheck,
   CheckCircle2,
 } from "lucide-react";
 

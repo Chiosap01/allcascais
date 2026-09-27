@@ -6,7 +6,6 @@ import {
   Home,
   Sparkles,
   ShieldCheck,
-  Globe,
   Mail,
   MapPin,
   Star,
@@ -367,7 +366,6 @@ const LandingPage: React.FC = () => {
   >("services");
 
   /* ---------- Search validation state (Norman) ---------- */
-  const [searchTouched, setSearchTouched] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
   /* ---------- Contact modal state ---------- */
@@ -384,19 +382,6 @@ const LandingPage: React.FC = () => {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  /* ---------------------------------------------------------
-     TRUST METRICS
-     Honestos: sem números inventados. À medida que os dados
-     reais existirem, liga isto ao Supabase (count de providers
-     e jobs) e substitui os claims por valores reais.
-  --------------------------------------------------------- */
-  const trustMetrics = {
-    rating: null as number | null,
-    reviews: 0,
-    providers: 0,
-    completedJobs: 0,
-  };
 
   /* ---------------------------------------------------------
      TESTIMONIALS
@@ -736,7 +721,6 @@ const LandingPage: React.FC = () => {
                               if (searchError) setSearchError(null);
                             }}
                             onBlur={() => {
-                              setSearchTouched(true);
                               if (!searchQuery.trim()) {
                                 setSearchError(
                                   isPT

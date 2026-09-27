@@ -33,7 +33,6 @@ import type { CategoryId, Category, Subcategory } from "../data/categories";
    o CTA "Ver contacto" (trigger único de "isto é uma oferta").
 --------------------------------------------------------- */
 const BRAND = "#1F6FA6";
-const BRAND_HOVER = "#195c8a";
 const OFFER_ACCENT = "#F59E0B";
 const OFFER_ACCENT_HOVER = "#D97706";
 
