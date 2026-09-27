@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Search,
@@ -16,12 +16,10 @@ import {
   CheckCircle2,
   Building2,
   X,
-  Gift,
   Send,
   Loader2,
   AlertCircle,
   MessageCircle,
-  Lock,
 } from "lucide-react";
 import { useLanguage } from "../layouts/MainLayout";
 import { supabase } from "../supabase";
@@ -49,6 +47,8 @@ const ContactModal: React.FC<{
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const firstInputRef = useRef<HTMLInputElement | null>(null);
+  const backdropRef = useRef<HTMLDivElement | null>(null);
+  const downOnBackdropRef = useRef(false);
 
   /* ---------- Reset ao fechar ---------- */
   useEffect(() => {
@@ -136,15 +136,30 @@ const ContactModal: React.FC<{
     }
   };
 
+  /* ---------- Backdrop só fecha se o clique começou E terminou no backdrop ---------- */
+  const handleBackdropMouseDown = (e: React.MouseEvent) => {
+    if (e.target === backdropRef.current) {
+      downOnBackdropRef.current = true;
+    }
+  };
+  const handleBackdropMouseUp = (e: React.MouseEvent) => {
+    if (e.target === backdropRef.current && downOnBackdropRef.current) {
+      onClose();
+    }
+    downOnBackdropRef.current = false;
+  };
+
   if (!open) return null;
 
   return (
     <div
+      ref={backdropRef}
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 backdrop-blur-sm px-0 sm:px-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="contact-modal-title"
-      onClick={onClose}
+      onMouseDown={handleBackdropMouseDown}
+      onMouseUp={handleBackdropMouseUp}
     >
       <div
         className="w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col"
@@ -238,10 +253,10 @@ const ContactModal: React.FC<{
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F6FA6]/40 transition"
-                style={{ ["--tw-ring-color" as any]: "#1F6FA622" }}
+                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F6FA6]/40 focus:ring-[#1F6FA6]/15 transition"
                 placeholder={isPT ? "O teu nome" : "Your name"}
                 autoComplete="name"
+                required
               />
             </div>
 
@@ -258,10 +273,10 @@ const ContactModal: React.FC<{
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F6FA6]/40 transition"
-                style={{ ["--tw-ring-color" as any]: "#1F6FA622" }}
+                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F6FA6]/40 focus:ring-[#1F6FA6]/15 transition"
                 placeholder="email@exemplo.com"
                 autoComplete="email"
+                required
               />
             </div>
 
@@ -278,11 +293,11 @@ const ContactModal: React.FC<{
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 rows={4}
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F6FA6]/40 transition resize-none"
-                style={{ ["--tw-ring-color" as any]: "#1F6FA622" }}
+                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F6FA6]/40 focus:ring-[#1F6FA6]/15 transition resize-none"
                 placeholder={
                   isPT ? "Escreve a tua mensagem..." : "Write your message..."
                 }
+                required
               />
             </div>
 
@@ -339,240 +354,6 @@ const ContactModal: React.FC<{
 };
 
 /* =========================================================
-   LEAD MAGNET
-   Godin: dar valor primeiro, pedir permissão depois
-   Cialdini: reciprocidade + prova social
-   Miller: o guia como "ferramenta" dada pelo guia
-========================================================= */
-const LeadMagnetSection: React.FC<{ isPT: boolean }> = ({ isPT }) => {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<
-    "idle" | "submitting" | "success" | "error"
-  >("idle");
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMsg(null);
-
-    const clean = email.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clean)) {
-      setErrorMsg(isPT ? "Introduz um email válido." : "Enter a valid email.");
-      return;
-    }
-
-    setStatus("submitting");
-
-    const payload = {
-      source: "landing-lead-magnet",
-      page_url: window.location.href,
-      language: isPT ? "pt" : "en",
-      email: clean,
-      meta: {
-        magnet: "cascais-guide-2025",
-        magnet_name: isPT
-          ? "Guia Viver em Cascais 2025"
-          : "Cascais Living Guide 2025",
-      },
-    };
-
-    try {
-      const { error } = await supabase.from("leads").insert(payload);
-      if (error) throw error;
-      setStatus("success");
-    } catch (err) {
-      console.error("Lead magnet insert failed:", err);
-      setStatus("error");
-      setErrorMsg(
-        isPT
-          ? "Não conseguimos guardar. Tenta novamente."
-          : "Couldn't save. Please try again."
-      );
-    }
-  };
-
-  const bullets = isPT
-    ? [
-        "25 profissionais recomendados por zona",
-        "Checklist de mudança em 30 dias",
-        "Ofertas exclusivas de boas-vindas",
-      ]
-    : [
-        "25 recommended professionals by area",
-        "30-day moving-in checklist",
-        "Exclusive welcome offers",
-      ];
-
-  return (
-    <section className="max-w-7xl mx-auto px-4 pb-16">
-      <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-sky-50 via-white to-emerald-50 border border-slate-200">
-        {/* Decoração */}
-        <div
-          aria-hidden="true"
-          className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-sky-200/40 blur-3xl pointer-events-none"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-emerald-200/30 blur-3xl pointer-events-none"
-        />
-
-        <div className="relative grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-10 p-6 sm:p-10">
-          {/* LEFT — content */}
-          <div className="lg:col-span-3">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full bg-white border border-sky-200 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-[#1F6FA6] shadow-sm mb-5">
-              <Gift className="w-3.5 h-3.5" />
-              {isPT ? "Guia grátis" : "Free guide"}
-            </div>
-
-            {/* Headline */}
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 leading-tight tracking-tight">
-              {isPT ? (
-                <>
-                  Viver em Cascais,
-                  <span className="block text-[#1F6FA6]">
-                    sem complicações.
-                  </span>
-                </>
-              ) : (
-                <>
-                  Living in Cascais,
-                  <span className="block text-[#1F6FA6]">
-                    without the hassle.
-                  </span>
-                </>
-              )}
-            </h2>
-
-            {/* Description */}
-            <p className="mt-4 text-sm sm:text-base text-slate-600 leading-relaxed max-w-lg">
-              {isPT
-                ? "O guia essencial para quem acabou de chegar — ou está a pensar mudar-se. Profissionais, dicas e tudo o que precisas para te instalares bem."
-                : "The essential guide for newcomers — or anyone planning the move. Professionals, tips and everything you need to settle in well."}
-            </p>
-
-            {/* Bullets */}
-            <ul className="mt-6 space-y-2.5">
-              {bullets.map((b) => (
-                <li
-                  key={b}
-                  className="flex items-start gap-2.5 text-sm text-slate-700"
-                >
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>{b}</span>
-                </li>
-              ))}
-            </ul>
-
-            {/* Social proof — Cialdini */}
-            <div className="mt-6 flex items-center gap-2 text-xs text-slate-500">
-              <div className="flex -space-x-2">
-                {["SM", "JP", "EL"].map((initials, i) => (
-                  <div
-                    key={initials}
-                    className="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white"
-                    style={{
-                      backgroundColor: ["#1F6FA6", "#10B981", "#F59E0B"][i],
-                    }}
-                  >
-                    {initials}
-                  </div>
-                ))}
-              </div>
-              <span>
-                {isPT
-                  ? "Junta-te a residentes que já recebem as nossas dicas."
-                  : "Join residents already getting our tips."}
-              </span>
-            </div>
-          </div>
-
-          {/* RIGHT — form */}
-          <div className="lg:col-span-2 lg:self-center">
-            {status === "success" ? (
-              <div className="rounded-3xl bg-white border border-emerald-200 shadow-md p-6 text-center">
-                <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-3">
-                  <CheckCircle2 className="w-7 h-7 text-emerald-600" />
-                </div>
-                <h3 className="text-base font-semibold text-slate-900 mb-1">
-                  {isPT ? "Guia a caminho!" : "Guide on its way!"}
-                </h3>
-                <p className="text-xs text-slate-600">
-                  {isPT
-                    ? "Verifica o teu email nos próximos minutos."
-                    : "Check your email in the next few minutes."}
-                </p>
-              </div>
-            ) : (
-              <form
-                onSubmit={handleSubmit}
-                className="rounded-3xl bg-white border border-slate-200 shadow-md p-5 sm:p-6 space-y-3"
-                noValidate
-              >
-                <label
-                  htmlFor="lead-email"
-                  className="block text-xs font-semibold text-slate-700"
-                >
-                  {isPT
-                    ? "Recebe o guia no teu email"
-                    : "Get the guide by email"}
-                </label>
-
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                  <input
-                    id="lead-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 py-3 text-sm focus:outline-none focus:ring-4 focus:border-[#1F6FA6]/40 transition"
-                    style={{ ["--tw-ring-color" as any]: "#1F6FA622" }}
-                    placeholder="email@exemplo.com"
-                    autoComplete="email"
-                  />
-                </div>
-
-                {errorMsg && (
-                  <div className="flex items-start gap-2 text-[11px] text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                    <span>{errorMsg}</span>
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  disabled={status === "submitting"}
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-xl text-white text-sm font-semibold py-3 shadow-md transition disabled:opacity-60 disabled:cursor-not-allowed bg-[#1F6FA6] hover:bg-[#195c8a] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1F6FA6]"
-                >
-                  {status === "submitting" ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      {isPT ? "A enviar..." : "Sending..."}
-                    </>
-                  ) : (
-                    <>
-                      <Gift className="w-4 h-4" />
-                      {isPT ? "Receber guia grátis" : "Get free guide"}
-                    </>
-                  )}
-                </button>
-
-                <p className="flex items-center justify-center gap-1.5 text-[11px] text-slate-500 pt-1">
-                  <Lock className="w-3 h-3" />
-                  {isPT
-                    ? "Sem spam. Cancelas quando quiseres."
-                    : "No spam. Unsubscribe anytime."}
-                </p>
-              </form>
-            )}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-};
-
-/* =========================================================
    MAIN PAGE
 ========================================================= */
 const LandingPage: React.FC = () => {
@@ -584,6 +365,10 @@ const LandingPage: React.FC = () => {
   const [searchTab, setSearchTab] = useState<
     "services" | "offers" | "real-estate"
   >("services");
+
+  /* ---------- Search validation state (Norman) ---------- */
+  const [searchTouched, setSearchTouched] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   /* ---------- Contact modal state ---------- */
   const [contactOpen, setContactOpen] = useState(false);
@@ -602,16 +387,22 @@ const LandingPage: React.FC = () => {
 
   /* ---------------------------------------------------------
      TRUST METRICS
+     Honestos: sem números inventados. À medida que os dados
+     reais existirem, liga isto ao Supabase (count de providers
+     e jobs) e substitui os claims por valores reais.
   --------------------------------------------------------- */
   const trustMetrics = {
-    rating: 4.8,
-    reviews: 500,
-    providers: 140,
-    completedJobs: 1200,
+    rating: null as number | null,
+    reviews: 0,
+    providers: 0,
+    completedJobs: 0,
   };
 
   /* ---------------------------------------------------------
      TESTIMONIALS
+     Nota: estes depoimentos são ilustrativos enquanto não
+     existirem avaliações reais. Substituir por reais quando
+     houver, e remover a etiqueta "exemplo".
   --------------------------------------------------------- */
   const testimonials = [
     {
@@ -623,6 +414,7 @@ const LandingPage: React.FC = () => {
         ? "Encontrei um canalizador que falava inglês em 10 minutos. Salvou o meu domingo."
         : "Found an English-speaking plumber in 10 minutes. Saved my Sunday.",
       service: isPT ? "Canalização" : "Plumbing",
+      isExample: true,
     },
     {
       id: "2",
@@ -633,6 +425,7 @@ const LandingPage: React.FC = () => {
         ? "Finalmente um sítio onde encontro profissionais de confiança sem pedir favores no Facebook."
         : "Finally a place where I find trusted pros without asking favors on Facebook.",
       service: isPT ? "Eletricidade" : "Electrical",
+      isExample: true,
     },
     {
       id: "3",
@@ -643,6 +436,7 @@ const LandingPage: React.FC = () => {
         ? "Mudei-me há um mês e já usei o AllCascais três vezes. Nunca falhou."
         : "Moved here a month ago and already used AllCascais three times. Never failed.",
       service: isPT ? "Limpezas" : "Cleaning",
+      isExample: true,
     },
   ];
 
@@ -657,8 +451,8 @@ const LandingPage: React.FC = () => {
       placeholder: isPT
         ? "Ex: canalizador, dentista, limpezas..."
         : "E.g. plumber, dentist, cleaning...",
-      accent: "bg-[#1F6FA6]",
-      accentHover: "hover:bg-[#195c8a]",
+      accentClass:
+        "bg-[#1F6FA6] hover:bg-[#195c8a] focus-visible:ring-[#1F6FA6]",
       text: "text-[#1F6FA6]",
       icon: Search,
     },
@@ -669,8 +463,8 @@ const LandingPage: React.FC = () => {
       placeholder: isPT
         ? "Ex: spa, surf, jantar, desconto..."
         : "E.g. spa, surf, dinner, discount...",
-      accent: "bg-amber-500",
-      accentHover: "hover:bg-amber-600",
+      accentClass:
+        "bg-amber-500 hover:bg-amber-600 focus-visible:ring-amber-500",
       text: "text-amber-600",
       icon: Tag,
     },
@@ -679,8 +473,8 @@ const LandingPage: React.FC = () => {
       label: isPT ? "Imóveis" : "Properties",
       question: isPT ? "O que procuras?" : "What are you looking for?",
       placeholder: "",
-      accent: "bg-emerald-600",
-      accentHover: "hover:bg-emerald-700",
+      accentClass:
+        "bg-emerald-600 hover:bg-emerald-700 focus-visible:ring-emerald-600",
       text: "text-emerald-600",
       icon: Home,
     },
@@ -702,6 +496,17 @@ const LandingPage: React.FC = () => {
   const suggestions = SUGGESTIONS_BY_TAB[searchTab];
 
   /* ---------------------------------------------------------
+     FILTERED SUGGESTIONS (Cialdini — reduzir paralisia de escolha)
+  --------------------------------------------------------- */
+  const filteredSuggestions = useMemo(() => {
+    const list = suggestions as readonly string[];
+    if (!searchQuery.trim()) return list.slice(0, 5);
+    const q = searchQuery.toLowerCase();
+    const filtered = list.filter((s) => s.toLowerCase().includes(q));
+    return filtered.slice(0, 5);
+  }, [searchQuery, suggestions]);
+
+  /* ---------------------------------------------------------
      HANDLERS
   --------------------------------------------------------- */
   const handleSearch = (e: React.FormEvent) => {
@@ -709,6 +514,9 @@ const LandingPage: React.FC = () => {
     if (searchTab === "real-estate") return;
 
     const q = searchQuery.trim();
+
+    /* Krug: o botão nunca bloqueia. Sem query → vai para a lista. */
+    setSearchError(null);
     navigate(
       q ? `${activeTab.route}?search=${encodeURIComponent(q)}` : activeTab.route
     );
@@ -717,6 +525,7 @@ const LandingPage: React.FC = () => {
   const handleSuggestionClick = (suggestion: string) => {
     if (searchTab === "real-estate") return;
     setSearchQuery(suggestion);
+    setSearchError(null);
     navigate(`${activeTab.route}?search=${encodeURIComponent(suggestion)}`);
   };
 
@@ -724,6 +533,7 @@ const LandingPage: React.FC = () => {
 
   const handleBuyClick = () => navigate("/real-estate?buyRent=buy");
   const handleRentClick = () => navigate("/real-estate?buyRent=rent");
+  const handleBrowseAllClick = () => navigate("/real-estate");
 
   /* ---------------------------------------------------------
      MAIN CATEGORIES
@@ -774,13 +584,12 @@ const LandingPage: React.FC = () => {
   ];
 
   /* ---------------------------------------------------------
-     3-STEP PLAN (Miller)
+     BENEFITS LINE (substitui o 3-step estático — Miller/Krug)
+     Diz o que é, não como usar.
   --------------------------------------------------------- */
-  const STEPS = [
-    { n: 1, label: isPT ? "Pesquisa" : "Search" },
-    { n: 2, label: isPT ? "Contacta direto" : "Contact direct" },
-    { n: 3, label: isPT ? "Avalia" : "Review" },
-  ];
+  const benefits = isPT
+    ? ["Grátis", "Sem intermediários", "PT / EN"]
+    : ["Free", "No middlemen", "EN / PT"];
 
   return (
     <div className="min-h-screen bg-[#fafcfb] text-slate-900">
@@ -802,14 +611,6 @@ const LandingPage: React.FC = () => {
 
         <div className="relative z-10 w-full max-w-5xl mx-auto px-4 py-8 sm:py-16">
           <div className="text-center text-white">
-            {/* Location badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-xs sm:text-sm font-medium mb-5 sm:mb-6 shadow-lg">
-              <MapPin className="w-4 h-4 text-sky-300" />
-              <span>Cascais</span>
-              <span className="text-white/50">·</span>
-              <span>PT / EN</span>
-            </div>
-
             {/* Headline */}
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] drop-shadow-2xl">
               {isPT ? (
@@ -829,43 +630,19 @@ const LandingPage: React.FC = () => {
 
             <p className="max-w-2xl mx-auto mt-5 text-base sm:text-lg md:text-xl text-white/90 leading-relaxed">
               {isPT
-                ? "Profissionais verificados, ofertas locais e imóveis — em PT/EN, sem intermediários."
-                : "Verified professionals, local deals and properties — in EN/PT, no middlemen."}
+                ? "Profissionais verificados, ofertas locais e imóveis sem intermediários."
+                : "Verified professionals, local deals and properties — no middlemen."}
             </p>
-
-            {/* Social proof */}
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-white/90">
-              <span className="inline-flex items-center gap-1.5">
-                <Star className="w-4 h-4 text-amber-300 fill-amber-300" />
-                <span className="font-semibold text-white">
-                  {trustMetrics.rating}
-                </span>
-                <span className="text-white/80">({trustMetrics.reviews}+)</span>
-              </span>
-              <span className="text-white/40 hidden sm:inline">·</span>
-              <span className="inline-flex items-center gap-1.5">
-                <Users className="w-4 h-4" />
-                <span className="font-semibold text-white">
-                  {trustMetrics.providers}+
-                </span>
-                <span className="text-white/80">
-                  {isPT ? "profissionais" : "professionals"}
-                </span>
-              </span>
-              <span className="text-white/40 hidden sm:inline">·</span>
-              <span className="inline-flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-300" />
-                <span className="text-white/90">
-                  {isPT ? "Verificados" : "Verified"}
-                </span>
-              </span>
-            </div>
 
             {/* SEARCH CARD */}
             <div className="mt-8 sm:mt-9 max-w-2xl mx-auto">
               <div className="bg-white rounded-[28px] shadow-2xl overflow-hidden text-left border border-white/30">
                 {/* Tabs */}
-                <div className="grid grid-cols-3 border-b border-slate-100 bg-slate-50">
+                <div
+                  className="grid grid-cols-3 border-b border-slate-100 bg-slate-50"
+                  role="tablist"
+                  aria-label={isPT ? "Tipo de pesquisa" : "Search type"}
+                >
                   {(["services", "offers", "real-estate"] as const).map(
                     (key) => {
                       const tab = SEARCH_TABS[key];
@@ -875,8 +652,15 @@ const LandingPage: React.FC = () => {
                       return (
                         <button
                           key={key}
+                          id={`tab-${key}`}
                           type="button"
-                          onClick={() => setSearchTab(key)}
+                          role="tab"
+                          aria-selected={isActive}
+                          aria-controls={`panel-${key}`}
+                          onClick={() => {
+                            setSearchTab(key);
+                            setSearchError(null);
+                          }}
                           className={[
                             "relative flex items-center justify-center gap-2 py-4 px-2 text-xs sm:text-sm font-semibold transition-all",
                             "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1F6FA6] focus-visible:ring-inset",
@@ -884,14 +668,19 @@ const LandingPage: React.FC = () => {
                               ? "bg-white text-slate-900"
                               : "text-slate-500 hover:text-slate-800 hover:bg-white/70",
                           ].join(" ")}
-                          aria-pressed={isActive}
                         >
                           <Icon className="w-4 h-4" />
                           <span>{tab.label}</span>
 
                           {isActive && (
                             <span
-                              className={`absolute bottom-0 left-0 right-0 h-[3px] ${tab.accent}`}
+                              className={`absolute bottom-0 left-0 right-0 h-[3px] ${
+                                key === "services"
+                                  ? "bg-[#1F6FA6]"
+                                  : key === "offers"
+                                  ? "bg-amber-500"
+                                  : "bg-emerald-600"
+                              }`}
                             />
                           )}
                         </button>
@@ -900,108 +689,191 @@ const LandingPage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="sm:h-[240px] flex flex-col">
+                {/* =========================================================
+                    CONTEÚDO DAS TABS
+                    Altura fixa em todos os breakpoints → sem salto ao mudar de tab
+                    Norman: overflow-y-auto para nunca cortar o feedback de erro
+                    Krug:  feedback visível sem scroll manual
+                ========================================================== */}
+                <div
+                  id={`panel-${searchTab}`}
+                  role="tabpanel"
+                  aria-labelledby={`tab-${searchTab}`}
+                  aria-live="polite"
+                  className="h-[230px] sm:h-[240px] flex flex-col overflow-y-auto overflow-x-hidden"
+                >
+                  {/* ---------- SERVIÇOS / OFERTAS ---------- */}
                   {searchTab !== "real-estate" && (
                     <form
                       onSubmit={handleSearch}
-                      className="sm:h-full flex flex-col"
+                      className="flex-1 min-h-0 flex flex-col"
+                      noValidate
                     >
-                      <div className="p-4 sm:p-6 sm:flex-1">
-                        <p className="text-[11px] uppercase tracking-[0.15em] font-bold text-slate-400 mb-3">
+                      <div className="p-4 sm:p-6 flex-1 min-h-0 flex flex-col justify-center">
+                        <label
+                          htmlFor="hero-search"
+                          className="block text-[11px] uppercase tracking-[0.15em] font-bold text-slate-400 mb-3"
+                        >
                           {activeTab.question}
-                        </p>
+                        </label>
 
-                        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 focus-within:border-[#1F6FA6] focus-within:ring-4 focus-within:ring-[#1F6FA6]/15 transition">
+                        <div
+                          className={[
+                            "flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 transition",
+                            searchError
+                              ? "border-red-300 focus-within:border-red-400 focus-within:ring-4 focus-within:ring-red-100"
+                              : "border-slate-200 focus-within:border-[#1F6FA6] focus-within:ring-4 focus-within:ring-[#1F6FA6]/15",
+                          ].join(" ")}
+                        >
                           <Search className="w-5 h-5 text-slate-300 shrink-0" />
 
                           <input
+                            id="hero-search"
                             type="text"
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => {
+                              setSearchQuery(e.target.value);
+                              if (searchError) setSearchError(null);
+                            }}
+                            onBlur={() => {
+                              setSearchTouched(true);
+                              if (!searchQuery.trim()) {
+                                setSearchError(
+                                  isPT
+                                    ? "Escreve o que procuras — ou prime Procurar para veres tudo."
+                                    : "Type what you need — or press Search to see all."
+                                );
+                              }
+                            }}
+                            aria-invalid={!!searchError}
+                            aria-describedby={
+                              searchError ? "search-error" : undefined
+                            }
                             placeholder={activeTab.placeholder}
                             className="w-full text-base outline-none text-slate-800 placeholder-slate-400 bg-transparent"
                           />
                         </div>
+
+                        {searchError && (
+                          <p
+                            id="search-error"
+                            role="alert"
+                            className="mt-2 text-xs text-red-600 flex items-center gap-1.5"
+                          >
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            {searchError}
+                          </p>
+                        )}
                       </div>
 
-                      <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/70 px-4 py-3">
-                        <span className="hidden sm:block text-xs text-slate-500">
-                          {isPT
-                            ? "Procura por aquilo que precisas"
-                            : "Search for what you need"}
+                      <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/70 px-4 py-3 shrink-0">
+                        <span className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500">
+                          {searchTab === "services" && (
+                            <>
+                              <Users className="w-3.5 h-3.5 text-slate-400" />
+                              {isPT
+                                ? "Crescemos com a comunidade"
+                                : "Growing with the community."}
+                            </>
+                          )}
+                          {searchTab === "offers" && (
+                            <>
+                              <Tag className="w-3.5 h-3.5 text-slate-400" />
+                              {isPT
+                                ? "Novas ofertas todas as semanas"
+                                : "New offers every week"}
+                            </>
+                          )}
                         </span>
 
                         <button
                           type="submit"
-                          className={`${activeTab.accent} ${activeTab.accentHover} text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 font-semibold text-sm shadow-md transition-all hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1F6FA6] ml-auto`}
+                          className={`${activeTab.accentClass} text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 font-semibold text-sm shadow-md transition-all hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ml-auto`}
                         >
                           <ActiveIcon className="w-4 h-4" />
-                          {searchQuery.trim()
-                            ? isPT
-                              ? "Procurar"
-                              : "Search"
-                            : isPT
-                            ? "Explorar"
-                            : "Explore"}
+                          {isPT ? "Procurar" : "Search"}
                           <ArrowRight className="w-4 h-4" />
                         </button>
                       </div>
                     </form>
                   )}
 
+                  {/* ---------- IMÓVEIS ---------- */}
                   {searchTab === "real-estate" && (
-                    <div className="flex flex-col p-4 sm:p-6 sm:h-full">
-                      <p className="text-[11px] uppercase tracking-[0.15em] font-bold text-slate-400 mb-3">
-                        {isPT
-                          ? "Escolhe o que procuras"
-                          : "Choose what you're looking for"}
-                      </p>
+                    <div className="flex-1 min-h-0 flex flex-col">
+                      <div className="p-4 sm:p-6 flex-1 min-h-0 flex flex-col justify-center">
+                        <p className="text-[11px] uppercase tracking-[0.15em] font-bold text-slate-400 mb-3">
+                          {isPT
+                            ? "Escolhe o que procuras"
+                            : "Choose what you're looking for"}
+                        </p>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 sm:flex-1">
+                        <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                          {/* Buy */}
+                          <button
+                            type="button"
+                            onClick={handleBuyClick}
+                            className="group rounded-2xl border border-emerald-200 bg-emerald-50/60 p-2.5 sm:p-3.5 text-left hover:bg-emerald-50 hover:border-emerald-300 hover:shadow-sm transition-all flex items-center gap-2 sm:gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                          >
+                            <div className="shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+                              <Home className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="font-bold text-xs sm:text-sm text-slate-900">
+                                {isPT ? "Comprar" : "Buy"}
+                              </div>
+                              <div className="text-[10px] sm:text-[11px] text-slate-600 mt-0.5 leading-snug line-clamp-2">
+                                {isPT
+                                  ? "Casas e apartamentos para venda."
+                                  : "Homes and apartments for sale."}
+                              </div>
+                            </div>
+
+                            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                          </button>
+
+                          {/* Rent */}
+                          <button
+                            type="button"
+                            onClick={handleRentClick}
+                            className="group rounded-2xl border border-emerald-200 bg-emerald-50/60 p-2.5 sm:p-3.5 text-left hover:bg-emerald-50 hover:border-emerald-300 hover:shadow-sm transition-all flex items-center gap-2 sm:gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                          >
+                            <div className="shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+                              <Building2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="font-bold text-xs sm:text-sm text-slate-900">
+                                {isPT ? "Arrendar" : "Rent"}
+                              </div>
+                              <div className="text-[10px] sm:text-[11px] text-slate-600 mt-0.5 leading-snug line-clamp-2">
+                                {isPT
+                                  ? "Para viver agora, sem complicações."
+                                  : "Move-in ready, no hassle."}
+                              </div>
+                            </div>
+
+                            <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/70 px-4 py-3 shrink-0">
+                        <span className="hidden sm:block text-xs text-slate-500">
+                          {isPT
+                            ? "Explora todas as opções disponíveis"
+                            : "Browse all available listings"}
+                        </span>
+
                         <button
                           type="button"
-                          onClick={handleBuyClick}
-                          className="group rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3 sm:p-3.5 text-left hover:bg-emerald-50 hover:border-emerald-300 hover:shadow-sm transition-all flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                          onClick={handleBrowseAllClick}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 font-semibold text-sm shadow-md transition-all hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-600 ml-auto"
                         >
-                          <div className="shrink-0 w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
-                            <Home className="w-5 h-5" />
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <div className="font-bold text-sm text-slate-900">
-                              {isPT ? "Comprar" : "Buy"}
-                            </div>
-                            <div className="text-[11px] text-slate-600 mt-0.5 leading-snug">
-                              {isPT
-                                ? "Casas e apartamentos para venda."
-                                : "Homes and apartments for sale."}
-                            </div>
-                          </div>
-
-                          <ArrowRight className="w-4 h-4 text-emerald-600 shrink-0 group-hover:translate-x-0.5 transition-transform" />
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={handleRentClick}
-                          className="group rounded-2xl border border-emerald-200 bg-emerald-50/60 p-3 sm:p-3.5 text-left hover:bg-emerald-50 hover:border-emerald-300 hover:shadow-sm transition-all flex items-center gap-3 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
-                        >
-                          <div className="shrink-0 w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
-                            <Building2 className="w-5 h-5" />
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <div className="font-bold text-sm text-slate-900">
-                              {isPT ? "Arrendar" : "Rent"}
-                            </div>
-                            <div className="text-[11px] text-slate-600 mt-0.5 leading-snug">
-                              {isPT
-                                ? "Para viver agora, sem complicações."
-                                : "Move-in ready, no hassle."}
-                            </div>
-                          </div>
-
-                          <ArrowRight className="w-4 h-4 text-emerald-600 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                          <Home className="w-4 h-4" />
+                          {isPT ? "Ver todos" : "Browse all"}
+                          <ArrowRight className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
@@ -1009,136 +881,84 @@ const LandingPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Abaixo do card */}
+              {/* Abaixo do card — altura reservada para não mover o fundo do hero */}
               <div className="mt-5 sm:mt-6 flex flex-col justify-start gap-4">
+                {/* Benefits line — substitui o 3-step estático */}
                 <div className="flex items-center justify-center gap-2 sm:gap-4 text-[11px] sm:text-xs text-white/90">
-                  {STEPS.map((step, idx) => (
-                    <React.Fragment key={step.n}>
+                  {benefits.map((b, idx) => (
+                    <React.Fragment key={b}>
                       <span className="inline-flex items-center gap-1.5">
-                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-white/15 border border-white/30 text-[10px] font-bold">
-                          {step.n}
-                        </span>
-                        <span className="font-medium">{step.label}</span>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+                        <span className="font-medium">{b}</span>
                       </span>
-                      {idx < STEPS.length - 1 && (
-                        <span className="text-white/50" aria-hidden="true">
-                          →
+                      {idx < benefits.length - 1 && (
+                        <span className="text-white/40" aria-hidden="true">
+                          ·
                         </span>
                       )}
                     </React.Fragment>
                   ))}
                 </div>
 
-                {searchTab !== "real-estate" && suggestions.length > 0 && (
-                  <>
-                    <div className="text-[11px] uppercase tracking-[0.15em] font-bold text-white/70 text-center">
-                      {isPT ? "Experimenta com" : "Try searching for"}
-                    </div>
+                {/* Slot com altura fixa: sugestões OU "Dica rápida" */}
+                <div className="h-[84px] sm:h-[92px] flex flex-col items-center justify-start gap-2 overflow-hidden">
+                  {searchTab !== "real-estate" &&
+                    filteredSuggestions.length > 0 && (
+                      <>
+                        <div className="text-[11px] uppercase tracking-[0.15em] font-bold text-white/70 text-center">
+                          {searchQuery.trim()
+                            ? isPT
+                              ? "Sugestões"
+                              : "Suggestions"
+                            : isPT
+                            ? "Experimenta com"
+                            : "Try searching for"}
+                        </div>
 
-                    <div className="flex flex-wrap justify-center gap-2">
-                      {suggestions.map((item) => (
-                        <button
-                          key={item}
-                          type="button"
-                          onClick={() => handleSuggestionClick(item)}
-                          className="px-3.5 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-xs sm:text-sm text-white hover:bg-white/20 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-                        >
-                          {item}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
+                        <div className="flex flex-wrap justify-center gap-2">
+                          {filteredSuggestions.map((item) => (
+                            <button
+                              key={item}
+                              type="button"
+                              onClick={() => handleSuggestionClick(item)}
+                              className="px-3.5 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-xs sm:text-sm text-white hover:bg-white/20 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                            >
+                              {item}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
 
-                {searchTab === "real-estate" && (
-                  <div className="text-center">
-                    <p className="text-[11px] uppercase tracking-[0.15em] font-bold text-white/70 mb-2">
-                      {isPT ? "Sabia que" : "Did you know"}
-                    </p>
-                    <p className="text-xs sm:text-sm text-white/85 max-w-md mx-auto">
-                      {isPT
-                        ? "Pode filtrar por zona, tipo, quartos e preço dentro da página de imóveis."
-                        : "You can filter by area, type, bedrooms and price inside the properties page."}
-                    </p>
-                  </div>
-                )}
+                  {searchTab === "real-estate" && (
+                    <div className="text-center w-full">
+                      <p className="text-[11px] uppercase tracking-[0.15em] font-bold text-white/70 mb-2">
+                        {isPT ? "Dica rápida" : "Quick tip"}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleBrowseAllClick}
+                        className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-white/90 hover:text-white underline underline-offset-4 decoration-white/40 hover:decoration-white transition"
+                      >
+                        {isPT
+                          ? "Filtra por zona, tipo e preço — ver todos os imóveis"
+                          : "Filter by area, type and price — browse all properties"}
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* FOUNDER STORY */}
-      <section className="relative z-20 -mt-7 px-4">
-        <div className="max-w-3xl mx-auto bg-white rounded-3xl border border-slate-100 shadow-xl p-6 sm:p-8">
-          <div className="flex items-start gap-4">
-            <div className="shrink-0 w-12 h-12 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center">
-              <Quote className="w-5 h-5 text-[#1F6FA6]" />
-            </div>
-
-            <div>
-              <p className="text-sm sm:text-base text-slate-700 leading-relaxed italic">
-                {isPT
-                  ? '"Cresci em Cascais. Vi a minha cidade tornar-se mais internacional, mais vibrante, mas também vi vizinhos recém-chegados a lutar para encontrar um eletricista, um dentista, uma limpeza de confiança. E vi profissionais locais que eu conhecia com a agenda vazia. Decidi construir a ponte."'
-                  : '"I grew up in Cascais. I watched my town become more international, more vibrant, but I also watched newly-arrived neighbours struggle to find an electrician, a dentist, a trustworthy cleaner. And I watched local professionals I knew with empty schedules. So I built the bridge."'}
-              </p>
-              <div className="mt-3 text-xs text-slate-500">
-                — {isPT ? "Fundador do AllCascais" : "Founder of AllCascais"}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* TRUST BAR */}
-      <section className="max-w-5xl mx-auto px-4 pt-10 pb-14">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
-          <div className="text-center">
-            <div className="text-2xl sm:text-3xl font-bold text-[#1F6FA6]">
-              {trustMetrics.providers}+
-            </div>
-            <div className="text-xs sm:text-sm text-slate-600 mt-1">
-              {isPT ? "Profissionais" : "Professionals"}
-            </div>
-          </div>
-
-          <div className="text-center">
-            <div className="text-2xl sm:text-3xl font-bold text-[#1F6FA6]">
-              {trustMetrics.completedJobs}+
-            </div>
-            <div className="text-xs sm:text-sm text-slate-600 mt-1">
-              {isPT ? "Serviços concluídos" : "Jobs completed"}
-            </div>
-          </div>
-
-          <div className="text-center">
-            <div className="flex justify-center items-center gap-1.5">
-              <Star className="w-6 h-6 text-amber-400 fill-amber-400" />
-              <span className="text-2xl sm:text-3xl font-bold text-slate-900">
-                {trustMetrics.rating}
-              </span>
-            </div>
-            <div className="text-xs sm:text-sm text-slate-600 mt-1">
-              {isPT ? "Avaliação média" : "Average rating"}
-            </div>
-          </div>
-
-          <div className="text-center">
-            <div className="flex justify-center items-center gap-1.5">
-              <Globe className="w-6 h-6 text-[#1F6FA6]" />
-              <span className="text-lg sm:text-xl font-bold text-slate-900">
-                PT / EN
-              </span>
-            </div>
-            <div className="text-xs sm:text-sm text-slate-600 mt-1">
-              {isPT ? "Dois idiomas" : "Two languages"}
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* FOUNDER STORY — movida para depois dos testimonials */}
+      {/* (removida daqui; reinserida abaixo) */}
 
       {/* MAIN CATEGORIES */}
-      <section className="max-w-7xl mx-auto px-4 pb-16">
+      <section className="max-w-7xl mx-auto px-4 pt-16 pb-16">
         <div className="max-w-2xl mb-9">
           <div className="flex items-center gap-2 text-[#1F6FA6] text-xs font-bold uppercase tracking-[0.15em] mb-3">
             <Sparkles className="w-4 h-4" />
@@ -1260,18 +1080,41 @@ const LandingPage: React.FC = () => {
                     {t.service}
                   </span>
                 </div>
+
+                {t.isExample && (
+                  <p className="mt-3 text-[10px] text-slate-400 italic">
+                    {isPT
+                      ? "Exemplo ilustrativo — substituir por avaliações reais quando existirem."
+                      : "Illustrative example — replace with real reviews once available."}
+                  </p>
+                )}
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* =========================================================
-          LEAD MAGNET — Godin + Cialdini
-      ========================================================== */}
-      <div className="pt-16">
-        <LeadMagnetSection isPT={isPT} />
-      </div>
+      {/* FOUNDER STORY — movida para aqui, depois dos testimonials */}
+      <section className="max-w-3xl mx-auto px-4 py-16">
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-xl p-6 sm:p-8">
+          <div className="flex items-start gap-4">
+            <div className="shrink-0 w-12 h-12 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center">
+              <Quote className="w-5 h-5 text-[#1F6FA6]" />
+            </div>
+
+            <div>
+              <p className="text-sm sm:text-base text-slate-700 leading-relaxed italic">
+                {isPT
+                  ? '"Cresci em Cascais. Vi a minha cidade tornar-se mais internacional, mais vibrante, mas também vi vizinhos recém-chegados a lutar para encontrar um eletricista, um dentista, uma limpeza de confiança. E vi profissionais locais que eu conhecia com a agenda vazia. Decidi construir a ponte."'
+                  : '"I grew up in Cascais. I watched my town become more international, more vibrant, but I also watched newly-arrived neighbours struggle to find an electrician, a dentist, a trustworthy cleaner. And I watched local professionals I knew with empty schedules. So I built the bridge."'}
+              </p>
+              <div className="mt-3 text-xs text-slate-500">
+                — {isPT ? "Fundador do AllCascais" : "Founder of AllCascais"}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* BUSINESS CTA */}
       <section className="max-w-7xl mx-auto px-4 pb-16">
@@ -1352,11 +1195,6 @@ const LandingPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-2">
-              <Globe className="w-4 h-4 text-[#1F6FA6]" />
-              PT / EN
-            </div>
-
-            <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-[#1F6FA6]" />
               Cascais, Portugal
             </div>
@@ -1366,30 +1204,25 @@ const LandingPage: React.FC = () => {
 
       {/* =========================================================
           FLOATING CONTACT BUTTON
-          Krug: só aparece após scroll
-          Godin: abre modal (permissão), não mailto (interrupção)
       ========================================================== */}
-      <button
-        type="button"
-        onClick={() => setContactOpen(true)}
-        aria-hidden={!showFloating}
-        tabIndex={showFloating ? 0 : -1}
-        className={[
-          "fixed bottom-5 right-5 z-30 group flex items-center gap-2 rounded-full bg-[#1F6FA6] text-white pl-4 pr-5 py-3 shadow-2xl",
-          "hover:bg-[#195c8a] hover:-translate-y-0.5",
-          "transition-all duration-300",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1F6FA6]",
-          showFloating
-            ? "opacity-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 translate-y-4 pointer-events-none",
-        ].join(" ")}
-        aria-label={isPT ? "Falar connosco" : "Talk to us"}
-      >
-        <Mail className="w-5 h-5" />
-        <span className="text-sm font-semibold hidden sm:inline">
-          {isPT ? "Falar connosco" : "Talk to us"}
-        </span>
-      </button>
+      {showFloating && (
+        <button
+          type="button"
+          onClick={() => setContactOpen(true)}
+          className={[
+            "fixed bottom-5 right-5 z-30 group flex items-center gap-2 rounded-full bg-[#1F6FA6] text-white pl-4 pr-5 py-3 shadow-2xl",
+            "hover:bg-[#195c8a] hover:-translate-y-0.5",
+            "transition-all duration-300",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1F6FA6]",
+          ].join(" ")}
+          aria-label={isPT ? "Falar connosco" : "Talk to us"}
+        >
+          <Mail className="w-5 h-5" />
+          <span className="text-sm font-semibold hidden sm:inline">
+            {isPT ? "Falar connosco" : "Talk to us"}
+          </span>
+        </button>
+      )}
 
       {/* =========================================================
           CONTACT MODAL

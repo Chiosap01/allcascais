@@ -1,5 +1,5 @@
 // src/pages/OffersPage.tsx
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { useLanguage } from "../layouts/MainLayout";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabase";
@@ -14,6 +14,7 @@ import {
   ChevronDown,
   ArrowUpDown,
   Sparkles,
+  AlertCircle,
 } from "lucide-react";
 
 import {
@@ -27,8 +28,14 @@ import type { CategoryId, Category, Subcategory } from "../data/categories";
 
 /* ---------------------------------------------------------
    DESIGN TOKENS
+   Opção B — o azul (BRAND) é a cor de marca consistente
+   entre páginas. O âmbar fica reservado para UMA coisa:
+   o CTA "Ver contacto" (trigger único de "isto é uma oferta").
 --------------------------------------------------------- */
 const BRAND = "#1F6FA6";
+const BRAND_HOVER = "#195c8a";
+const OFFER_ACCENT = "#F59E0B";
+const OFFER_ACCENT_HOVER = "#D97706";
 
 /* ---------------------------------------------------------
    TYPES
@@ -92,9 +99,10 @@ type OfferRow = {
 /* ---------------------------------------------------------
    HELPERS
 --------------------------------------------------------- */
-const formatPrice = (value?: number | null): string => {
+const formatPrice = (value?: number | null, isPT: boolean = false): string => {
   if (value == null) return "-";
-  return `€${value.toLocaleString("en-US", { minimumFractionDigits: 0 })}`;
+  const locale = isPT ? "pt-PT" : "en-US";
+  return `€${value.toLocaleString(locale, { minimumFractionDigits: 0 })}`;
 };
 
 const formatValidUntil = (value: string | null | undefined, isPT: boolean) => {
@@ -117,6 +125,12 @@ const daysUntil = (value?: string | null): number | null => {
   return Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 };
 
+const formatEndingSoon = (days: number, isPT: boolean): string => {
+  if (days === 0) return isPT ? "Termina hoje" : "Ends today";
+  if (days === 1) return isPT ? "Termina amanhã" : "Ends tomorrow";
+  return isPT ? `Termina em ${days} dias` : `Ends in ${days} days`;
+};
+
 const highlightLabel = (highlight?: OfferHighlight, isPT?: boolean): string => {
   if (!highlight) return "";
   const map = {
@@ -132,8 +146,8 @@ const highlightPillClass = (highlight?: OfferHighlight) => {
   if (highlight === "new")
     return "bg-emerald-50/95 text-emerald-700 border-emerald-100";
   if (highlight === "last-minute")
-    return "bg-rose-50/95 text-rose-700 border-rose-100";
-  return "bg-amber-50/95 text-amber-700 border-amber-100";
+    return "bg-amber-50/95 text-amber-800 border-amber-100";
+  return "bg-sky-50/95 text-sky-800 border-sky-100";
 };
 
 const languageFlag = (code: string) => {
@@ -224,8 +238,103 @@ const calcDiscountPercent = (o: Offer) => {
 
 const normalizePhoneForTel = (raw: string) => raw.replace(/[^\d+]/g, "");
 
+const isRecentlyAdded = (createdAt?: string | null): boolean => {
+  if (!createdAt) return false;
+  const created = new Date(createdAt).getTime();
+  if (Number.isNaN(created)) return false;
+  return Date.now() - created < 48 * 60 * 60 * 1000;
+};
+
 /* ---------------------------------------------------------
-   OFFER CARD — cleaner hierarchy, hover lift
+   CONFIRM DELETE MODAL
+   Norman: feedback claro, sem `window.confirm`
+--------------------------------------------------------- */
+const ConfirmDeleteModal: React.FC<{
+  open: boolean;
+  offerTitle: string;
+  isPT: boolean;
+  busy: boolean;
+  errorMsg: string | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ open, offerTitle, isPT, busy, errorMsg, onConfirm, onCancel }) => {
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-delete-title"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-md rounded-3xl bg-white shadow-xl border border-slate-100"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-5 py-6">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-red-50 border border-red-100 flex items-center justify-center shrink-0 text-lg">
+              ⚠️
+            </div>
+            <div className="min-w-0">
+              <h3
+                id="confirm-delete-title"
+                className="text-base font-semibold text-slate-900"
+              >
+                {isPT ? "Remover oferta?" : "Remove offer?"}
+              </h3>
+              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                {isPT
+                  ? `"${offerTitle}" será removida permanentemente. Esta ação não pode ser desfeita.`
+                  : `"${offerTitle}" will be permanently removed. This action cannot be undone.`}
+              </p>
+            </div>
+          </div>
+
+          {errorMsg && (
+            <div className="mb-4 flex items-start gap-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={busy}
+              className="rounded-full bg-slate-100 text-slate-700 text-sm font-semibold px-5 py-2.5 hover:bg-slate-200 disabled:opacity-60 transition"
+            >
+              {isPT ? "Cancelar" : "Cancel"}
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={busy}
+              className="rounded-full bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-5 py-2.5 shadow-sm disabled:opacity-60 transition"
+            >
+              {busy
+                ? isPT
+                  ? "A remover..."
+                  : "Removing..."
+                : isPT
+                ? "Remover"
+                : "Remove"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ---------------------------------------------------------
+   OFFER CARD
+   Paleta reduzida: azul (BRAND) para UI, âmbar (OFFER_ACCENT)
+   apenas no CTA. Verde só para o desconto. Vermelho removido.
+   CTA primário acima da descrição. Imagem aspect-[4/3].
+   Painel de contacto com backdrop + pointer-events-auto.
 --------------------------------------------------------- */
 type OfferCardProps = {
   offer: Offer;
@@ -243,13 +352,14 @@ const OfferCard: React.FC<OfferCardProps> = ({
   onEdit,
 }) => {
   const [showContact, setShowContact] = useState(false);
-  const [showFullDescription, setShowFullDescription] = useState(false);
+
+  const contactPanelRef = useRef<HTMLDivElement | null>(null);
 
   const discountPercent = calcDiscountPercent(offer);
-  const hasDiscount = discountPercent != null;
-
   const discountAmount =
-    hasDiscount && offer.originalPrice != null && offer.discountedPrice != null
+    discountPercent != null &&
+    offer.originalPrice != null &&
+    offer.discountedPrice != null
       ? offer.originalPrice - offer.discountedPrice
       : null;
 
@@ -259,23 +369,29 @@ const OfferCard: React.FC<OfferCardProps> = ({
   const linkedinUrl = socialUrl("linkedin", offer.linkedin);
   const hasAnySocial = instagramUrl || facebookUrl || tiktokUrl || linkedinUrl;
 
+  const hasContactInfo =
+    !!offer.phone || !!offer.contactEmail || !!offer.website || hasAnySocial;
+
   const initials =
     offer.serviceName?.charAt(0).toUpperCase() ||
     offer.title?.charAt(0).toUpperCase() ||
     "?";
 
   const primaryPrice = formatPrice(
-    offer.discountedPrice ?? offer.originalPrice ?? null
+    offer.discountedPrice ?? offer.originalPrice ?? null,
+    isPT
   );
-  const oldPrice = hasDiscount ? formatPrice(offer.originalPrice) : null;
+  const oldPrice =
+    discountPercent != null ? formatPrice(offer.originalPrice, isPT) : null;
 
   const phoneTel =
     offer.phone && offer.phone.trim()
       ? normalizePhoneForTel(offer.phone)
       : null;
 
-  const descRef = React.useRef<HTMLParagraphElement | null>(null);
+  const descRef = useRef<HTMLParagraphElement | null>(null);
   const [isTruncated, setIsTruncated] = useState(false);
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
   useEffect(() => {
     const el = descRef.current;
@@ -292,21 +408,37 @@ const OfferCard: React.FC<OfferCardProps> = ({
       window.removeEventListener("resize", check);
       ro?.disconnect();
     };
-  }, [offer.description]);
+  }, [offer.description, showFullDescription]);
+
+  /* Norman: foco dentro do painel quando abre */
+  useEffect(() => {
+    if (showContact && contactPanelRef.current) {
+      const focusable = contactPanelRef.current.querySelector<HTMLElement>(
+        "button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])"
+      );
+      focusable?.focus();
+    }
+  }, [showContact]);
+
+  /* Esc fecha o painel */
+  useEffect(() => {
+    if (!showContact) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowContact(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [showContact]);
 
   const days = daysUntil(offer.validUntil);
   const isEndingSoon = days != null && days <= 3 && days >= 0;
-
-  const closeAllOverlays = () => {
-    setShowContact(false);
-    setShowFullDescription(false);
-  };
+  const recentlyAdded = isRecentlyAdded(offer.createdAt);
 
   return (
-    <article className="relative bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
-      {/* IMAGE */}
+    <article className="relative flex flex-col bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden hover:border-slate-300 hover:shadow-md transition-[box-shadow,border-color] duration-200">
+      {/* IMAGE — aspect 4/3, mais cards visíveis por ecrã */}
       <div className="relative">
-        <div className="w-full aspect-[16/10] bg-slate-100 overflow-hidden">
+        <div className="w-full aspect-[4/3] bg-slate-100 overflow-hidden">
           {offer.imageUrl ? (
             <img
               src={offer.imageUrl}
@@ -328,10 +460,11 @@ const OfferCard: React.FC<OfferCardProps> = ({
           )}
         </div>
 
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-black/10 to-transparent" />
+        {/* Gradiente leve no topo para legibilidade das pills */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/40 to-transparent" />
 
-        {/* Top pills */}
-        <div className="absolute top-3 left-3 flex flex-wrap gap-2">
+        {/* Pills no topo — só categoria de estado */}
+        <div className="absolute top-3 left-3 flex flex-wrap gap-2 max-w-[70%]">
           {offer.highlight && (
             <span
               className={[
@@ -343,89 +476,55 @@ const OfferCard: React.FC<OfferCardProps> = ({
             </span>
           )}
 
-          {hasDiscount && discountPercent != null && (
+          {discountPercent != null && (
             <span className="inline-flex items-center rounded-full bg-emerald-600 text-white text-[11px] font-semibold px-3 py-1 shadow-sm">
               -{discountPercent}%
             </span>
           )}
 
-          {isEndingSoon && (
-            <span className="inline-flex items-center rounded-full bg-rose-500 text-white text-[11px] font-semibold px-3 py-1 shadow-sm">
-              {days === 0
-                ? isPT
-                  ? "Termina hoje"
-                  : "Ends today"
-                : isPT
-                ? `Termina em ${days}d`
-                : `Ends in ${days}d`}
+          {isEndingSoon && days != null && (
+            <span className="inline-flex items-center rounded-full bg-amber-700 text-white text-[11px] font-semibold px-3 py-1 shadow-sm">
+              {formatEndingSoon(days, isPT)}
             </span>
           )}
-        </div>
-
-        {/* Price overlay */}
-        <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-baseline gap-2">
-              <span className="text-white text-xl sm:text-2xl font-extrabold drop-shadow">
-                {primaryPrice}
-              </span>
-              {oldPrice && (
-                <span className="text-white/80 text-sm line-through drop-shadow">
-                  {oldPrice}
-                </span>
-              )}
-            </div>
-            {hasDiscount && discountAmount != null && (
-              <div className="mt-1 text-[12px] text-white/90 drop-shadow">
-                {isPT ? "Poupa" : "Save"} €{discountAmount}
-              </div>
-            )}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setShowContact(true)}
-            className="shrink-0 rounded-full bg-white text-slate-900 text-xs sm:text-sm font-semibold px-4 py-2.5 shadow-md hover:bg-slate-50 transition"
-          >
-            {isPT ? "Ver contacto" : "Get this deal"}
-          </button>
         </div>
       </div>
 
       {/* CONTENT */}
-      <div className="p-4 sm:p-5 flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold text-slate-700 border border-slate-200">
-            {getCategoryLabel(offer.categoryId, isPT)}
-          </span>
-
-          {offer.subcategoryId && (
-            <span className="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200">
-              {getSubcategoryLabel(offer.categoryId, offer.subcategoryId, isPT)}
-            </span>
-          )}
-
-          {offer.validUntil && (
-            <span className="inline-flex items-center rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700 border border-sky-100 ml-auto">
-              ⏰ {formatValidUntil(offer.validUntil, isPT)}
-            </span>
-          )}
-        </div>
-
-        <div className="space-y-1">
+      <div className="p-4 sm:p-5 flex flex-col gap-3 flex-1">
+        {/* Título + preço + info — o essencial em cima */}
+        <div className="space-y-2">
           <h3 className="text-base sm:text-lg font-semibold text-slate-900 leading-tight">
             {offer.title}
           </h3>
 
-          <div className="flex flex-wrap items-center gap-2 text-[12px] text-slate-500">
+          {/* Preço dentro do card — clareza sobre fundo branco */}
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className="text-xl sm:text-2xl font-extrabold text-slate-900">
+              {primaryPrice}
+            </span>
+            {oldPrice && (
+              <span className="text-sm line-through text-slate-400">
+                {oldPrice}
+              </span>
+            )}
+            {discountPercent != null && discountAmount != null && (
+              <span className="text-[12px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5">
+                {isPT ? "Poupa" : "Save"} {formatPrice(discountAmount, isPT)}
+              </span>
+            )}
+          </div>
+
+          {/* Hierarquia clara: quem > onde */}
+          <div className="flex flex-wrap items-center gap-2">
             {offer.serviceName && (
-              <span className="font-semibold text-slate-800">
+              <span className="text-[13px] font-semibold text-slate-900">
                 {offer.serviceName}
               </span>
             )}
             {offer.location && (
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5" />
+              <span className="flex items-center gap-1 text-[11px] text-slate-500">
+                <MapPin className="w-3 h-3" />
                 <span>{offer.location}</span>
               </span>
             )}
@@ -439,55 +538,55 @@ const OfferCard: React.FC<OfferCardProps> = ({
               </span>
             )}
           </div>
-        </div>
 
-        {offer.shortLabel && (
-          <div className="rounded-2xl border border-slate-100 bg-sky-50/50 px-3 py-2 text-[12px] text-slate-700">
-            <span className="font-semibold text-slate-900">
-              {isPT ? "Destaque:" : "Deal:"}
-            </span>{" "}
-            {offer.shortLabel}
-          </div>
-        )}
+          {/* Meta pills — categoria / sub / recência / validade */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+            <span className="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold text-slate-700 border border-slate-200">
+              {getCategoryLabel(offer.categoryId, isPT)}
+            </span>
 
-        {offer.description && (
-          <div className="space-y-2">
-            <p
-              ref={descRef}
-              className="text-sm text-slate-700 leading-relaxed line-clamp-3"
-            >
-              {offer.description}
-            </p>
+            {offer.subcategoryId && (
+              <span className="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200">
+                {getSubcategoryLabel(
+                  offer.categoryId,
+                  offer.subcategoryId,
+                  isPT
+                )}
+              </span>
+            )}
 
-            {isTruncated && (
-              <button
-                type="button"
-                onClick={() => setShowFullDescription(true)}
-                className="text-[12px] font-semibold text-[#1F6FA6] hover:text-[#195c8a] underline underline-offset-2"
-              >
-                {isPT ? "Mostrar mais" : "Show more"}
-              </button>
+            {recentlyAdded && (
+              <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-100">
+                {isPT ? "Adicionada recentemente" : "Added recently"}
+              </span>
+            )}
+
+            {offer.validUntil && (
+              <span className="inline-flex items-center rounded-full bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-600 border border-slate-200 ml-auto">
+                ⏰ {formatValidUntil(offer.validUntil, isPT)}
+              </span>
             )}
           </div>
-        )}
+        </div>
 
-        <div className="pt-2 flex items-center gap-2">
+        {/* CTA — sempre visível antes da descrição (Miller/Krug) */}
+        <div className="pt-1 flex items-center gap-2">
           <button
             type="button"
             onClick={() => setShowContact(true)}
             className="flex-1 rounded-full text-white text-sm font-semibold py-2.5 transition shadow-sm"
-            style={{ backgroundColor: "#F59E0B" }}
+            style={{ backgroundColor: OFFER_ACCENT }}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#D97706")
+              (e.currentTarget.style.backgroundColor = OFFER_ACCENT_HOVER)
             }
             onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#F59E0B")
+              (e.currentTarget.style.backgroundColor = OFFER_ACCENT)
             }
           >
-            {isPT ? "Ver contacto / Comprar" : "Contact / Buy"}
+            {isPT ? "Ver contacto" : "Contact"}
           </button>
 
-          {phoneTel ? (
+          {phoneTel && (
             <a
               href={`tel:${phoneTel}`}
               className="rounded-full bg-white hover:bg-slate-50 text-slate-800 text-sm font-semibold px-4 py-2.5 border border-slate-200 transition"
@@ -495,20 +594,50 @@ const OfferCard: React.FC<OfferCardProps> = ({
             >
               📞
             </a>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowContact(true)}
-              className="rounded-full bg-white hover:bg-slate-50 text-slate-800 text-sm font-semibold px-4 py-2.5 border border-slate-200 transition"
-              aria-label={isPT ? "Abrir contactos" : "Open contacts"}
-            >
-              📞
-            </button>
           )}
         </div>
 
+        {/* shortLabel — badge inline âmbar suave, sem bloco */}
+        {offer.shortLabel && (
+          <div className="inline-flex items-center gap-1.5 self-start text-[12px] font-semibold text-amber-800 bg-amber-50 border border-amber-100 rounded-full px-3 py-1">
+            ✨ {offer.shortLabel}
+          </div>
+        )}
+
+        {/* Descrição — secundária, expansível inline */}
+        {offer.description && (
+          <div className="space-y-2">
+            <p
+              ref={descRef}
+              className={[
+                "text-sm text-slate-600 leading-relaxed",
+                !showFullDescription ? "line-clamp-3" : "",
+              ].join(" ")}
+            >
+              {offer.description}
+            </p>
+
+            {isTruncated && (
+              <button
+                type="button"
+                onClick={() => setShowFullDescription((v) => !v)}
+                className="text-[12px] font-semibold text-[#1F6FA6] hover:text-[#195c8a] underline underline-offset-2"
+              >
+                {showFullDescription
+                  ? isPT
+                    ? "Mostrar menos"
+                    : "Show less"
+                  : isPT
+                  ? "Mostrar mais"
+                  : "Show more"}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Gestão do dono */}
         {canDelete && (
-          <div className="pt-2 mt-1 border-t border-slate-100 flex items-center justify-between">
+          <div className="mt-auto pt-2 border-t border-slate-100 flex items-center justify-between">
             <span className="text-[11px] text-slate-400">
               {isPT ? "Gerir oferta" : "Manage offer"}
             </span>
@@ -536,107 +665,94 @@ const OfferCard: React.FC<OfferCardProps> = ({
         )}
       </div>
 
-      {/* OVERLAYS */}
-      <div
-        className={[
-          "absolute inset-0 z-30 transition",
-          showContact || showFullDescription
-            ? "pointer-events-auto"
-            : "pointer-events-none",
-        ].join(" ")}
-        aria-hidden={!(showContact || showFullDescription)}
-      >
+      {/* BACKDROP — bloqueia cliques no card por baixo, fecha ao clicar */}
+      {showContact && (
         <button
           type="button"
-          onClick={closeAllOverlays}
-          className={[
-            "absolute inset-0 w-full h-full transition-opacity",
-            showContact || showFullDescription
-              ? "opacity-100 pointer-events-auto"
-              : "opacity-0 pointer-events-none",
-          ].join(" ")}
-          style={{ background: "rgba(2, 6, 23, 0.5)" }}
-          aria-label={isPT ? "Fechar" : "Close"}
+          onClick={() => setShowContact(false)}
+          className="absolute inset-0 z-20 cursor-default"
+          aria-label={isPT ? "Fechar contactos" : "Close contacts"}
+          style={{ background: "rgba(2, 6, 23, 0.15)" }}
         />
+      )}
 
-        {/* CONTACT PANEL */}
+      {/* PAINEL DE CONTACTO — top fixo, mantém imagem + título + preço visíveis */}
+      {showContact && (
         <div
-          className={[
-            "absolute left-3 right-3 bottom-3 sm:left-5 sm:right-5 sm:bottom-5",
-            "rounded-3xl bg-white border border-slate-200 shadow-xl",
-            "transition-all duration-200",
-            showContact
-              ? "opacity-100 translate-y-0 pointer-events-auto"
-              : "opacity-0 translate-y-3 pointer-events-none",
-          ].join(" ")}
+          ref={contactPanelRef}
+          className="absolute inset-x-0 bottom-0 top-[calc(75%-2rem)] z-30 bg-white flex flex-col rounded-b-3xl pointer-events-auto"
           role="dialog"
           aria-modal="true"
+          aria-label={isPT ? "Contactos" : "Contacts"}
         >
-          <div className="p-4 sm:p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="text-sm font-semibold text-slate-900">
-                  {isPT ? "Contactos" : "Contacts"}
-                </div>
-                <div className="mt-1 text-[12px] text-slate-500 break-words">
-                  {offer.serviceName || offer.title}
-                </div>
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 shrink-0">
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-slate-800">
+                {isPT ? "Contactos" : "Contacts"}
               </div>
+              <div className="text-[11px] text-slate-500 truncate">
+                {offer.serviceName || offer.title}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowContact(false)}
+              className="rounded-full w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition shrink-0"
+              aria-label={isPT ? "Fechar" : "Close"}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
 
-              <button
-                type="button"
-                onClick={() => setShowContact(false)}
-                className="rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 transition"
+          <div className="flex-1 overflow-y-auto px-4 py-3 text-[12px] space-y-2">
+            {!hasContactInfo && (
+              <p className="text-slate-500 italic">
+                {isPT
+                  ? "Este prestador ainda não adicionou contactos."
+                  : "This provider hasn't added contact details yet."}
+              </p>
+            )}
+
+            {offer.phone && (
+              <a
+                href={`tel:${normalizePhoneForTel(offer.phone)}`}
+                className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 hover:bg-slate-100 transition"
               >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+                <Phone className="w-4 h-4 text-slate-500 shrink-0" />
+                <span className="font-semibold text-slate-800 truncate">
+                  {offer.phone}
+                </span>
+              </a>
+            )}
 
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-              {offer.phone && (
-                <a
-                  href={`tel:${normalizePhoneForTel(offer.phone)}`}
-                  className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 hover:bg-slate-100 transition overflow-hidden"
-                >
-                  <Phone className="w-4 h-4 text-slate-500 shrink-0" />
-                  <span className="font-semibold text-slate-800 break-words">
-                    {offer.phone}
-                  </span>
-                </a>
-              )}
+            {offer.contactEmail && (
+              <a
+                href={`mailto:${offer.contactEmail}`}
+                className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 hover:bg-slate-100 transition"
+              >
+                <Mail className="w-4 h-4 text-slate-500 shrink-0" />
+                <span className="font-semibold text-slate-800 truncate">
+                  {offer.contactEmail}
+                </span>
+              </a>
+            )}
 
-              {offer.contactEmail && (
-                <a
-                  href={`mailto:${offer.contactEmail}`}
-                  className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 hover:bg-slate-100 transition overflow-hidden"
-                >
-                  <Mail className="w-4 h-4 text-slate-500 shrink-0" />
-                  <span className="font-semibold text-slate-800 break-all">
-                    {offer.contactEmail}
-                  </span>
-                </a>
-              )}
-
-              {offer.website && (
-                <a
-                  href={`https://${offer.website.replace(/^https?:\/\//, "")}`}
-                  className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 hover:bg-slate-100 transition sm:col-span-2 overflow-hidden"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <Globe className="w-4 h-4 text-slate-500 shrink-0" />
-                  <span className="font-semibold text-slate-800 break-all">
-                    {offer.website}
-                  </span>
-                </a>
-              )}
-            </div>
+            {offer.website && (
+              <a
+                href={`https://${offer.website.replace(/^https?:\/\//, "")}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 hover:bg-slate-100 transition"
+              >
+                <Globe className="w-4 h-4 text-slate-500 shrink-0" />
+                <span className="font-semibold text-[#1F6FA6] underline truncate">
+                  {offer.website}
+                </span>
+              </a>
+            )}
 
             {hasAnySocial && (
-              <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap items-center gap-2">
-                <span className="text-[12px] text-slate-500 mr-1">
-                  {isPT ? "Redes:" : "Socials:"}
-                </span>
+              <div className="pt-2 mt-1 border-t border-slate-100 flex flex-wrap gap-2">
                 {[
                   { url: instagramUrl, name: "Instagram" },
                   { url: facebookUrl, name: "Facebook" },
@@ -650,104 +766,35 @@ const OfferCard: React.FC<OfferCardProps> = ({
                       href={s.url!}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 px-3 py-1.5 text-[11px] font-semibold text-slate-700 hover:border-[#1F6FA6] hover:text-[#1F6FA6] transition"
+                      className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 px-2.5 py-1 text-[10px] font-medium text-slate-600 hover:border-[#1F6FA6] hover:text-[#1F6FA6] transition"
                     >
                       {s.name}
                     </a>
                   ))}
               </div>
             )}
+          </div>
 
-            <div className="mt-5 flex gap-2">
-              <button
-                type="button"
-                onClick={() => setShowContact(false)}
-                className="flex-1 rounded-full bg-white hover:bg-slate-50 text-slate-800 text-sm font-semibold py-2.5 border border-slate-200 transition"
+          <div className="px-4 py-3 border-t border-slate-100 shrink-0 flex gap-2">
+            {phoneTel && (
+              <a
+                href={`tel:${phoneTel}`}
+                className="flex-1 text-center rounded-full text-white text-xs font-semibold py-2.5 shadow-sm transition"
+                style={{ backgroundColor: OFFER_ACCENT }}
               >
-                {isPT ? "Voltar" : "Back"}
-              </button>
-              {phoneTel ? (
-                <a
-                  href={`tel:${phoneTel}`}
-                  className="flex-1 text-center rounded-full text-white text-sm font-semibold py-2.5 transition"
-                  style={{ backgroundColor: "#F59E0B" }}
-                >
-                  {isPT ? "Ligar agora" : "Call now"}
-                </a>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setShowContact(false)}
-                  className="flex-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold py-2.5 transition"
-                >
-                  {isPT ? "Continuar" : "Continue"}
-                </button>
-              )}
-            </div>
+                {isPT ? "Ligar agora" : "Call now"}
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowContact(false)}
+              className="flex-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold py-2.5 hover:bg-slate-200 transition"
+            >
+              {isPT ? "Voltar" : "Back"}
+            </button>
           </div>
         </div>
-
-        {/* FULL DESCRIPTION PANEL */}
-        <div
-          className={[
-            "absolute left-3 right-3 bottom-3 sm:left-5 sm:right-5 sm:bottom-5",
-            "rounded-3xl bg-white border border-slate-200 shadow-xl",
-            "transition-all duration-200",
-            showFullDescription
-              ? "opacity-100 translate-y-0 pointer-events-auto"
-              : "opacity-0 translate-y-3 pointer-events-none",
-          ].join(" ")}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="p-4 sm:p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="text-sm font-semibold text-slate-900">
-                  {isPT ? "Descrição completa" : "Full description"}
-                </div>
-                <div className="mt-1 text-[12px] text-slate-500 break-words">
-                  {offer.title}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setShowFullDescription(false)}
-                className="rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 p-2 transition"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4 max-h-[45vh] overflow-auto">
-              <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
-                {offer.description}
-              </p>
-            </div>
-
-            <div className="mt-5 flex gap-2">
-              <button
-                type="button"
-                onClick={() => setShowFullDescription(false)}
-                className="flex-1 rounded-full bg-white hover:bg-slate-50 text-slate-800 text-sm font-semibold py-2.5 border border-slate-200 transition"
-              >
-                {isPT ? "Mostrar menos" : "Show less"}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowFullDescription(false);
-                  setShowContact(true);
-                }}
-                className="flex-1 rounded-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold py-2.5 transition"
-              >
-                {isPT ? "Ver contacto" : "Get this deal"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      )}
     </article>
   );
 };
@@ -757,17 +804,13 @@ const OfferCard: React.FC<OfferCardProps> = ({
 --------------------------------------------------------- */
 const OfferSkeleton: React.FC = () => (
   <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden animate-pulse">
-    <div className="w-full aspect-[16/10] bg-slate-200" />
+    <div className="w-full aspect-[4/3] bg-slate-200" />
     <div className="p-4 sm:p-5 space-y-3">
-      <div className="flex gap-2">
-        <div className="h-5 w-20 bg-slate-200 rounded-full" />
-        <div className="h-5 w-16 bg-slate-100 rounded-full" />
-      </div>
       <div className="h-5 bg-slate-200 rounded w-3/4" />
-      <div className="h-4 bg-slate-100 rounded w-1/2" />
-      <div className="h-3 bg-slate-100 rounded w-full" />
-      <div className="h-3 bg-slate-100 rounded w-5/6" />
+      <div className="h-7 bg-slate-200 rounded w-1/2" />
+      <div className="h-4 bg-slate-100 rounded w-2/3" />
       <div className="h-10 bg-slate-100 rounded-full mt-2" />
+      <div className="h-3 bg-slate-100 rounded w-5/6" />
     </div>
   </div>
 );
@@ -793,6 +836,10 @@ const OffersPage: React.FC = () => {
 
   const [dbOffers, setDbOffers] = useState<Offer[]>([]);
   const [loadingOffers, setLoadingOffers] = useState(true);
+
+  const [offerToDelete, setOfferToDelete] = useState<Offer | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
@@ -842,7 +889,6 @@ const OffersPage: React.FC = () => {
   const filteredOffers = useMemo(() => {
     let list = [...dbOffers];
 
-    // Auto-hide expired
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     list = list.filter((o) => {
@@ -881,7 +927,6 @@ const OffersPage: React.FC = () => {
       });
     }
 
-    // Sort
     if (sortBy === "discount") {
       list.sort(
         (a, b) => (calcDiscountPercent(b) ?? 0) - (calcDiscountPercent(a) ?? 0)
@@ -912,13 +957,24 @@ const OffersPage: React.FC = () => {
     sortBy,
   ]);
 
-  const handleDeleteOffer = async (offerId: string | number) => {
-    if (!user || typeof offerId !== "string") return;
+  const openDeleteModal = (offer: Offer) => {
+    setOfferToDelete(offer);
+    setDeleteError(null);
+  };
 
-    const confirmText = isPT
-      ? "Tem a certeza de que quer remover esta oferta?"
-      : "Are you sure you want to remove this offer?";
-    if (!window.confirm(confirmText)) return;
+  const closeDeleteModal = () => {
+    if (deleteBusy) return;
+    setOfferToDelete(null);
+    setDeleteError(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!user || !offerToDelete) return;
+    const offerId = offerToDelete.id;
+    if (typeof offerId !== "string") return;
+
+    setDeleteBusy(true);
+    setDeleteError(null);
 
     const { error } = await supabase
       .from("service_offers")
@@ -926,17 +982,20 @@ const OffersPage: React.FC = () => {
       .eq("id", offerId)
       .eq("user_id", user.id);
 
+    setDeleteBusy(false);
+
     if (error) {
       console.error(error);
-      alert(
+      setDeleteError(
         isPT
-          ? "Erro ao remover a oferta."
+          ? "Erro ao remover a oferta. Tenta novamente."
           : "Something went wrong while removing the offer."
       );
       return;
     }
 
     setDbOffers((prev) => prev.filter((o) => o.id !== offerId));
+    setOfferToDelete(null);
   };
 
   const activeCategoryLabel =
@@ -973,24 +1032,24 @@ const OffersPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-transparent pb-10">
       {/* =========================================================
-          HERO
+          HERO — agora com BRAND em vez de âmbar (consistência com HomePage)
       ========================================================== */}
-      <section className="relative overflow-hidden border-b border-slate-200/60 bg-gradient-to-b from-white via-white to-amber-50/40">
+      <section className="relative overflow-hidden border-b border-slate-200/60 bg-gradient-to-b from-white via-white to-sky-50/40">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
         >
-          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-amber-200/30 blur-3xl" />
-          <div className="absolute -bottom-28 -left-20 h-80 w-80 rounded-full bg-sky-100/40 blur-3xl" />
+          <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-sky-200/30 blur-3xl" />
+          <div className="absolute -bottom-28 -left-20 h-80 w-80 rounded-full bg-amber-100/30 blur-3xl" />
         </div>
 
         <div className="relative max-w-5xl mx-auto px-4 pt-10 sm:pt-14 pb-8">
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-amber-200/70 bg-amber-50/80 px-3 py-1 text-[11px] font-semibold text-amber-800 backdrop-blur">
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200/70 bg-sky-50/80 px-3 py-1 text-[11px] font-semibold text-[#1F6FA6] backdrop-blur">
               <Sparkles className="w-3.5 h-3.5" />
               {isPT
-                ? "Ofertas selecionadas em Cascais"
-                : "Curated deals in Cascais"}
+                ? "Ofertas de moradores locais"
+                : "Deals from local residents"}
             </div>
 
             <h1 className="mt-4 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900">
@@ -1001,11 +1060,10 @@ const OffersPage: React.FC = () => {
 
             <p className="mt-3 text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto">
               {isPT
-                ? "Descontos, pacotes e campanhas sazonais dos prestadores verificados de Cascais."
-                : "Discounts, packages and seasonal campaigns from verified Cascais providers."}
+                ? "Descontos, pacotes e campanhas sazonais de prestadores locais em Cascais."
+                : "Discounts, packages and seasonal campaigns from local Cascais providers."}
             </p>
 
-            {/* Search */}
             <div className="mt-6 max-w-2xl mx-auto">
               <div className="relative">
                 <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
@@ -1020,8 +1078,9 @@ const OffersPage: React.FC = () => {
                       ? "Ex: spa, surf, jantar, desconto…"
                       : "E.g. spa, surf, dinner, discount…"
                   }
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-12 pr-12 py-4 text-sm sm:text-base shadow-sm outline-none focus:ring-4 focus:border-amber-400/40 transition"
-                  style={{ ["--tw-ring-color" as any]: "#F59E0B22" }}
+                  aria-label={isPT ? "Pesquisar ofertas" : "Search offers"}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-12 pr-12 py-4 text-sm sm:text-base shadow-sm outline-none focus:ring-4 focus:border-[#1F6FA6]/40 transition"
+                  style={{ ["--tw-ring-color" as any]: `${BRAND}22` }}
                 />
 
                 {search.trim() && (
@@ -1041,7 +1100,7 @@ const OffersPage: React.FC = () => {
       </section>
 
       {/* =========================================================
-          CATEGORY STRIP
+          CATEGORY STRIP — tudo BRAND
       ========================================================== */}
       <section className="relative -mt-2 pb-4" aria-label="Offer categories">
         <div className="max-w-7xl mx-auto px-4">
@@ -1082,15 +1141,18 @@ const OffersPage: React.FC = () => {
                           setSelectedSubcategory("all");
                         }}
                         className={[
-                          "shrink-0 rounded-2xl border px-3 py-2 transition flex items-center gap-2 text-xs font-semibold",
+                          "shrink-0 rounded-2xl border transition flex items-center gap-2 text-xs font-semibold",
+                          isAll ? "px-3.5 py-2" : "px-3 py-2",
                           active
-                            ? "border-amber-400 bg-amber-50 text-amber-800 shadow-sm"
+                            ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6] shadow-sm"
                             : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700",
                         ].join(" ")}
                       >
-                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white border border-slate-200 text-base">
-                          {isAll ? "🏖️" : category.icon}
-                        </span>
+                        {!isAll && (
+                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white border border-slate-200 text-base">
+                            {category.icon}
+                          </span>
+                        )}
                         <span className="max-w-[140px] truncate">{label}</span>
                       </button>
                     );
@@ -1119,15 +1181,12 @@ const OffersPage: React.FC = () => {
                     type="button"
                     onClick={() => setSelectedSubcategory("all")}
                     className={[
-                      "shrink-0 rounded-2xl border px-3 py-2 transition flex items-center gap-2 text-xs font-semibold",
+                      "shrink-0 rounded-2xl border px-3.5 py-2 transition flex items-center gap-2 text-xs font-semibold",
                       selectedSubcategory === "all"
-                        ? "border-amber-400 bg-amber-50 text-amber-800"
+                        ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6]"
                         : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700",
                     ].join(" ")}
                   >
-                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white border border-slate-200 text-base">
-                      🏖️
-                    </span>
                     <span>{isPT ? "Todos" : "All"}</span>
                   </button>
 
@@ -1146,7 +1205,7 @@ const OffersPage: React.FC = () => {
                         className={[
                           "shrink-0 rounded-2xl border px-3 py-2 transition flex items-center gap-2 text-xs font-semibold",
                           active
-                            ? "border-amber-400 bg-amber-50 text-amber-800"
+                            ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6]"
                             : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700",
                         ].join(" ")}
                       >
@@ -1165,7 +1224,7 @@ const OffersPage: React.FC = () => {
       </section>
 
       {/* =========================================================
-          RESULTS BAR — count + highlight filter + sort
+          RESULTS BAR — filtros BRAND, não âmbar
       ========================================================== */}
       <section className="max-w-7xl mx-auto px-4 pt-4 pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -1182,44 +1241,51 @@ const OffersPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Highlight filter */}
-            <div className="inline-flex items-center rounded-full bg-white border border-slate-200 px-1 py-1 shadow-sm">
-              {(
-                [
-                  { id: "all", label: isPT ? "Todas" : "All" },
-                  { id: "new", label: isPT ? "Novas" : "New" },
-                  { id: "last-minute", label: isPT ? "Últ. hora" : "Last min" },
-                  { id: "popular", label: isPT ? "Popular" : "Popular" },
-                ] as const
-              ).map((h) => {
-                const active = selectedHighlight === h.id;
-                return (
-                  <button
-                    key={h.id}
-                    type="button"
-                    onClick={() =>
-                      setSelectedHighlight(h.id as OfferHighlight | "all")
-                    }
-                    className={[
-                      "px-2.5 py-1 rounded-full text-[11px] font-semibold transition",
-                      active
-                        ? "bg-amber-100 text-amber-800"
-                        : "text-slate-500 hover:text-slate-800",
-                    ].join(" ")}
-                  >
-                    {h.label}
-                  </button>
-                );
-              })}
+            <div className="inline-flex items-center gap-1.5">
+              <span className="text-[11px] font-semibold text-slate-500 hidden sm:inline">
+                {isPT ? "Filtrar:" : "Filter:"}
+              </span>
+              <div className="inline-flex items-center rounded-full bg-white border border-slate-200 px-1 py-1 shadow-sm">
+                {(
+                  [
+                    { id: "all", label: isPT ? "Todas" : "All" },
+                    { id: "new", label: isPT ? "Novas" : "New" },
+                    {
+                      id: "last-minute",
+                      label: isPT ? "Últ. hora" : "Last min",
+                    },
+                    { id: "popular", label: isPT ? "Popular" : "Popular" },
+                  ] as const
+                ).map((h) => {
+                  const active = selectedHighlight === h.id;
+                  return (
+                    <button
+                      key={h.id}
+                      type="button"
+                      onClick={() =>
+                        setSelectedHighlight(h.id as OfferHighlight | "all")
+                      }
+                      className={[
+                        "px-2.5 py-1 rounded-full text-xs font-semibold transition",
+                        active
+                          ? "bg-sky-100 text-[#1F6FA6]"
+                          : "text-slate-500 hover:text-slate-800",
+                      ].join(" ")}
+                    >
+                      {h.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Sort */}
             <div className="relative">
               <ArrowUpDown className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="appearance-none rounded-full bg-white border border-slate-200 pl-8 pr-7 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-amber-400/30 transition"
+                aria-label={isPT ? "Ordenar" : "Sort"}
+                className="appearance-none rounded-full bg-white border border-slate-200 pl-8 pr-7 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 transition"
               >
                 <option value="recent">
                   {isPT ? "Mais recentes" : "Most recent"}
@@ -1252,7 +1318,7 @@ const OffersPage: React.FC = () => {
       ========================================================== */}
       <section className="max-w-7xl mx-auto px-4 pt-2 pb-10">
         {loadingOffers && dbOffers.length === 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 items-start">
             {Array.from({ length: 6 }).map((_, i) => (
               <OfferSkeleton key={i} />
             ))}
@@ -1261,7 +1327,7 @@ const OffersPage: React.FC = () => {
 
         {!loadingOffers && filteredOffers.length === 0 && (
           <div className="bg-white rounded-3xl border border-dashed border-slate-200 p-10 text-center max-w-xl mx-auto">
-            <div className="text-4xl mb-3">🫧</div>
+            <div className="text-4xl mb-3">🔍</div>
             <h3 className="text-base font-semibold text-slate-900 mb-2">
               {isPT ? "Sem ofertas" : "No offers"}
             </h3>
@@ -1283,7 +1349,7 @@ const OffersPage: React.FC = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 items-start">
           {filteredOffers.map((offer) => {
             const isOwner = !!user && offer.userId === user.id;
             return (
@@ -1292,9 +1358,7 @@ const OffersPage: React.FC = () => {
                 offer={offer}
                 isPT={isPT}
                 canDelete={isOwner}
-                onDelete={
-                  isOwner ? () => handleDeleteOffer(offer.id) : undefined
-                }
+                onDelete={isOwner ? () => openDeleteModal(offer) : undefined}
                 onEdit={
                   isOwner
                     ? () => navigate(`/offers/edit/${offer.id}`)
@@ -1305,6 +1369,19 @@ const OffersPage: React.FC = () => {
           })}
         </div>
       </section>
+
+      {/* =========================================================
+          CONFIRM DELETE MODAL
+      ========================================================== */}
+      <ConfirmDeleteModal
+        open={!!offerToDelete}
+        offerTitle={offerToDelete?.title ?? ""}
+        isPT={isPT}
+        busy={deleteBusy}
+        errorMsg={deleteError}
+        onConfirm={confirmDelete}
+        onCancel={closeDeleteModal}
+      />
     </div>
   );
 };

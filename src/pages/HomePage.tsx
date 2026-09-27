@@ -1,7 +1,7 @@
 // src/pages/HomePage.tsx
 import React, { useState, useMemo, useEffect } from "react";
 import { useLanguage } from "../layouts/MainLayout";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabase";
 import { useAuth } from "../context/AuthContext";
 import { toCdnUrl } from "../utils/cdn";
@@ -17,6 +17,8 @@ import {
   X,
   ChevronDown,
   ArrowUpDown,
+  ShieldCheck,
+  CheckCircle2,
 } from "lucide-react";
 
 import {
@@ -255,6 +257,8 @@ const StarInput: React.FC<{
 
 /* ---------------------------------------------------------
    RATING MODAL (write)
+   Norman: se o estado não permite a ação, mostrar antes,
+   não depois do submit. Sem `alert()`.
 --------------------------------------------------------- */
 const RatingModal: React.FC<{ service: Service; onClose: () => void }> = ({
   service,
@@ -263,6 +267,7 @@ const RatingModal: React.FC<{ service: Service; onClose: () => void }> = ({
   const { language } = useLanguage();
   const isPT = language === "pt";
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const [workQuality, setWorkQuality] = useState(0);
   const [punctuality, setPunctuality] = useState(0);
@@ -271,19 +276,52 @@ const RatingModal: React.FC<{ service: Service; onClose: () => void }> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
+  /* ---------- Estado: sem login ---------- */
+  if (!user) {
+    return (
+      <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 px-3">
+        <div className="w-full max-w-md rounded-3xl bg-white shadow-xl border border-slate-100">
+          <div className="px-5 py-6 text-center">
+            <div className="w-14 h-14 rounded-full bg-sky-50 border border-sky-100 flex items-center justify-center mx-auto mb-4 text-2xl">
+              🔒
+            </div>
+            <h2 className="text-base font-semibold text-slate-900 mb-1">
+              {isPT
+                ? "Precisas de uma conta para avaliar"
+                : "You need an account to rate"}
+            </h2>
+            <p className="text-sm text-slate-600 mb-5">
+              {isPT
+                ? "Entra na tua conta e volta para partilhar a tua experiência."
+                : "Sign in and come back to share your experience."}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={() => navigate("/login")}
+                className="flex-1 rounded-full text-white text-sm font-semibold py-2.5 shadow-sm transition"
+                style={{ backgroundColor: BRAND }}
+              >
+                {isPT ? "Entrar" : "Sign in"}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 rounded-full bg-slate-100 text-slate-700 text-sm font-semibold py-2.5 hover:bg-slate-200 transition"
+              >
+                {isPT ? "Cancelar" : "Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
-
-    if (!user) {
-      alert(
-        isPT
-          ? "Tem de iniciar sessão para avaliar um serviço."
-          : "You need to be signed in to rate a service."
-      );
-      return;
-    }
 
     if (!workQuality || !punctuality) {
       setErrorMsg(
@@ -383,7 +421,7 @@ const RatingModal: React.FC<{ service: Service; onClose: () => void }> = ({
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={3}
-              className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2"
+              className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:border-[#1F6FA6]/40"
               style={{ ["--tw-ring-color" as any]: `${BRAND}55` }}
             />
           </div>
@@ -403,7 +441,7 @@ const RatingModal: React.FC<{ service: Service; onClose: () => void }> = ({
             <button
               type="submit"
               disabled={submitting}
-              className="inline-flex items-center justify-center rounded-full text-white text-xs sm:text-sm font-semibold px-5 py-2.5 shadow-sm disabled:opacity-60"
+              className="inline-flex items-center justify-center rounded-full text-white text-xs sm:text-sm font-semibold px-5 py-2.5 shadow-sm disabled:opacity-60 transition"
               style={{ backgroundColor: BRAND }}
             >
               {submitting
@@ -417,7 +455,7 @@ const RatingModal: React.FC<{ service: Service; onClose: () => void }> = ({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-700 text-xs sm:text-sm font-semibold px-5 py-2.5 hover:bg-slate-200"
+              className="inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-700 text-xs sm:text-sm font-semibold px-5 py-2.5 hover:bg-slate-200 transition"
             >
               {isPT ? "Cancelar" : "Cancel"}
             </button>
@@ -554,7 +592,7 @@ const RatingDetailsModal: React.FC<{
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-700 text-xs sm:text-sm font-semibold px-5 py-2.5 hover:bg-slate-200"
+              className="inline-flex items-center justify-center rounded-full bg-slate-100 text-slate-700 text-xs sm:text-sm font-semibold px-5 py-2.5 hover:bg-slate-200 transition"
             >
               {isPT ? "Fechar" : "Close"}
             </button>
@@ -566,7 +604,11 @@ const RatingDetailsModal: React.FC<{
 };
 
 /* ---------------------------------------------------------
-   SERVICE CARD — fully clickable (Norman affordance)
+   SERVICE CARD
+   Cooper: 1 tarefa primária (Contactar) + 1 secundária (Avaliar)
+   Wathan: h-full para uniformizar altura em grid
+   Norman: painel de contactos é overlay absoluto — não empurra
+           o layout do card, nem dos vizinhos da mesma linha
 --------------------------------------------------------- */
 type ServiceCardProps = {
   service: Service;
@@ -688,9 +730,12 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
 
   const closeAvatarZoom = () => setShowAvatarZoom(false);
 
+  const hasContactInfo =
+    !!service.phone || !!service.email || !!service.website || hasAnySocial;
+
   return (
     <>
-      <article className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+      <article className="relative h-full flex flex-col bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow duration-200">
         {/* HEADER */}
         <div className="p-4 pb-3 flex items-start gap-3 border-b border-slate-100">
           <button
@@ -792,7 +837,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
         </div>
 
         {/* BODY */}
-        <div className="px-4 pt-3 pb-4 flex flex-col gap-3">
+        <div className="px-4 pt-3 pb-4 flex flex-col gap-3 flex-1">
           {service.quote && (
             <div className="space-y-1">
               <p
@@ -830,29 +875,96 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
             </div>
           )}
 
-          {showContact && (
-            <div className="mt-1 rounded-2xl bg-slate-50 border border-slate-100 px-3 py-3 text-[11px] sm:text-xs space-y-2">
-              <div className="font-semibold text-slate-700 mb-1">
+          {/* CTAs — 1 primário (Contactar) + 1 secundário (Avaliar) */}
+          <div className="mt-auto pt-2 flex flex-col sm:flex-row gap-2">
+            <button
+              type="button"
+              onClick={() => setShowContact((v) => !v)}
+              className={[
+                "flex-1 rounded-full text-xs font-semibold py-2.5 transition shadow-sm",
+                showContact
+                  ? "bg-slate-100 text-slate-800 border border-slate-300 hover:bg-slate-200"
+                  : "text-white",
+              ].join(" ")}
+              style={!showContact ? { backgroundColor: BRAND } : undefined}
+              onMouseEnter={(e) => {
+                if (!showContact)
+                  e.currentTarget.style.backgroundColor = BRAND_HOVER;
+              }}
+              onMouseLeave={(e) => {
+                if (!showContact) e.currentTarget.style.backgroundColor = BRAND;
+              }}
+            >
+              {showContact
+                ? isPT
+                  ? "Esconder"
+                  : "Hide"
+                : isPT
+                ? "Contactar"
+                : "Contact"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onRate(service)}
+              className="flex-1 rounded-full text-xs font-semibold py-2.5 border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 transition"
+            >
+              {isPT ? "Avaliar" : "Rate"}
+            </button>
+          </div>
+        </div>
+
+        {/* PAINEL DE CONTACTOS — overlay absoluto dentro do card.
+            Não empurra o layout, não afeta a altura dos vizinhos. */}
+        {showContact && (
+          <div
+            className="absolute inset-0 z-20 bg-white flex flex-col rounded-3xl"
+            role="dialog"
+            aria-modal="true"
+            aria-label={isPT ? "Contactos" : "Contacts"}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 shrink-0">
+              <div className="text-sm font-semibold text-slate-800">
                 {isPT ? "Contactos" : "Contact"}
               </div>
+              <button
+                type="button"
+                onClick={() => setShowContact(false)}
+                className="rounded-full w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+                aria-label={isPT ? "Fechar" : "Close"}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-3 text-[12px] sm:text-xs space-y-2">
+              {!hasContactInfo && (
+                <p className="text-slate-500 italic">
+                  {isPT
+                    ? "Este serviço ainda não adicionou contactos."
+                    : "This service hasn't added contact details yet."}
+                </p>
+              )}
 
               {service.phone && (
                 <a
                   href={`tel:${service.phone.replace(/\s/g, "")}`}
-                  className="flex items-center gap-2 hover:underline"
+                  className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 hover:bg-slate-100 transition"
                 >
-                  <Phone className="w-4 h-4 text-slate-500" />
-                  {service.phone}
+                  <Phone className="w-4 h-4 text-slate-500 shrink-0" />
+                  <span className="font-semibold text-slate-800 truncate">
+                    {service.phone}
+                  </span>
                 </a>
               )}
 
               {service.email && (
                 <a
                   href={`mailto:${service.email}`}
-                  className="flex items-center gap-2 truncate"
+                  className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 hover:bg-slate-100 transition"
                 >
                   <Mail className="w-4 h-4 text-slate-500 shrink-0" />
-                  <span className="text-[#1F6FA6] hover:underline truncate">
+                  <span className="font-semibold text-slate-800 truncate">
                     {service.email}
                   </span>
                 </a>
@@ -864,19 +976,19 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
                     /^https?:\/\//,
                     ""
                   )}`}
-                  className="flex items-center gap-2"
                   target="_blank"
                   rel="noreferrer"
+                  className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 hover:bg-slate-100 transition"
                 >
                   <Globe className="w-4 h-4 text-slate-500 shrink-0" />
-                  <span className="text-[#1F6FA6] underline truncate">
+                  <span className="font-semibold text-[#1F6FA6] underline truncate">
                     {service.website}
                   </span>
                 </a>
               )}
 
               {hasAnySocial && (
-                <div className="pt-2 mt-2 border-t border-slate-200 flex flex-wrap gap-2">
+                <div className="pt-2 mt-1 border-t border-slate-100 flex flex-wrap gap-2">
                   {[
                     { url: instagramUrl, name: "Instagram" },
                     { url: facebookUrl, name: "Facebook" },
@@ -898,44 +1010,27 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
                 </div>
               )}
             </div>
-          )}
 
-          <div className="mt-2 flex flex-col sm:flex-row gap-2">
-            <button
-              type="button"
-              onClick={() => setShowContact((v) => !v)}
-              className={[
-                "flex-1 rounded-full text-xs font-semibold py-2.5 border transition",
-                showContact
-                  ? "bg-slate-100 text-slate-800 border-slate-300 hover:bg-slate-200"
-                  : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50",
-              ].join(" ")}
-            >
-              {showContact
-                ? isPT
-                  ? "Esconder"
-                  : "Hide"
-                : isPT
-                ? "Contactar"
-                : "Contact"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onRate(service)}
-              className="flex-1 rounded-full text-white text-xs font-semibold py-2.5 shadow-sm transition"
-              style={{ backgroundColor: BRAND }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.backgroundColor = BRAND_HOVER)
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.backgroundColor = BRAND)
-              }
-            >
-              {isPT ? "Avaliar" : "Rate"}
-            </button>
+            <div className="px-4 py-3 border-t border-slate-100 shrink-0 flex gap-2">
+              {service.phone && (
+                <a
+                  href={`tel:${service.phone.replace(/\s/g, "")}`}
+                  className="flex-1 text-center rounded-full text-white text-xs font-semibold py-2.5 shadow-sm transition"
+                  style={{ backgroundColor: BRAND }}
+                >
+                  {isPT ? "Ligar agora" : "Call now"}
+                </a>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowContact(false)}
+                className="flex-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold py-2.5 hover:bg-slate-200 transition"
+              >
+                {isPT ? "Voltar" : "Back"}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </article>
 
       {/* ZOOM MODAL */}
@@ -973,7 +1068,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
 };
 
 /* ---------------------------------------------------------
-   LOADING SKELETON (Wathan)
+   LOADING SKELETON
 --------------------------------------------------------- */
 const ServiceSkeleton: React.FC = () => (
   <div className="bg-white rounded-3xl shadow-sm border border-slate-200 p-4 animate-pulse">
@@ -1067,7 +1162,6 @@ const HomePage: React.FC = () => {
       });
     }
 
-    // Sort
     if (sortBy === "rating") {
       list.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     } else if (sortBy === "name") {
@@ -1215,7 +1309,7 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-transparent pb-10">
       {/* =========================================================
-          HERO — clearer headline, single search
+          HERO
       ========================================================== */}
       <section className="relative overflow-hidden border-b border-slate-200/60 bg-gradient-to-b from-white via-white to-sky-50/40">
         <div
@@ -1228,11 +1322,11 @@ const HomePage: React.FC = () => {
 
         <div className="relative max-w-5xl mx-auto px-4 pt-10 sm:pt-14 pb-8">
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200/70 bg-white/80 px-3 py-1 text-[11px] font-semibold text-slate-700 backdrop-blur">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-emerald-50/80 px-3 py-1 text-[11px] font-semibold text-emerald-800 backdrop-blur">
+              <CheckCircle2 className="w-3.5 h-3.5" />
               {isPT
-                ? "Serviços verificados em Cascais"
-                : "Verified services in Cascais"}
+                ? "Verificado por residentes de Cascais"
+                : "Verified by Cascais residents"}
             </div>
 
             <h1 className="mt-4 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-slate-900">
@@ -1243,8 +1337,8 @@ const HomePage: React.FC = () => {
 
             <p className="mt-3 text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl mx-auto">
               {isPT
-                ? "Profissionais verificados pela comunidade. Contacta diretamente, sem intermediários."
-                : "Local professionals verified by the community. Contact directly, no middlemen."}
+                ? "Profissionais recomendados por vizinhos. Contacta diretamente, sem intermediários."
+                : "Professionals recommended by neighbours. Contact directly, no middlemen."}
             </p>
 
             {/* Search bar */}
@@ -1262,6 +1356,7 @@ const HomePage: React.FC = () => {
                       ? "Ex: fisioterapia, limpezas, surf, cabeleireiro…"
                       : "E.g. physio, cleaning, surf, hairdresser…"
                   }
+                  aria-label={isPT ? "Pesquisar serviços" : "Search services"}
                   className="w-full rounded-2xl border border-slate-200 bg-white px-12 pr-12 py-4 text-sm sm:text-base shadow-sm outline-none focus:ring-4 focus:border-[#1F6FA6]/40 transition"
                   style={{ ["--tw-ring-color" as any]: `${BRAND}22` }}
                 />
@@ -1324,18 +1419,18 @@ const HomePage: React.FC = () => {
                           setSelectedSubcategory("all");
                         }}
                         className={[
-                          "shrink-0 rounded-2xl border px-3 py-2 transition flex items-center gap-2 text-xs font-semibold",
+                          "shrink-0 rounded-2xl border transition flex items-center gap-2 text-xs font-semibold",
+                          isAll ? "px-3.5 py-2" : "px-3 py-2",
                           active
                             ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6] shadow-sm"
                             : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700",
                         ].join(" ")}
                       >
-                        <span
-                          className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white border border-slate-200 text-base"
-                          aria-hidden="true"
-                        >
-                          {isAll ? "🏖️" : category.icon}
-                        </span>
+                        {!isAll && (
+                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white border border-slate-200 text-base">
+                            {category.icon}
+                          </span>
+                        )}
                         <span className="max-w-[140px] truncate">{label}</span>
                       </button>
                     );
@@ -1370,15 +1465,12 @@ const HomePage: React.FC = () => {
                       type="button"
                       onClick={() => setSelectedSubcategory("all")}
                       className={[
-                        "shrink-0 rounded-2xl border px-3 py-2 transition flex items-center gap-2 text-xs font-semibold",
+                        "shrink-0 rounded-2xl border px-3.5 py-2 transition flex items-center gap-2 text-xs font-semibold",
                         selectedSubcategory === "all"
                           ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6]"
                           : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700",
                       ].join(" ")}
                     >
-                      <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white border border-slate-200 text-base">
-                        🏖️
-                      </span>
                       <span>{isPT ? "Todos" : "All"}</span>
                     </button>
 
@@ -1419,7 +1511,7 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* =========================================================
-          RESULTS BAR — count + sort + rating filter
+          RESULTS BAR
       ========================================================== */}
       <section className="max-w-7xl mx-auto px-4 pt-4 pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -1436,26 +1528,31 @@ const HomePage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Rating filter */}
-            <div className="inline-flex items-center rounded-full bg-white border border-slate-200 px-2 py-1 shadow-sm">
-              {[0, 3, 4, 4.5].map((r) => {
-                const active = minRating === r;
-                return (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setMinRating(r)}
-                    className={[
-                      "px-2.5 py-1 rounded-full text-[11px] font-semibold transition",
-                      active
-                        ? "bg-amber-100 text-amber-800"
-                        : "text-slate-500 hover:text-slate-800",
-                    ].join(" ")}
-                  >
-                    {r === 0 ? (isPT ? "Todas" : "All") : `⭐ ${r}+`}
-                  </button>
-                );
-              })}
+            {/* Rating filter — com label explícito (Krug) */}
+            <div className="inline-flex items-center gap-1.5">
+              <span className="text-[11px] font-semibold text-slate-500 hidden sm:inline">
+                {isPT ? "Filtrar:" : "Filter:"}
+              </span>
+              <div className="inline-flex items-center rounded-full bg-white border border-slate-200 px-2 py-1 shadow-sm">
+                {[0, 3, 4, 4.5].map((r) => {
+                  const active = minRating === r;
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setMinRating(r)}
+                      className={[
+                        "px-2.5 py-1 rounded-full text-xs font-semibold transition",
+                        active
+                          ? "bg-amber-100 text-amber-800"
+                          : "text-slate-500 hover:text-slate-800",
+                      ].join(" ")}
+                    >
+                      {r === 0 ? (isPT ? "Todas" : "All") : `⭐ ${r}+`}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Sort */}
@@ -1464,7 +1561,8 @@ const HomePage: React.FC = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
-                className="appearance-none rounded-full bg-white border border-slate-200 pl-8 pr-7 py-1.5 text-[11px] font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 transition"
+                aria-label={isPT ? "Ordenar" : "Sort"}
+                className="appearance-none rounded-full bg-white border border-slate-200 pl-8 pr-7 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 transition"
               >
                 <option value="recent">
                   {isPT ? "Mais recentes" : "Most recent"}
@@ -1491,11 +1589,12 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* =========================================================
-          SERVICES LIST
+          SERVICES LIST — grid items-start para que um card que
+          abra o painel de contactos não estique os vizinhos
       ========================================================== */}
       <section className="max-w-7xl mx-auto px-4 pt-2">
         {loadingServices && dbServices.length === 0 && (
-          <div className="columns-1 md:columns-2 xl:columns-3 gap-5 space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 items-start">
             {Array.from({ length: 6 }).map((_, i) => (
               <ServiceSkeleton key={i} />
             ))}
@@ -1526,7 +1625,7 @@ const HomePage: React.FC = () => {
           </div>
         )}
 
-        <div className="columns-1 md:columns-2 xl:columns-3 gap-5 space-y-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 items-start">
           {filteredServices.map((service: Service) => (
             <ServiceCard
               key={service.id}

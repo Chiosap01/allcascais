@@ -322,7 +322,9 @@ const PropertyListingPage: React.FC = () => {
     const filesToUpload = files.slice(0, remaining);
 
     if (filesToUpload.length === 0) {
-      alert(isPT ? "Máximo de fotos atingido." : "Maximum photos reached.");
+      setErrorMsg(
+        isPT ? "Máximo de fotos atingido." : "Maximum photos reached."
+      );
       return;
     }
 
@@ -438,12 +440,14 @@ const PropertyListingPage: React.FC = () => {
     if (currentStep > 1) goToStep((currentStep - 1) as StepId);
   };
 
-  /* ---------- SUBMIT ---------- */
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  /* ---------- SUBMIT ----------
+     Norman: só o botão final dispara submit.
+     Enter em inputs avança de passo, nunca submete.
+  --------------------------------------------------------- */
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (saving) return;
 
-    // Validate all steps
     for (const step of [1, 2, 3] as StepId[]) {
       const err = validateStep(step);
       if (err) {
@@ -525,7 +529,7 @@ const PropertyListingPage: React.FC = () => {
           : "Listing published!"
       );
 
-      setTimeout(() => navigate("/real-estate"), 800);
+      setTimeout(() => navigate("/real-estate"), 1200);
     } finally {
       setSaving(false);
     }
@@ -617,13 +621,19 @@ const PropertyListingPage: React.FC = () => {
         {/* FORM */}
         <form
           onSubmit={handleSubmit}
+          onKeyDown={(e) => {
+            const target = e.target as HTMLElement;
+            if (e.key === "Enter" && target.tagName !== "TEXTAREA") {
+              e.preventDefault();
+              if (currentStep < 3) handleNext();
+            }
+          }}
           className="bg-white rounded-3xl shadow-md border border-slate-100 overflow-hidden"
         >
           <div className="px-5 sm:px-7 py-6 space-y-6">
             {/* ========== STEP 1: PROPERTY BASICS ========== */}
             {currentStep === 1 && (
               <>
-                {/* Buy/Rent toggle */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-3">
                     {isPT ? "Pretende *" : "You want to *"}
@@ -662,7 +672,6 @@ const PropertyListingPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Property type */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-2 flex items-center gap-2">
                     <Building2 className="w-4 h-4" />
@@ -694,7 +703,6 @@ const PropertyListingPage: React.FC = () => {
                   </select>
                 </div>
 
-                {/* Title */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-2">
                     {isPT ? "Título do anúncio *" : "Listing title *"}
@@ -720,7 +728,6 @@ const PropertyListingPage: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Area */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-2 flex items-center gap-2">
                     <MapPin className="w-4 h-4" />
@@ -756,7 +763,6 @@ const PropertyListingPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Neighborhood */}
                 {locationArea && neighborhoodOptions.length > 0 && (
                   <div>
                     <label className="block text-sm font-semibold text-slate-800 mb-2">
@@ -783,7 +789,6 @@ const PropertyListingPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Description */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="block text-sm font-semibold text-slate-800">
@@ -818,7 +823,6 @@ const PropertyListingPage: React.FC = () => {
             {/* ========== STEP 2: DETAILS ========== */}
             {currentStep === 2 && (
               <>
-                {/* Price */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-2 flex items-center gap-2">
                     <Euro className="w-4 h-4" />
@@ -879,7 +883,6 @@ const PropertyListingPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Bedrooms / Bathrooms */}
                 {(isApartmentOrHouse || isCommercial || isWarehouse) && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {isApartmentOrHouse && (
@@ -943,7 +946,6 @@ const PropertyListingPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Areas */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {(isApartmentOrHouse ||
                     isCommercial ||
@@ -1018,7 +1020,6 @@ const PropertyListingPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Condition */}
                 {(isApartmentOrHouse ||
                   isCommercial ||
                   isGarage ||
@@ -1053,7 +1054,6 @@ const PropertyListingPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Furnished */}
                 {isApartmentOrHouse && (
                   <div>
                     <label className="block text-sm font-semibold text-slate-800 mb-3">
@@ -1105,7 +1105,6 @@ const PropertyListingPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Energy cert */}
                 {(isApartmentOrHouse || isCommercial) && (
                   <div>
                     <label className="block text-sm font-semibold text-slate-800 mb-2">
@@ -1167,7 +1166,6 @@ const PropertyListingPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Divisions (commercial only) */}
                 {isCommercial && (
                   <div>
                     <label className="block text-sm font-semibold text-slate-800 mb-2">
@@ -1200,7 +1198,6 @@ const PropertyListingPage: React.FC = () => {
             {/* ========== STEP 3: PHOTOS & CONTACT ========== */}
             {currentStep === 3 && (
               <>
-                {/* Photos */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
                     <ImageIcon className="w-4 h-4" />
@@ -1289,7 +1286,6 @@ const PropertyListingPage: React.FC = () => {
                   )}
                 </div>
 
-                {/* Publisher type */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-3">
                     {isPT ? "Quem está a anunciar?" : "Who is listing?"}
@@ -1330,7 +1326,6 @@ const PropertyListingPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Contact details */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-3">
                     {isPT ? "Detalhes de contacto *" : "Contact details *"}
@@ -1464,7 +1459,8 @@ const PropertyListingPage: React.FC = () => {
               </button>
             ) : (
               <button
-                type="submit"
+                type="button"
+                onClick={handleSubmit}
                 disabled={saving}
                 className="inline-flex items-center gap-1.5 rounded-full text-white text-sm font-semibold px-5 py-2.5 shadow-sm transition disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{ backgroundColor: BRAND }}

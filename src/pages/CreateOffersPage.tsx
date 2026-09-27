@@ -139,7 +139,7 @@ const phoneInputToDb = (input: string): string | null => {
 };
 
 /* ---------------------------------------------------------
-   STEP INDICATOR (shared pattern)
+   STEP INDICATOR
 --------------------------------------------------------- */
 const StepIndicator: React.FC<{
   currentStep: StepId;
@@ -472,8 +472,13 @@ const CreateOffersPage: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  /* ---------- SUBMIT ----------
+     Norman: só o botão final dispara submit.
+     Enter em inputs avança de passo, nunca submete.
+  --------------------------------------------------------- */
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (saving) return;
 
     for (const step of [1, 2, 3] as StepId[]) {
       const err = validateStep(step);
@@ -560,7 +565,7 @@ const CreateOffersPage: React.FC = () => {
           : "Offer created!"
       );
 
-      setTimeout(() => navigate("/offers"), 800);
+      setTimeout(() => navigate("/offers"), 1200);
     } finally {
       setSaving(false);
     }
@@ -646,6 +651,13 @@ const CreateOffersPage: React.FC = () => {
         {/* FORM */}
         <form
           onSubmit={handleSubmit}
+          onKeyDown={(e) => {
+            const target = e.target as HTMLElement;
+            if (e.key === "Enter" && target.tagName !== "TEXTAREA") {
+              e.preventDefault();
+              if (currentStep < 3) handleNext();
+            }
+          }}
           className="bg-white rounded-3xl shadow-md border border-slate-100 overflow-hidden"
         >
           <div className="px-5 sm:px-7 py-6 space-y-6">
@@ -857,7 +869,6 @@ const CreateOffersPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Discount preview */}
                 {discountPercent !== null && (
                   <div className="rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-sm shrink-0">
@@ -989,7 +1000,6 @@ const CreateOffersPage: React.FC = () => {
                   />
                 </div>
 
-                {/* Socials */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-3">
                     {isPT
@@ -1040,7 +1050,6 @@ const CreateOffersPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Languages */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
                     <Languages className="w-4 h-4" />
@@ -1072,7 +1081,6 @@ const CreateOffersPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Image */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
                     <ImageIcon className="w-4 h-4" />
@@ -1176,7 +1184,8 @@ const CreateOffersPage: React.FC = () => {
               </button>
             ) : (
               <button
-                type="submit"
+                type="button"
+                onClick={handleSubmit}
                 disabled={saving}
                 className="inline-flex items-center gap-1.5 rounded-full text-white text-sm font-semibold px-5 py-2.5 shadow-sm transition disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{ backgroundColor: BRAND }}

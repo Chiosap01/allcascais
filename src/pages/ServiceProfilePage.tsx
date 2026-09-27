@@ -463,8 +463,13 @@ const ServiceProfilePage: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  /* ---------- SUBMIT ----------
+     Norman: só o botão "Guardar perfil" dispara o submit.
+     Enter dentro de inputs avança de passo (não submete).
+  --------------------------------------------------------- */
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (saving) return;
 
     // Validate all steps
     for (const step of [1, 2, 3] as StepId[]) {
@@ -537,7 +542,7 @@ const ServiceProfilePage: React.FC = () => {
       setSuccessMsg(
         isPT ? "Serviço guardado com sucesso!" : "Service saved successfully!"
       );
-      setTimeout(() => navigate("/"), 800);
+      setTimeout(() => navigate("/"), 1200);
     } finally {
       setSaving(false);
     }
@@ -624,6 +629,13 @@ const ServiceProfilePage: React.FC = () => {
         {/* FORM */}
         <form
           onSubmit={handleSubmit}
+          onKeyDown={(e) => {
+            const target = e.target as HTMLElement;
+            if (e.key === "Enter" && target.tagName !== "TEXTAREA") {
+              e.preventDefault();
+              if (currentStep < 3) handleNext();
+            }
+          }}
           className="bg-white rounded-3xl shadow-md border border-slate-100 overflow-hidden"
         >
           {/* STEP CONTENT */}
@@ -863,7 +875,6 @@ const ServiceProfilePage: React.FC = () => {
             {/* ---------- STEP 3: DETAILS ---------- */}
             {currentStep === 3 && (
               <>
-                {/* Visibility toggle — top, since it's important */}
                 <div
                   className={[
                     "rounded-2xl border px-4 py-3 transition",
@@ -915,7 +926,6 @@ const ServiceProfilePage: React.FC = () => {
                   </label>
                 </div>
 
-                {/* Profile image */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-3">
                     {isPT
@@ -960,7 +970,6 @@ const ServiceProfilePage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Languages */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-3">
                     {isPT ? "Idiomas que fala" : "Languages you speak"}
@@ -991,7 +1000,6 @@ const ServiceProfilePage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Social links */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-3">
                     {isPT
@@ -1049,7 +1057,6 @@ const ServiceProfilePage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Opening hours */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
                     <Clock className="w-4 h-4" />
@@ -1183,7 +1190,8 @@ const ServiceProfilePage: React.FC = () => {
               </button>
             ) : (
               <button
-                type="submit"
+                type="button"
+                onClick={handleSubmit}
                 disabled={saving}
                 className="inline-flex items-center gap-1.5 rounded-full text-white text-sm font-semibold px-5 py-2.5 shadow-sm transition disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{ backgroundColor: BRAND }}
@@ -1211,7 +1219,6 @@ const ServiceProfilePage: React.FC = () => {
           </div>
         </form>
 
-        {/* FOOTER TIP */}
         <p className="text-center text-[11px] text-slate-400 mt-6">
           {isPT
             ? "Pode editar o seu perfil a qualquer momento."
