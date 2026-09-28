@@ -9,6 +9,8 @@ import {
   MapPin,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   ArrowUpDown,
   X,
   Sparkles,
@@ -23,6 +25,7 @@ import {
   ArrowRight,
   Plus,
   SlidersHorizontal,
+  Loader2,
 } from "lucide-react";
 
 /* ---------------------------------------------------------
@@ -30,6 +33,7 @@ import {
 --------------------------------------------------------- */
 const BRAND = "#1F6FA6";
 const BRAND_HOVER = "#195c8a";
+const SUCCESS = "#10B981";
 
 /* ---------------------------------------------------------
    TYPES
@@ -126,7 +130,9 @@ type PropertyRow = {
   created_at?: string | null;
 };
 
-type GuideKey = "buying" | "renting" | "costs" | "areas" | "owners" | "moving";
+type GuideKey = "buying" | "renting" | "costs" | "areas";
+
+type Overlay = "none" | "property" | "match" | "delete";
 
 /* ---------------------------------------------------------
    CONSTANTS
@@ -231,6 +237,9 @@ const calcPricePerSqm = (p: Property) => {
   return Math.round((p.price / area) * 100) / 100;
 };
 
+const isValidEmail = (value: string) =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+
 /* ---------------------------------------------------------
    GUIDES CONTENT
 --------------------------------------------------------- */
@@ -314,7 +323,7 @@ const GUIDES: {
 ];
 
 /* ---------------------------------------------------------
-   LOADING SKELETON
+   LOADING SKELETONS
 --------------------------------------------------------- */
 const PropertySkeleton: React.FC = () => (
   <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-3 animate-pulse">
@@ -326,6 +335,475 @@ const PropertySkeleton: React.FC = () => (
     </div>
   </div>
 );
+
+const PageSkeleton: React.FC = () => (
+  <div className="min-h-screen bg-[#FAF8F4] py-4">
+    <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
+      {/* Hero skeleton — aproxima a altura real */}
+      <div className="h-56 sm:h-64 rounded-3xl bg-slate-200 border border-slate-100 shadow-sm mb-6 animate-pulse" />
+      {/* Filters skeleton */}
+      <div className="h-32 rounded-3xl bg-white border border-slate-100 shadow-sm mb-6 animate-pulse" />
+      {/* Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <PropertySkeleton key={i} />
+        ))}
+      </div>
+    </div>
+  </div>
+);
+
+/* ---------------------------------------------------------
+   CONFIRM DELETE MODAL
+   Norman: feedback claro, sem `window.confirm`
+--------------------------------------------------------- */
+const ConfirmDeleteModal: React.FC<{
+  open: boolean;
+  listingTitle: string;
+  isPT: boolean;
+  busy: boolean;
+  errorMsg: string | null;
+  onConfirm: () => void;
+  onCancel: () => void;
+}> = ({ open, listingTitle, isPT, busy, errorMsg, onConfirm, onCancel }) => {
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/50 px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-delete-listing-title"
+      onClick={onCancel}
+    >
+      <div
+        className="w-full max-w-md rounded-3xl bg-white shadow-xl border border-slate-100"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-5 py-6">
+          <div className="flex items-start gap-3 mb-4">
+            <div className="w-10 h-10 rounded-full bg-red-50 border border-red-100 flex items-center justify-center shrink-0 text-lg">
+              ⚠️
+            </div>
+            <div className="min-w-0">
+              <h3
+                id="confirm-delete-listing-title"
+                className="text-base font-semibold text-slate-900"
+              >
+                {isPT ? "Remover anúncio?" : "Remove listing?"}
+              </h3>
+              <p className="mt-1 text-sm text-slate-600 leading-relaxed">
+                {isPT
+                  ? `"${listingTitle}" será removido permanentemente. Esta ação não pode ser desfeita.`
+                  : `"${listingTitle}" will be permanently removed. This action cannot be undone.`}
+              </p>
+            </div>
+          </div>
+
+          {errorMsg && (
+            <div className="mb-4 flex items-start gap-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={busy}
+              className="rounded-full bg-slate-100 text-slate-700 text-sm font-semibold px-5 py-2.5 hover:bg-slate-200 disabled:opacity-60 transition"
+            >
+              {isPT ? "Cancelar" : "Cancel"}
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={busy}
+              className="rounded-full bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-5 py-2.5 shadow-sm disabled:opacity-60 transition inline-flex items-center justify-center gap-2"
+            >
+              {busy && <Loader2 className="w-4 h-4 animate-spin" />}
+              {busy
+                ? isPT
+                  ? "A remover..."
+                  : "Removing..."
+                : isPT
+                ? "Remover"
+                : "Remove"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ---------------------------------------------------------
+   MATCH MODAL
+   Norman: feedback dentro do modal, sem `alert()`
+   Godin: permissão antes do pedido
+--------------------------------------------------------- */
+const MatchModal: React.FC<{
+  open: boolean;
+  initialType: "buyer" | "owner";
+  isPT: boolean;
+  filtersSnapshot: Record<string, unknown>;
+  onClose: () => void;
+}> = ({ open, initialType, isPT, filtersSnapshot, onClose }) => {
+  const [matchType, setMatchType] = useState<"buyer" | "owner">(initialType);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [notes, setNotes] = useState("");
+  const [status, setStatus] = useState<
+    "idle" | "submitting" | "success" | "error"
+  >("idle");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [mailtoUrl, setMailtoUrl] = useState<string | null>(null);
+
+  const firstInputRef = useRef<HTMLInputElement | null>(null);
+
+  /* Reset ao fechar */
+  useEffect(() => {
+    if (!open) {
+      const t = setTimeout(() => {
+        setName("");
+        setEmail("");
+        setPhone("");
+        setNotes("");
+        setStatus("idle");
+        setErrorMsg(null);
+        setMailtoUrl(null);
+        setMatchType(initialType);
+      }, 200);
+      return () => clearTimeout(t);
+    }
+  }, [open, initialType]);
+
+  /* Focus + ESC */
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => firstInputRef.current?.focus(), 100);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && status !== "submitting") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      clearTimeout(t);
+    };
+  }, [open, onClose, status]);
+
+  if (!open) return null;
+
+  const buildMailto = () => {
+    const subject =
+      matchType === "owner"
+        ? isPT
+          ? "AllCascais — Pedido (Proprietário)"
+          : "AllCascais — Owner request"
+        : isPT
+        ? "AllCascais — Pedido (Comprador/Arrendatário)"
+        : "AllCascais — Buyer/Renter request";
+
+    const bodyLines = [
+      matchType === "owner"
+        ? isPT
+          ? "Tipo: Proprietário"
+          : "Type: Owner"
+        : isPT
+        ? "Tipo: Comprador/Arrendatário"
+        : "Type: Buyer/Renter",
+      `Nome/Name: ${name || "—"}`,
+      `Email: ${email || "—"}`,
+      `Telefone/Phone: ${phone || "—"}`,
+      "",
+      isPT ? "Notas:" : "Notes:",
+      notes || "—",
+      "",
+      "Page:",
+      window.location.href,
+    ];
+
+    return `mailto:info@allcascais.com?subject=${encodeURIComponent(
+      subject
+    )}&body=${encodeURIComponent(bodyLines.join("\n"))}`;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+
+    if (!name.trim() || !isValidEmail(email)) {
+      setErrorMsg(
+        isPT
+          ? "Preencha nome e email válido."
+          : "Please add name and a valid email."
+      );
+      return;
+    }
+
+    setStatus("submitting");
+
+    const payload = {
+      source: "real-estate",
+      page_url: window.location.href,
+      language: isPT ? "pt" : "en",
+      match_type: matchType,
+      name: name.trim(),
+      email: email.trim(),
+      phone: phone.trim() || null,
+      notes: notes.trim() || null,
+      meta: { filters: filtersSnapshot },
+    };
+
+    try {
+      const { error } = await supabase.from("leads").insert(payload);
+      if (error) throw error;
+      setStatus("success");
+      setTimeout(() => onClose(), 1600);
+    } catch (err) {
+      console.error("Lead insert failed:", err);
+      setMailtoUrl(buildMailto());
+      setStatus("error");
+      setErrorMsg(
+        isPT
+          ? "Não foi possível enviar automaticamente. Pode enviar por email."
+          : "Couldn't submit automatically. You can send it by email."
+      );
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-2 sm:px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="match-modal-title"
+      onClick={status === "submitting" ? undefined : onClose}
+    >
+      <div
+        className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 sm:px-7 py-4 border-b border-slate-100 bg-slate-50/80 sticky top-0 z-10">
+          <div>
+            <div className="text-[11px] font-semibold" style={{ color: BRAND }}>
+              {matchType === "owner"
+                ? isPT
+                  ? "Para proprietários"
+                  : "For owners"
+                : isPT
+                ? "Para compradores/arrendatários"
+                : "For buyers/renters"}
+            </div>
+            <div
+              id="match-modal-title"
+              className="text-sm sm:text-base font-semibold text-slate-900"
+            >
+              {matchType === "owner"
+                ? isPT
+                  ? "Quer destacar o seu imóvel?"
+                  : "Want to feature your home?"
+                : isPT
+                ? "Diga-nos o que procura"
+                : "Tell us what you need"}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={status === "submitting"}
+            className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-60 transition"
+            aria-label={isPT ? "Fechar" : "Close"}
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Success state */}
+        {status === "success" && (
+          <div className="px-5 sm:px-7 py-12 text-center">
+            <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+            </div>
+            <h3 className="text-base font-semibold text-slate-900 mb-1">
+              {isPT ? "Pedido recebido!" : "Request received!"}
+            </h3>
+            <p className="text-sm text-slate-600">
+              {isPT ? "Respondemos em até 24h." : "We'll reply within 24h."}
+            </p>
+          </div>
+        )}
+
+        {/* Form */}
+        {status !== "success" && (
+          <form onSubmit={handleSubmit} className="p-5 sm:p-7" noValidate>
+            <div className="flex gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setMatchType("buyer")}
+                className={[
+                  "flex-1 rounded-full border px-4 py-2 text-xs font-semibold transition",
+                  matchType === "buyer"
+                    ? "border-emerald-600 bg-emerald-50 text-emerald-700"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                ].join(" ")}
+              >
+                {isPT ? "Quero comprar/arrendar" : "I want to buy/rent"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMatchType("owner")}
+                className={[
+                  "flex-1 rounded-full border px-4 py-2 text-xs font-semibold transition",
+                  matchType === "owner"
+                    ? "bg-sky-50 text-[#1F6FA6]"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                ].join(" ")}
+                style={
+                  matchType === "owner" ? { borderColor: BRAND } : undefined
+                }
+              >
+                {isPT ? "Sou proprietário" : "I'm an owner"}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-semibold text-slate-600">
+                  {isPT ? "Nome *" : "Name *"}
+                </label>
+                <input
+                  ref={firstInputRef}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition"
+                  placeholder={isPT ? "O seu nome" : "Your name"}
+                  autoComplete="name"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-semibold text-slate-600">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition"
+                  placeholder="email@exemplo.com"
+                  autoComplete="email"
+                  required
+                />
+              </div>
+
+              <div className="flex flex-col gap-1 sm:col-span-2">
+                <label className="text-[11px] font-semibold text-slate-600">
+                  {isPT ? "Telefone (opcional)" : "Phone (optional)"}
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition"
+                  placeholder="+351 ..."
+                  autoComplete="tel"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1 sm:col-span-2">
+                <label className="text-[11px] font-semibold text-slate-600">
+                  {matchType === "owner"
+                    ? isPT
+                      ? "Sobre o imóvel"
+                      : "About the home"
+                    : isPT
+                    ? "O que procura?"
+                    : "What are you looking for?"}
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={4}
+                  className="rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition resize-none"
+                  placeholder={
+                    matchType === "owner"
+                      ? isPT
+                        ? "Ex: Moradia T3 em Birre, vender em 2-3 meses..."
+                        : "e.g. T3 house in Birre, selling in 2-3 months..."
+                      : isPT
+                      ? "Ex: Arrendar T2 até €2.000/mês, perto de escolas..."
+                      : "e.g. Rent T2 up to €2,000/mo, near schools..."
+                  }
+                />
+              </div>
+            </div>
+
+            {errorMsg && (
+              <div className="mt-4 flex items-start gap-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <div>{errorMsg}</div>
+                  {mailtoUrl && (
+                    <a
+                      href={mailtoUrl}
+                      className="mt-1 inline-flex items-center gap-1 font-semibold underline underline-offset-2"
+                    >
+                      {isPT ? "Abrir email" : "Open email"}
+                      <ArrowRight className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-5 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+              <div className="text-[11px] text-slate-500">
+                {isPT
+                  ? "Ao enviar, iremos contactá-lo em até 24h."
+                  : "Submitting will get you a reply within 24h."}
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={status === "submitting"}
+                  className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 hover:bg-slate-50 disabled:opacity-60 transition"
+                >
+                  {isPT ? "Cancelar" : "Cancel"}
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={status === "submitting"}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-full text-white text-xs font-semibold px-5 py-2 shadow transition disabled:opacity-60"
+                  style={{ backgroundColor: BRAND }}
+                >
+                  {status === "submitting" ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      {isPT ? "A enviar..." : "Sending..."}
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      {isPT ? "Enviar pedido" : "Send request"}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
 
 /* ---------------------------------------------------------
    MAIN COMPONENT
@@ -342,14 +820,14 @@ const RealEstatePage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [buyRent, setBuyRent] = useState<BuyRent>("all");
 
-  // Aplica ?buyRent= da URL (vindo da LandingPage)
+  /* Aplica ?buyRent= da URL — reage a mudanças de URL */
   useEffect(() => {
     const buyRentParam = searchParams.get("buyRent");
     if (buyRentParam === "buy" || buyRentParam === "rent") {
       setBuyRent(buyRentParam);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
+
   const [locationArea, setLocationArea] = useState<string>("all");
   const [locationNeighborhood, setLocationNeighborhood] =
     useState<string>("all");
@@ -367,7 +845,10 @@ const RealEstatePage: React.FC = () => {
   const [loadingProperties, setLoadingProperties] = useState(true);
   const [propertiesError, setPropertiesError] = useState<string | null>(null);
 
-  /* ---------- MODAL ---------- */
+  /* ---------- OVERLAY STATE (unificado) ---------- */
+  const [overlay, setOverlay] = useState<Overlay>("none");
+
+  /* ---------- PROPERTY MODAL ---------- */
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(
     null
   );
@@ -380,24 +861,24 @@ const RealEstatePage: React.FC = () => {
   const lastFocusedElRef = useRef<HTMLElement | null>(null);
 
   /* ---------- MATCH MODAL ---------- */
-  const [showMatchModal, setShowMatchModal] = useState(false);
-  const [matchType, setMatchType] = useState<"buyer" | "owner">("buyer");
-  const [matchName, setMatchName] = useState("");
-  const [matchEmail, setMatchEmail] = useState("");
-  const [matchPhone, setMatchPhone] = useState("");
-  const [matchNotes, setMatchNotes] = useState("");
+  const [matchInitialType, setMatchInitialType] = useState<"buyer" | "owner">(
+    "buyer"
+  );
+
+  /* ---------- DELETE MODAL ---------- */
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   /* ---------- GUIDES ---------- */
   const [openGuide, setOpenGuide] = useState<GuideKey | null>(null);
 
-  /* ---------- SCROLL LOCK ---------- */
+  /* ---------- SCROLL LOCK (único) ---------- */
   useEffect(() => {
-    const shouldLock = !!selectedProperty || showMatchModal;
-    document.body.style.overflow = shouldLock ? "hidden" : "";
+    document.body.style.overflow = overlay !== "none" ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
-  }, [selectedProperty, showMatchModal]);
+  }, [overlay]);
 
   /* ---------- RESET MAX PRICE ON BUY/RENT CHANGE ---------- */
   useEffect(() => {
@@ -468,77 +949,69 @@ const RealEstatePage: React.FC = () => {
   }, [locationArea, properties]);
 
   const filteredProperties = useMemo(() => {
-    let list = [...properties];
+    const list = [...properties];
 
-    if (buyRent !== "all") list = list.filter((p) => p.buyRent === buyRent);
-    if (locationArea !== "all")
-      list = list.filter((p) => p.location === locationArea);
-    if (locationNeighborhood !== "all" && locationArea !== "all")
-      list = list.filter(
-        (p) => (p.neighborhood ?? "") === locationNeighborhood
-      );
-    if (propertyType !== "all")
-      list = list.filter((p) => p.type === propertyType);
+    const filtered = list.filter((p) => {
+      if (buyRent !== "all" && p.buyRent !== buyRent) return false;
+      if (locationArea !== "all" && p.location !== locationArea) return false;
+      if (
+        locationNeighborhood !== "all" &&
+        locationArea !== "all" &&
+        (p.neighborhood ?? "") !== locationNeighborhood
+      )
+        return false;
+      if (propertyType !== "all" && p.type !== propertyType) return false;
 
-    if (bedrooms !== "any") {
-      const n = Number(bedrooms);
-      list = list.filter((p) => p.bedrooms >= n);
-    }
-    if (bathrooms !== "any") {
-      const n = Number(bathrooms);
-      list = list.filter((p) => p.bathrooms >= n);
-    }
-    if (maxPrice !== "any") {
-      const n = Number(maxPrice);
-      if (!Number.isNaN(n)) list = list.filter((p) => p.price <= n);
-    }
-    if (minArea !== "any") {
-      const n = Number(minArea);
-      if (!Number.isNaN(n)) {
-        list = list.filter((p) => {
-          const area = p.type === "land" ? p.landArea ?? 0 : p.usableArea ?? 0;
-          return area >= n;
-        });
+      if (bedrooms !== "any" && p.bedrooms < Number(bedrooms)) return false;
+      if (bathrooms !== "any" && p.bathrooms < Number(bathrooms)) return false;
+      if (maxPrice !== "any") {
+        const n = Number(maxPrice);
+        if (!Number.isNaN(n) && p.price > n) return false;
       }
-    }
-    if (maxArea !== "any") {
-      const n = Number(maxArea);
-      if (!Number.isNaN(n)) {
-        list = list.filter((p) => {
+      if (minArea !== "any") {
+        const n = Number(minArea);
+        if (!Number.isNaN(n)) {
           const area = p.type === "land" ? p.landArea ?? 0 : p.usableArea ?? 0;
-          return area <= n;
-        });
+          if (area < n) return false;
+        }
       }
-    }
+      if (maxArea !== "any") {
+        const n = Number(maxArea);
+        if (!Number.isNaN(n)) {
+          const area = p.type === "land" ? p.landArea ?? 0 : p.usableArea ?? 0;
+          if (area > n) return false;
+        }
+      }
+      return true;
+    });
 
-    /* ---------- SORT ---------- */
+    const sorted = [...filtered];
     switch (sortBy) {
       case "price-asc":
-        list.sort((a, b) => a.price - b.price);
+        sorted.sort((a, b) => a.price - b.price);
         break;
       case "price-desc":
-        list.sort((a, b) => b.price - a.price);
+        sorted.sort((a, b) => b.price - a.price);
         break;
       case "area-desc":
-        list.sort((a, b) => {
+        sorted.sort((a, b) => {
           const aa = a.type === "land" ? a.landArea ?? 0 : a.usableArea ?? 0;
           const ab = b.type === "land" ? b.landArea ?? 0 : b.usableArea ?? 0;
           return ab - aa;
         });
         break;
       case "recent":
-        list.sort((a, b) => {
+        sorted.sort((a, b) => {
           const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
           const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
           return tb - ta;
         });
         break;
       default:
-        // Default: keep Supabase order (already recent first)
         break;
     }
 
-    return list;
+    return sorted;
   }, [
     properties,
     buyRent,
@@ -690,6 +1163,7 @@ const RealEstatePage: React.FC = () => {
     setActiveImageIndex(0);
     setShowAgentEmail(false);
     setHasCopiedEmail(false);
+    setOverlay("property");
   };
 
   const closePropertyModal = () => {
@@ -697,6 +1171,7 @@ const RealEstatePage: React.FC = () => {
     setActiveImageIndex(0);
     setShowAgentEmail(false);
     setHasCopiedEmail(false);
+    setOverlay("none");
     requestAnimationFrame(() => {
       lastFocusedElRef.current?.focus?.();
     });
@@ -718,18 +1193,16 @@ const RealEstatePage: React.FC = () => {
     );
   };
 
+  /* Krug: um clique copia + mostra. Sem dois passos. */
   const handleCopyAgentEmail = async () => {
     if (!selectedProperty?.agentEmail) return;
-    if (!showAgentEmail) {
-      setShowAgentEmail(true);
-      return;
-    }
     try {
       await navigator.clipboard.writeText(selectedProperty.agentEmail);
       setHasCopiedEmail(true);
       setTimeout(() => setHasCopiedEmail(false), 1800);
     } catch (err) {
       console.error("Failed to copy:", err);
+      setShowAgentEmail(true);
     }
   };
 
@@ -743,12 +1216,22 @@ const RealEstatePage: React.FC = () => {
     navigate(`/properties/${id}/edit`);
   };
 
-  const handleDeleteListing = async () => {
+  const openDeleteListingModal = () => {
+    setDeleteError(null);
+    setDeleteBusy(false);
+    setOverlay("delete");
+  };
+
+  const closeDeleteListingModal = () => {
+    if (deleteBusy) return;
+    setDeleteError(null);
+    setOverlay("property");
+  };
+
+  const confirmDeleteListing = async () => {
     if (!selectedProperty || !user) return;
-    const confirmText = isPT
-      ? "Tem a certeza que quer remover este anúncio? Esta ação é permanente."
-      : "Are you sure you want to remove this listing? This action is permanent.";
-    if (!window.confirm(confirmText)) return;
+    setDeleteBusy(true);
+    setDeleteError(null);
 
     const { error } = await supabase
       .from("property_listings")
@@ -756,11 +1239,13 @@ const RealEstatePage: React.FC = () => {
       .eq("id", selectedProperty.id)
       .eq("user_id", user.id);
 
+    setDeleteBusy(false);
+
     if (error) {
       console.error("Error deleting listing:", error);
-      alert(
+      setDeleteError(
         isPT
-          ? "Erro ao remover o anúncio."
+          ? "Erro ao remover o anúncio. Tenta novamente."
           : "Something went wrong while removing the listing."
       );
       return;
@@ -772,103 +1257,42 @@ const RealEstatePage: React.FC = () => {
 
   /* ---------- MATCH MODAL HANDLERS ---------- */
   const openMatch = (type: "buyer" | "owner") => {
-    setMatchType(type);
-    setShowMatchModal(true);
-    setMatchNotes("");
+    setMatchInitialType(type);
+    setOverlay("match");
   };
 
-  const closeMatch = () => setShowMatchModal(false);
+  const closeMatch = () => setOverlay("none");
 
-  const submitMatch = async () => {
-    if (!matchName.trim() || !matchEmail.trim()) {
-      alert(isPT ? "Preencha nome e email." : "Please add name and email.");
-      return;
-    }
-
-    const payload = {
-      source: "real-estate",
-      page_url: window.location.href,
-      language: isPT ? "pt" : "en",
-      match_type: matchType,
-      name: matchName.trim(),
-      email: matchEmail.trim(),
-      phone: matchPhone.trim() || null,
-      notes: matchNotes.trim() || null,
-      meta: {
-        filters: {
-          buyRent,
-          locationArea,
-          locationNeighborhood,
-          propertyType,
-          bedrooms,
-          bathrooms,
-          maxPrice,
-          minArea,
-          maxArea,
-          sortBy,
-        },
-      },
-    };
-
-    const openMailto = () => {
-      const subject =
-        matchType === "owner"
-          ? isPT
-            ? "AllCascais — Pedido (Proprietário)"
-            : "AllCascais — Owner request"
-          : isPT
-          ? "AllCascais — Pedido (Comprador/Arrendatário)"
-          : "AllCascais — Buyer/Renter request";
-
-      const bodyLines = [
-        matchType === "owner"
-          ? isPT
-            ? "Tipo: Proprietário"
-            : "Type: Owner"
-          : isPT
-          ? "Tipo: Comprador/Arrendatário"
-          : "Type: Buyer/Renter",
-        `Nome/Name: ${matchName || "—"}`,
-        `Email: ${matchEmail || "—"}`,
-        `Telefone/Phone: ${matchPhone || "—"}`,
-        "",
-        isPT ? "Notas:" : "Notes:",
-        matchNotes || "—",
-        "",
-        "Page:",
-        window.location.href,
-      ];
-
-      window.location.href = `mailto:info@allcascais.com?subject=${encodeURIComponent(
-        subject
-      )}&body=${encodeURIComponent(bodyLines.join("\n"))}`;
-    };
-
-    try {
-      const { error } = await supabase.from("leads").insert(payload);
-      if (error) throw error;
-
-      alert(isPT ? "Pedido recebido ✅" : "Request received ✅");
-      setShowMatchModal(false);
-      setMatchName("");
-      setMatchEmail("");
-      setMatchPhone("");
-      setMatchNotes("");
-    } catch (err) {
-      console.error("Lead insert failed:", err);
-      alert(
-        isPT
-          ? "Não foi possível enviar automaticamente. Vamos abrir o seu email como alternativa."
-          : "Couldn't submit automatically. We'll open your email as a fallback."
-      );
-      openMailto();
-      setShowMatchModal(false);
-    }
-  };
+  const filtersSnapshot = useMemo(
+    () => ({
+      buyRent,
+      locationArea,
+      locationNeighborhood,
+      propertyType,
+      bedrooms,
+      bathrooms,
+      maxPrice,
+      minArea,
+      maxArea,
+      sortBy,
+    }),
+    [
+      buyRent,
+      locationArea,
+      locationNeighborhood,
+      propertyType,
+      bedrooms,
+      bathrooms,
+      maxPrice,
+      minArea,
+      maxArea,
+      sortBy,
+    ]
+  );
 
   /* ---------- MODAL FOCUS TRAP ---------- */
   useEffect(() => {
-    if (!selectedProperty) return;
+    if (overlay !== "property") return;
 
     requestAnimationFrame(() => {
       closeBtnRef.current?.focus();
@@ -919,23 +1343,11 @@ const RealEstatePage: React.FC = () => {
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedProperty]);
+  }, [overlay]);
 
   /* ---------- LOADING ---------- */
   if (loadingProperties) {
-    return (
-      <div className="min-h-screen bg-[#FAF8F4] py-8">
-        <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
-          <div className="h-48 rounded-3xl bg-white border border-slate-100 shadow-sm mb-6 animate-pulse" />
-          <div className="h-24 rounded-3xl bg-white border border-slate-100 shadow-sm mb-6 animate-pulse" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <PropertySkeleton key={i} />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   const selectedImages =
@@ -947,8 +1359,9 @@ const RealEstatePage: React.FC = () => {
     <div className="min-h-screen bg-[#FAF8F4] py-4">
       <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
         {/* =========================================================
-            HERO
-        ========================================================== */}
+    HERO — uma CTA primária, uma secundária (Cooper)
+    Direita preenchida com trust strip (Wathan)
+========================================================== */}
         <section className="mb-6">
           <div className="relative overflow-hidden rounded-3xl border border-slate-200 shadow-sm bg-slate-900">
             <div
@@ -961,38 +1374,40 @@ const RealEstatePage: React.FC = () => {
               aria-hidden="true"
               style={{
                 background:
-                  "linear-gradient(90deg, rgba(2,6,23,0.80) 0%, rgba(2,6,23,0.55) 55%, rgba(2,6,23,0.25) 100%)",
+                  "linear-gradient(90deg, rgba(2,6,23,0.85) 0%, rgba(2,6,23,0.55) 55%, rgba(2,6,23,0.20) 100%)",
               }}
             />
 
-            <div className="relative px-5 py-6 sm:px-8 sm:py-8">
-              <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
-                <div className="min-w-0">
+            <div className="relative px-5 py-6 sm:px-8 sm:py-8 lg:py-10">
+              <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+                {/* Left — content */}
+                <div className="min-w-0 max-w-2xl">
                   <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
                     {isPT ? "Viver em Cascais" : "Living in Cascais"}
                   </div>
 
                   <h1
-                    className="mt-2 text-2xl sm:text-3xl font-semibold text-white tracking-wide"
+                    className="mt-2 text-2xl sm:text-3xl lg:text-4xl font-semibold text-white tracking-wide"
                     style={{ fontFamily: "'Playfair Display', serif" }}
                   >
                     {isPT
-                      ? "Casas com contexto local."
-                      : "Homes with local context."}
+                      ? "Encontra o teu lugar em Cascais."
+                      : "Find your place in Cascais."}
                   </h1>
 
-                  <p className="mt-2 text-sm sm:text-base text-white/85 max-w-2xl">
+                  <p className="mt-3 text-sm sm:text-base text-white/85 max-w-2xl">
                     {isPT
-                      ? "Descubra imóveis com contexto: zonas, lifestyle e serviços úteis para o dia-a-dia em Cascais."
-                      : "Discover homes with context: areas, lifestyle, and services that make moving easier."}
+                      ? "Casas, zonas e serviços úteis para o dia-a-dia sem intermediários."
+                      : "Homes, areas, and services that make moving easier — no middlemen."}
                   </p>
 
-                  <div className="mt-4 flex flex-wrap gap-2">
+                  {/* CTAs — empilhadas em mobile, lado a lado em desktop */}
+                  <div className="mt-5 flex flex-col sm:flex-row gap-2">
                     <button
                       type="button"
                       onClick={scrollToFilters}
-                      className="inline-flex items-center justify-center gap-2 rounded-full bg-white text-slate-900 px-5 py-2.5 text-xs sm:text-sm font-semibold shadow hover:bg-white/90 transition"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-white text-slate-900 px-5 py-2.5 text-xs sm:text-sm font-semibold shadow-lg hover:bg-slate-50 transition"
                     >
                       {isPT ? "Ver imóveis" : "Browse homes"}
                       <ArrowRight className="w-4 h-4" />
@@ -1001,22 +1416,39 @@ const RealEstatePage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => openMatch("buyer")}
-                      className="inline-flex items-center justify-center gap-2 rounded-full text-white px-5 py-2.5 text-xs sm:text-sm font-semibold shadow hover:opacity-90 transition"
-                      style={{ backgroundColor: "#10B981" }}
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-white/10 border border-white/30 backdrop-blur text-white px-5 py-2.5 text-xs sm:text-sm font-semibold hover:bg-white/20 transition"
                     >
                       <Sparkles className="w-4 h-4" />
                       {isPT ? "Receber sugestões" : "Get matches"}
                     </button>
                   </div>
 
-                  <div className="mt-4 flex flex-wrap gap-2 text-[11px] text-white/75">
-                    <span className="inline-flex items-center rounded-full bg-black/20 border border-white/10 px-3 py-1">
-                      {isPT ? "Contexto local" : "Local context"}
-                    </span>
-                    <span className="inline-flex items-center rounded-full bg-black/20 border border-white/10 px-3 py-1">
-                      {isPT ? "Zonas & bairros" : "Areas & neighborhoods"}
+                  {/* Scroll cue em mobile */}
+                  <div className="mt-6 flex items-center gap-2 lg:hidden text-[11px] text-white/60">
+                    <ChevronDown className="w-4 h-4 animate-bounce" />
+                    <span>
+                      {isPT
+                        ? "Deslize para ver imóveis"
+                        : "Scroll to browse homes"}
                     </span>
                   </div>
+                </div>
+
+                {/* Right — trust strip (apenas em desktop, escondido em mobile) */}
+                <div className="hidden lg:flex flex-col gap-2 shrink-0">
+                  {[
+                    isPT ? "Contacto direto" : "Direct contact",
+                    isPT ? "Sem intermediários" : "No middlemen",
+                    isPT ? "PT / EN" : "EN / PT",
+                  ].map((label) => (
+                    <div
+                      key={label}
+                      className="flex items-center gap-2 text-xs font-medium text-white/90 bg-white/10 backdrop-blur border border-white/15 rounded-full px-3 py-1.5"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+                      <span>{label}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -1082,7 +1514,6 @@ const RealEstatePage: React.FC = () => {
 
             {/* Primary filters */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              {/* Buy/Rent */}
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   {isPT ? "Comprar / Arrendar" : "Buy / Rent"}
@@ -1098,7 +1529,6 @@ const RealEstatePage: React.FC = () => {
                 </select>
               </div>
 
-              {/* Area */}
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   {isPT ? "Zona" : "Area"}
@@ -1120,7 +1550,6 @@ const RealEstatePage: React.FC = () => {
                 </select>
               </div>
 
-              {/* Type */}
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   {isPT ? "Tipo" : "Type"}
@@ -1148,7 +1577,6 @@ const RealEstatePage: React.FC = () => {
                 </select>
               </div>
 
-              {/* Max price */}
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   {isPT ? "Preço máx." : "Max price"}
@@ -1182,7 +1610,6 @@ const RealEstatePage: React.FC = () => {
                 </select>
               </div>
 
-              {/* Sort */}
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                   {isPT ? "Ordenar" : "Sort"}
@@ -1219,7 +1646,6 @@ const RealEstatePage: React.FC = () => {
             {showMoreFilters && (
               <div className="mt-4 pt-4 border-t border-slate-100">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {/* Bedrooms */}
                   <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                       {isPT ? "Quartos" : "Bedrooms"}
@@ -1238,7 +1664,6 @@ const RealEstatePage: React.FC = () => {
                     </select>
                   </div>
 
-                  {/* Bathrooms */}
                   <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                       {isPT ? "Casas de banho" : "Bathrooms"}
@@ -1256,7 +1681,6 @@ const RealEstatePage: React.FC = () => {
                     </select>
                   </div>
 
-                  {/* Min area */}
                   <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                       {isPT ? "Área mín. (m²)" : "Min area (m²)"}
@@ -1277,7 +1701,6 @@ const RealEstatePage: React.FC = () => {
                     </select>
                   </div>
 
-                  {/* Max area */}
                   <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
                       {isPT ? "Área máx. (m²)" : "Max area (m²)"}
@@ -1298,7 +1721,6 @@ const RealEstatePage: React.FC = () => {
                     </select>
                   </div>
 
-                  {/* Neighborhood (only when area selected) */}
                   {locationArea !== "all" &&
                     neighborhoodsForArea.length > 0 && (
                       <div className="flex flex-col gap-1 col-span-2 md:col-span-2">
@@ -1327,7 +1749,7 @@ const RealEstatePage: React.FC = () => {
 
             {/* Applied chips */}
             {appliedChips.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap gap-2 items-center">
                 {appliedChips.map((c) => (
                   <button
                     key={c.key}
@@ -1339,6 +1761,16 @@ const RealEstatePage: React.FC = () => {
                     <X className="w-3 h-3 text-slate-400" />
                   </button>
                 ))}
+
+                {appliedChips.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="inline-flex items-center gap-1 rounded-full text-[11px] font-semibold text-slate-500 hover:text-slate-900 underline underline-offset-2 px-2"
+                  >
+                    {isPT ? "Limpar todos" : "Clear all"}
+                  </button>
+                )}
               </div>
             )}
 
@@ -1401,142 +1833,27 @@ const RealEstatePage: React.FC = () => {
         </section>
 
         {/* =========================================================
-            PROPERTY GRID
+            PROPERTY GRID — erro ≠ vazio (Norman)
         ========================================================== */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-10">
-          {filteredProperties.map((property) => {
-            const coverImage = property.images?.[0] ?? property.image;
-            const ppsm = calcPricePerSqm(property);
-
-            return (
-              <article
-                key={property.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => openPropertyModal(property)}
-                onKeyDown={(e) =>
-                  e.key === "Enter" && openPropertyModal(property)
-                }
-                className="group cursor-pointer bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-10 items-start">
+          {propertiesError ? (
+            <div className="col-span-full bg-red-50 border border-red-200 rounded-3xl p-8 text-center max-w-xl mx-auto">
+              <AlertCircle className="w-8 h-8 text-red-600 mx-auto mb-3" />
+              <h3 className="text-base font-semibold text-red-900 mb-1">
+                {isPT
+                  ? "Não conseguimos carregar os imóveis"
+                  : "Couldn't load properties"}
+              </h3>
+              <p className="text-sm text-red-700 mb-4">{propertiesError}</p>
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="inline-flex items-center justify-center rounded-full bg-white border border-red-200 text-red-700 text-xs font-semibold px-5 py-2.5 hover:bg-red-100 transition"
               >
-                {/* Image */}
-                {coverImage ? (
-                  <div className="w-full aspect-[4/3] overflow-hidden bg-slate-100">
-                    <img
-                      src={coverImage}
-                      alt={property.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-full aspect-[4/3] bg-slate-100 flex items-center justify-center">
-                    <HomeIcon className="w-12 h-12 text-slate-300" />
-                  </div>
-                )}
-
-                {/* Content */}
-                <div className="p-4">
-                  {/* Top row: type + location */}
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 border border-slate-200 text-[10px] font-semibold text-slate-700 px-2 py-0.5">
-                      {formatTypeLabel(property.type, isPT)}
-                    </span>
-
-                    <span className="text-[10px] text-slate-500 truncate">
-                      {locationLabel(property)}
-                    </span>
-                  </div>
-
-                  {/* Title */}
-                  <h3 className="text-sm font-semibold text-slate-900 leading-snug line-clamp-2 mb-3 min-h-[2.4em]">
-                    {property.title}
-                  </h3>
-
-                  {/* Price */}
-                  <div className="flex items-end justify-between mb-3">
-                    <div>
-                      <div
-                        className="text-lg font-bold"
-                        style={{ color: BRAND }}
-                      >
-                        €
-                        {property.price.toLocaleString(
-                          isPT ? "pt-PT" : "en-US"
-                        )}
-                      </div>
-                      <div className="text-[10px] text-slate-500">
-                        {property.buyRent === "rent"
-                          ? isPT
-                            ? "por mês"
-                            : "per month"
-                          : isPT
-                          ? "preço de venda"
-                          : "sale price"}
-                      </div>
-                    </div>
-
-                    {ppsm != null && (
-                      <div className="text-right">
-                        <div className="text-[10px] text-slate-500">€/m²</div>
-                        <div className="text-xs font-semibold text-slate-700">
-                          €{ppsm.toLocaleString(isPT ? "pt-PT" : "en-US")}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Meta row */}
-                  <div className="flex items-center gap-3 pt-3 border-t border-slate-100 text-[11px] text-slate-600">
-                    {property.bedrooms > 0 && (
-                      <span className="inline-flex items-center gap-1">
-                        <Bed className="w-3.5 h-3.5" />
-                        {property.bedrooms}
-                      </span>
-                    )}
-                    {property.bathrooms > 0 && (
-                      <span className="inline-flex items-center gap-1">
-                        <Bath className="w-3.5 h-3.5" />
-                        {property.bathrooms}
-                      </span>
-                    )}
-                    <span className="inline-flex items-center gap-1 ml-auto">
-                      <Maximize className="w-3.5 h-3.5" />
-                      {property.type === "land"
-                        ? `${property.landArea ?? 0} m²`
-                        : `${property.usableArea ?? 0} m²`}
-                    </span>
-                  </div>
-
-                  {/* Badges */}
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {property.isPriceNegotiable && (
-                      <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-semibold px-2 py-0.5">
-                        {isPT ? "Negociável" : "Negotiable"}
-                      </span>
-                    )}
-                    <span className="inline-flex items-center rounded-full bg-slate-50 border border-slate-200 text-[10px] font-semibold text-slate-700 px-2 py-0.5">
-                      {property.publisherType === "agency"
-                        ? isPT
-                          ? "Agência"
-                          : "Agency"
-                        : isPT
-                        ? "Particular"
-                        : "Owner"}
-                    </span>
-                    {property.energyCertificate && (
-                      <span className="inline-flex items-center rounded-full bg-slate-50 border border-slate-200 text-[10px] font-semibold text-slate-700 px-2 py-0.5">
-                        CE: {property.energyCertificate}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </article>
-            );
-          })}
-
-          {/* Empty state */}
-          {filteredProperties.length === 0 && (
+                {isPT ? "Tentar novamente" : "Try again"}
+              </button>
+            </div>
+          ) : filteredProperties.length === 0 ? (
             <div className="col-span-full bg-white rounded-3xl border border-dashed border-slate-200 p-10 text-center max-w-xl mx-auto">
               <div className="text-4xl mb-3">🏡</div>
               <h3 className="text-base font-semibold text-slate-900 mb-2">
@@ -1563,13 +1880,137 @@ const RealEstatePage: React.FC = () => {
                   type="button"
                   onClick={() => openMatch("buyer")}
                   className="inline-flex items-center justify-center gap-1.5 rounded-full text-white text-xs font-semibold px-5 py-2.5 shadow-sm transition hover:opacity-90"
-                  style={{ backgroundColor: "#10B981" }}
+                  style={{ backgroundColor: SUCCESS }}
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   {isPT ? "Quero sugestões" : "Get matches"}
                 </button>
               </div>
             </div>
+          ) : (
+            filteredProperties.map((property) => {
+              const coverImage = property.images?.[0] ?? property.image;
+              const ppsm = calcPricePerSqm(property);
+
+              return (
+                <article
+                  key={property.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openPropertyModal(property)}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && openPropertyModal(property)
+                  }
+                  className="group cursor-pointer bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg transition-shadow duration-200"
+                >
+                  {coverImage ? (
+                    <div className="w-full aspect-[4/3] overflow-hidden bg-slate-100">
+                      <img
+                        src={coverImage}
+                        alt={property.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-full aspect-[4/3] bg-slate-100 flex items-center justify-center">
+                      <HomeIcon className="w-12 h-12 text-slate-300" />
+                    </div>
+                  )}
+
+                  <div className="p-4">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 border border-slate-200 text-[10px] font-semibold text-slate-700 px-2 py-0.5">
+                        {formatTypeLabel(property.type, isPT)}
+                      </span>
+
+                      <span className="text-[10px] text-slate-500 truncate">
+                        {locationLabel(property)}
+                      </span>
+                    </div>
+
+                    <h3 className="text-sm font-semibold text-slate-900 leading-snug line-clamp-2 mb-3 min-h-[2.4em]">
+                      {property.title}
+                    </h3>
+
+                    <div className="flex items-end justify-between mb-3">
+                      <div>
+                        <div
+                          className="text-lg font-bold"
+                          style={{ color: BRAND }}
+                        >
+                          €
+                          {property.price.toLocaleString(
+                            isPT ? "pt-PT" : "en-US"
+                          )}
+                        </div>
+                        <div className="text-[10px] text-slate-500">
+                          {property.buyRent === "rent"
+                            ? isPT
+                              ? "por mês"
+                              : "per month"
+                            : isPT
+                            ? "preço de venda"
+                            : "sale price"}
+                        </div>
+                      </div>
+
+                      {ppsm != null && (
+                        <div className="text-right">
+                          <div className="text-[10px] text-slate-500">€/m²</div>
+                          <div className="text-xs font-semibold text-slate-700">
+                            €{ppsm.toLocaleString(isPT ? "pt-PT" : "en-US")}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-3 border-t border-slate-100 text-[11px] text-slate-600">
+                      {property.bedrooms > 0 && (
+                        <span className="inline-flex items-center gap-1">
+                          <Bed className="w-3.5 h-3.5" />
+                          {property.bedrooms}
+                        </span>
+                      )}
+                      {property.bathrooms > 0 && (
+                        <span className="inline-flex items-center gap-1">
+                          <Bath className="w-3.5 h-3.5" />
+                          {property.bathrooms}
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1 ml-auto">
+                        <Maximize className="w-3.5 h-3.5" />
+                        {property.type === "land"
+                          ? `${property.landArea ?? 0} m²`
+                          : `${property.usableArea ?? 0} m²`}
+                      </span>
+                    </div>
+
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {property.isPriceNegotiable && (
+                        <span className="inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-[10px] font-semibold px-2 py-0.5">
+                          {isPT ? "Negociável" : "Negotiable"}
+                        </span>
+                      )}
+                      <span className="inline-flex items-center rounded-full bg-slate-50 border border-slate-200 text-[10px] font-semibold text-slate-700 px-2 py-0.5">
+                        {property.publisherType === "agency"
+                          ? isPT
+                            ? "Agência"
+                            : "Agency"
+                          : isPT
+                          ? "Particular"
+                          : "Owner"}
+                      </span>
+                      {property.energyCertificate && (
+                        <span className="inline-flex items-center rounded-full bg-slate-50 border border-slate-200 text-[10px] font-semibold text-slate-700 px-2 py-0.5">
+                          CE: {property.energyCertificate}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })
           )}
         </section>
 
@@ -1637,7 +2078,7 @@ const RealEstatePage: React.FC = () => {
                             type="button"
                             onClick={() => openMatch("buyer")}
                             className="inline-flex items-center gap-1.5 rounded-full text-white text-xs font-semibold px-4 py-2 shadow-sm transition hover:opacity-90"
-                            style={{ backgroundColor: "#10B981" }}
+                            style={{ backgroundColor: SUCCESS }}
                           >
                             <Sparkles className="w-3.5 h-3.5" />
                             {isPT ? "Pedir ajuda" : "Get help"}
@@ -1666,181 +2107,18 @@ const RealEstatePage: React.FC = () => {
       {/* =========================================================
           MATCH MODAL
       ========================================================== */}
-      {showMatchModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-2 sm:px-4">
-          <div
-            role="dialog"
-            aria-modal="true"
-            className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-          >
-            <div className="flex items-center justify-between px-5 sm:px-7 py-4 border-b border-slate-100 bg-slate-50/80 sticky top-0">
-              <div>
-                <div
-                  className="text-[11px] font-semibold"
-                  style={{ color: BRAND }}
-                >
-                  {matchType === "owner"
-                    ? isPT
-                      ? "Para proprietários"
-                      : "For owners"
-                    : isPT
-                    ? "Para compradores/arrendatários"
-                    : "For buyers/renters"}
-                </div>
-                <div className="text-sm sm:text-base font-semibold text-slate-900">
-                  {matchType === "owner"
-                    ? isPT
-                      ? "Quer destacar o seu imóvel?"
-                      : "Want to feature your home?"
-                    : isPT
-                    ? "Diga-nos o que procura"
-                    : "Tell us what you need"}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={closeMatch}
-                className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 transition"
-                aria-label={isPT ? "Fechar" : "Close"}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-5 sm:p-7">
-              <div className="flex gap-2 mb-4">
-                <button
-                  type="button"
-                  onClick={() => setMatchType("buyer")}
-                  className={[
-                    "flex-1 rounded-full border px-4 py-2 text-xs font-semibold transition",
-                    matchType === "buyer"
-                      ? "border-emerald-600 bg-emerald-50 text-emerald-700"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-                  ].join(" ")}
-                >
-                  {isPT ? "Quero comprar/arrendar" : "I want to buy/rent"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMatchType("owner")}
-                  className={[
-                    "flex-1 rounded-full border px-4 py-2 text-xs font-semibold transition",
-                    matchType === "owner"
-                      ? "bg-sky-50 text-[#1F6FA6]"
-                      : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-                  ].join(" ")}
-                  style={
-                    matchType === "owner" ? { borderColor: BRAND } : undefined
-                  }
-                >
-                  {isPT ? "Sou proprietário" : "I'm an owner"}
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[11px] font-semibold text-slate-600">
-                    {isPT ? "Nome" : "Name"}
-                  </label>
-                  <input
-                    value={matchName}
-                    onChange={(e) => setMatchName(e.target.value)}
-                    className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition"
-                    placeholder={isPT ? "O seu nome" : "Your name"}
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-[11px] font-semibold text-slate-600">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={matchEmail}
-                    onChange={(e) => setMatchEmail(e.target.value)}
-                    className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition"
-                    placeholder="email@exemplo.com"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1 sm:col-span-2">
-                  <label className="text-[11px] font-semibold text-slate-600">
-                    {isPT ? "Telefone (opcional)" : "Phone (optional)"}
-                  </label>
-                  <input
-                    type="tel"
-                    value={matchPhone}
-                    onChange={(e) => setMatchPhone(e.target.value)}
-                    className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition"
-                    placeholder="+351 ..."
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1 sm:col-span-2">
-                  <label className="text-[11px] font-semibold text-slate-600">
-                    {matchType === "owner"
-                      ? isPT
-                        ? "Sobre o imóvel"
-                        : "About the home"
-                      : isPT
-                      ? "O que procura?"
-                      : "What are you looking for?"}
-                  </label>
-                  <textarea
-                    value={matchNotes}
-                    onChange={(e) => setMatchNotes(e.target.value)}
-                    rows={4}
-                    className="rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition resize-none"
-                    placeholder={
-                      matchType === "owner"
-                        ? isPT
-                          ? "Ex: Moradia T3 em Birre, vender em 2-3 meses..."
-                          : "e.g. T3 house in Birre, selling in 2-3 months..."
-                        : isPT
-                        ? "Ex: Arrendar T2 até €2.000/mês, perto de escolas..."
-                        : "e.g. Rent T2 up to €2,000/mo, near schools..."
-                    }
-                  />
-                </div>
-              </div>
-
-              <div className="mt-5 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-                <div className="text-[11px] text-slate-500">
-                  {isPT
-                    ? "Ao enviar, iremos contactá-lo em até 24h."
-                    : "Submitting will get you a reply within 24h."}
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={closeMatch}
-                    className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 hover:bg-slate-50 transition"
-                  >
-                    {isPT ? "Cancelar" : "Cancel"}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={submitMatch}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-full text-white text-xs font-semibold px-5 py-2 shadow transition hover:opacity-90"
-                    style={{ backgroundColor: BRAND }}
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    {isPT ? "Enviar pedido" : "Send request"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <MatchModal
+        open={overlay === "match"}
+        initialType={matchInitialType}
+        isPT={isPT}
+        filtersSnapshot={filtersSnapshot}
+        onClose={closeMatch}
+      />
 
       {/* =========================================================
           PROPERTY DETAIL MODAL
       ========================================================== */}
-      {selectedProperty && (
+      {selectedProperty && overlay === "property" && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-sm px-2 sm:px-4">
           <div
             ref={modalRef}
@@ -1849,7 +2127,6 @@ const RealEstatePage: React.FC = () => {
             aria-labelledby="property-modal-title"
             className="bg-white rounded-3xl shadow-2xl max-w-6xl w-full max-h-[92vh] flex flex-col overflow-hidden"
           >
-            {/* Header */}
             <div className="flex items-center justify-between px-5 sm:px-7 py-3 border-b border-slate-100 bg-slate-50/80">
               <div className="min-w-0">
                 <p
@@ -1877,7 +2154,6 @@ const RealEstatePage: React.FC = () => {
               </button>
             </div>
 
-            {/* Body */}
             <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
               {/* Gallery */}
               <div className="md:w-1/2 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col bg-slate-900/5">
@@ -1915,7 +2191,7 @@ const RealEstatePage: React.FC = () => {
                             isPT ? "Imagem anterior" : "Previous image"
                           }
                         >
-                          <ChevronDown className="w-4 h-4 rotate-90" />
+                          <ChevronLeft className="w-4 h-4" />
                         </button>
                         <button
                           type="button"
@@ -1923,7 +2199,7 @@ const RealEstatePage: React.FC = () => {
                           className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/85 shadow flex items-center justify-center hover:bg-white text-slate-700 transition"
                           aria-label={isPT ? "Seguinte" : "Next image"}
                         >
-                          <ChevronDown className="w-4 h-4 -rotate-90" />
+                          <ChevronRight className="w-4 h-4" />
                         </button>
                       </>
                     )}
@@ -1972,7 +2248,6 @@ const RealEstatePage: React.FC = () => {
               {/* Info panel */}
               <div className="md:w-1/2 flex flex-col overflow-y-auto bg-gradient-to-b from-white to-slate-50">
                 <div className="p-5 sm:p-7 space-y-5">
-                  {/* Meta pills */}
                   <div className="flex flex-wrap items-center gap-2">
                     <span
                       className="inline-flex items-center rounded-full text-[11px] font-semibold px-3 py-1"
@@ -1999,7 +2274,6 @@ const RealEstatePage: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Title */}
                   <div>
                     <h3 className="text-lg sm:text-xl font-semibold text-slate-900 leading-snug">
                       {selectedProperty.title}
@@ -2010,7 +2284,6 @@ const RealEstatePage: React.FC = () => {
                     </p>
                   </div>
 
-                  {/* Price card */}
                   <div className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
                     <div className="p-4 sm:p-5">
                       <div className="flex items-end justify-between gap-4">
@@ -2059,7 +2332,6 @@ const RealEstatePage: React.FC = () => {
                         })()}
                       </div>
 
-                      {/* Quick stats */}
                       <div className="mt-4 grid grid-cols-3 gap-2">
                         <div className="rounded-2xl bg-slate-50 border border-slate-100 px-3 py-2">
                           <div className="text-[10px] font-semibold text-slate-500 flex items-center gap-1">
@@ -2100,7 +2372,6 @@ const RealEstatePage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Details */}
                   <div>
                     <h4 className="text-sm font-semibold text-slate-900 mb-3">
                       {isPT ? "Detalhes" : "Details"}
@@ -2197,7 +2468,6 @@ const RealEstatePage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Description */}
                   <div>
                     <h4 className="text-sm font-semibold text-slate-900 mb-2">
                       {isPT ? "Descrição" : "Description"}
@@ -2209,7 +2479,6 @@ const RealEstatePage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Owner controls */}
                   {isOwner && (
                     <div className="flex flex-wrap gap-2 pt-1">
                       <button
@@ -2221,7 +2490,7 @@ const RealEstatePage: React.FC = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={handleDeleteListing}
+                        onClick={openDeleteListingModal}
                         className="inline-flex items-center justify-center rounded-full bg-red-600 text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow hover:bg-red-700 transition"
                       >
                         {isPT ? "Remover anúncio" : "Remove listing"}
@@ -2262,7 +2531,7 @@ const RealEstatePage: React.FC = () => {
                         <a
                           href={`tel:${selectedProperty.agentPhone}`}
                           className="inline-flex items-center justify-center gap-1.5 rounded-full text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow transition hover:opacity-90"
-                          style={{ backgroundColor: "#10B981" }}
+                          style={{ backgroundColor: SUCCESS }}
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           {isPT ? "Ligar" : "Call"}
@@ -2280,31 +2549,38 @@ const RealEstatePage: React.FC = () => {
                             ? isPT
                               ? "Copiado ✓"
                               : "Copied ✓"
-                            : showAgentEmail
-                            ? isPT
-                              ? "Copiar email"
-                              : "Copy email"
                             : isPT
-                            ? "Ver email"
-                            : "Show email"}
+                            ? "Copiar email"
+                            : "Copy email"}
                         </button>
                       )}
                     </div>
                   </div>
 
-                  {selectedProperty.agentEmail &&
-                    showAgentEmail &&
-                    !hasCopiedEmail && (
-                      <div className="mt-2 text-[11px] text-slate-500 break-all">
-                        {selectedProperty.agentEmail}
-                      </div>
-                    )}
+                  {selectedProperty.agentEmail && showAgentEmail && (
+                    <div className="mt-2 text-[11px] text-slate-500 break-all">
+                      {selectedProperty.agentEmail}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
       )}
+
+      {/* =========================================================
+          CONFIRM DELETE MODAL
+      ========================================================== */}
+      <ConfirmDeleteModal
+        open={overlay === "delete" && !!selectedProperty}
+        listingTitle={selectedProperty?.title ?? ""}
+        isPT={isPT}
+        busy={deleteBusy}
+        errorMsg={deleteError}
+        onConfirm={confirmDeleteListing}
+        onCancel={closeDeleteListingModal}
+      />
     </div>
   );
 };

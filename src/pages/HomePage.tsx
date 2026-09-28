@@ -18,7 +18,10 @@ import {
   ChevronDown,
   ArrowUpDown,
   CheckCircle2,
+  LayoutGrid,
 } from "lucide-react";
+
+import CategorySheet from "../components/CategorySheet";
 
 import {
   CATEGORIES,
@@ -34,6 +37,16 @@ import type { CategoryId, Category, Subcategory } from "../data/categories";
 --------------------------------------------------------- */
 const BRAND = "#1F6FA6";
 const BRAND_HOVER = "#195c8a";
+
+/* Categorias prioritárias para a grelha mobile (Weinschenk: 6 itens = scan instantâneo) */
+const PRIMARY_CATEGORY_IDS: CategoryId[] = [
+  "home-services",
+  "real-estate",
+  "food",
+  "wellness-beauty",
+  "medical",
+  "professional",
+];
 
 /* ---------------------------------------------------------
    TYPES
@@ -256,8 +269,6 @@ const StarInput: React.FC<{
 
 /* ---------------------------------------------------------
    RATING MODAL (write)
-   Norman: se o estado não permite a ação, mostrar antes,
-   não depois do submit. Sem `alert()`.
 --------------------------------------------------------- */
 const RatingModal: React.FC<{ service: Service; onClose: () => void }> = ({
   service,
@@ -275,7 +286,6 @@ const RatingModal: React.FC<{ service: Service; onClose: () => void }> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  /* ---------- Estado: sem login ---------- */
   if (!user) {
     return (
       <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 px-3">
@@ -604,10 +614,6 @@ const RatingDetailsModal: React.FC<{
 
 /* ---------------------------------------------------------
    SERVICE CARD
-   Cooper: 1 tarefa primária (Contactar) + 1 secundária (Avaliar)
-   Wathan: h-full para uniformizar altura em grid
-   Norman: painel de contactos é overlay absoluto — não empurra
-           o layout do card, nem dos vizinhos da mesma linha
 --------------------------------------------------------- */
 type ServiceCardProps = {
   service: Service;
@@ -874,7 +880,6 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
             </div>
           )}
 
-          {/* CTAs — 1 primário (Contactar) + 1 secundário (Avaliar) */}
           <div className="mt-auto pt-2 flex flex-col sm:flex-row gap-2">
             <button
               type="button"
@@ -913,8 +918,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
           </div>
         </div>
 
-        {/* PAINEL DE CONTACTOS — overlay absoluto dentro do card.
-            Não empurra o layout, não afeta a altura dos vizinhos. */}
+        {/* PAINEL DE CONTACTOS — overlay absoluto */}
         {showContact && (
           <div
             className="absolute inset-0 z-20 bg-white flex flex-col rounded-3xl"
@@ -1100,6 +1104,7 @@ const HomePage: React.FC = () => {
   >("all");
   const [minRating, setMinRating] = useState<number>(0);
   const [sortBy, setSortBy] = useState<SortOption>("recent");
+  const [showCategorySheet, setShowCategorySheet] = useState(false);
 
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState("");
@@ -1340,7 +1345,6 @@ const HomePage: React.FC = () => {
                 : "Professionals recommended by neighbours. Contact directly, no middlemen."}
             </p>
 
-            {/* Search bar */}
             <div className="mt-6 max-w-2xl mx-auto">
               <div className="relative">
                 <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
@@ -1378,6 +1382,8 @@ const HomePage: React.FC = () => {
 
       {/* =========================================================
           CATEGORY STRIP
+          Mobile: grelha 3×2 + "Ver todas" (Weinschenk + Krug)
+          Desktop: fila horizontal com todas
       ========================================================== */}
       <section className="relative -mt-2 pb-4" aria-label="Categories">
         <div className="max-w-7xl mx-auto px-4">
@@ -1396,8 +1402,54 @@ const HomePage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="relative">
-                <div className="flex flex-nowrap sm:flex-wrap gap-2 overflow-x-auto sm:overflow-visible no-scrollbar py-1 pr-10 sm:pr-0">
+              {/* ---------- MOBILE: grelha 3×2 + Ver todas ---------- */}
+              <div className="sm:hidden">
+                <div className="grid grid-cols-3 gap-2">
+                  {PRIMARY_CATEGORY_IDS.map((id) => {
+                    const cat = CATEGORIES.find((c) => c.id === id);
+                    if (!cat) return null;
+                    const active = selectedCategory === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategory(id);
+                          setSelectedSubcategory("all");
+                        }}
+                        className={[
+                          "flex flex-col items-center gap-1 p-3 rounded-2xl border transition",
+                          active
+                            ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6] shadow-sm"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                        ].join(" ")}
+                      >
+                        <span className="text-2xl" aria-hidden="true">
+                          {cat.icon}
+                        </span>
+                        <span className="text-[11px] font-semibold text-center leading-tight line-clamp-2">
+                          {getCategoryLabel(id, isPT)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowCategorySheet(true)}
+                  className="mt-2 w-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold py-2.5 transition inline-flex items-center justify-center gap-1.5"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  {isPT
+                    ? `Ver todas as ${CATEGORIES.length - 1} categorias`
+                    : `See all ${CATEGORIES.length - 1} categories`}
+                </button>
+              </div>
+
+              {/* ---------- DESKTOP: fila horizontal ---------- */}
+              <div className="hidden sm:block relative">
+                <div className="flex flex-wrap gap-2 py-1">
                   {displayCategories.map((category: Category) => {
                     const active = category.id === selectedCategory;
                     const isAll = category.id === "all";
@@ -1435,11 +1487,6 @@ const HomePage: React.FC = () => {
                     );
                   })}
                 </div>
-
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute right-0 top-0 h-full w-12 bg-gradient-to-l from-white to-transparent sm:hidden"
-                />
               </div>
             </div>
 
@@ -1527,7 +1574,6 @@ const HomePage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Rating filter — com label explícito (Krug) */}
             <div className="inline-flex items-center gap-1.5">
               <span className="text-[11px] font-semibold text-slate-500 hidden sm:inline">
                 {isPT ? "Filtrar:" : "Filter:"}
@@ -1554,7 +1600,6 @@ const HomePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Sort */}
             <div className="relative">
               <ArrowUpDown className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               <select
@@ -1588,8 +1633,7 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* =========================================================
-          SERVICES LIST — grid items-start para que um card que
-          abra o painel de contactos não estique os vizinhos
+          SERVICES LIST
       ========================================================== */}
       <section className="max-w-7xl mx-auto px-4 pt-2">
         {loadingServices && dbServices.length === 0 && (
@@ -1649,6 +1693,18 @@ const HomePage: React.FC = () => {
           onClose={() => setRatingDetailsService(null)}
         />
       )}
+
+      {/* CATEGORY SHEET (mobile) */}
+      <CategorySheet
+        open={showCategorySheet}
+        isPT={isPT}
+        selectedCategory={selectedCategory}
+        onSelect={(id) => {
+          setSelectedCategory(id);
+          setSelectedSubcategory("all");
+        }}
+        onClose={() => setShowCategorySheet(false)}
+      />
     </div>
   );
 };

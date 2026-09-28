@@ -137,11 +137,28 @@ const AboutPage: React.FC = () => {
   const { language } = useLanguage();
   const isPT = language === "pt";
 
-  /* ---------- WEATHER ---------- */
+  /* ---------- WEATHER (cache em sessionStorage) ---------- */
   const [weather, setWeather] = useState<WeatherState | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
 
   useEffect(() => {
+    const CACHE_KEY = "cascais-weather";
+    const CACHE_TTL = 30 * 60 * 1000; // 30 min
+
+    const cached = sessionStorage.getItem(CACHE_KEY);
+    if (cached) {
+      try {
+        const { ts, data } = JSON.parse(cached);
+        if (Date.now() - ts < CACHE_TTL) {
+          setWeather(data);
+          setWeatherLoading(false);
+          return;
+        }
+      } catch {
+        /* ignore malformed cache */
+      }
+    }
+
     const fetchWeather = async () => {
       try {
         const res = await fetch(
@@ -149,11 +166,16 @@ const AboutPage: React.FC = () => {
         );
         const data: any = await res.json();
         if (data?.current_weather) {
-          setWeather({
+          const w: WeatherState = {
             temperature: data.current_weather.temperature,
             windspeed: data.current_weather.windspeed,
             weatherCode: data.current_weather.weathercode,
-          });
+          };
+          setWeather(w);
+          sessionStorage.setItem(
+            CACHE_KEY,
+            JSON.stringify({ ts: Date.now(), data: w })
+          );
         }
       } catch (err) {
         console.error("Failed to fetch weather", err);
@@ -173,33 +195,26 @@ const AboutPage: React.FC = () => {
   const handleGoToServices = () => navigate("/services");
   const handleGoToCreateServices = () => navigate("/service-listing");
 
-  const handleEmergencyClick = () => {
-    const message = isPT
-      ? "Números de emergência:\nPolícia: 112\nAmbulância: 112\nBombeiros: 112\n\nLigar 112 agora?"
-      : "Emergency Numbers:\nPolice: 112\nAmbulance: 112\nFire Department: 112\n\nCall 112 now?";
-    if (window.confirm(message)) {
-      window.location.href = "tel:112";
-    }
-  };
-
   /* ---------- CONTENT ---------- */
+  /* Stats honestos — afirmam o que somos, não números que não temos */
   const stats = [
     {
-      value: "140+",
-      label: isPT ? "Profissionais locais" : "Local professionals",
+      value: isPT ? "Grátis" : "Free",
+      label: isPT
+        ? "Para residentes e prestadores"
+        : "For residents and providers",
     },
     {
-      value: "1.200+",
-      label: isPT ? "Serviços concluídos" : "Jobs completed",
-    },
-    {
-      value: "4.8",
-      label: isPT ? "Avaliação média" : "Average rating",
-      icon: "star",
+      value: isPT ? "Sem comissões" : "No fees",
+      label: isPT ? "Contacto direto" : "Direct contact",
     },
     {
       value: "PT / EN",
       label: isPT ? "Dois idiomas" : "Two languages",
+    },
+    {
+      value: isPT ? "Local" : "Local",
+      label: isPT ? "Focado em Cascais" : "Focused on Cascais",
     },
   ];
 
@@ -232,8 +247,8 @@ const AboutPage: React.FC = () => {
       icon: ShieldCheck,
       title: isPT ? "Confiança" : "Trust",
       desc: isPT
-        ? "Cada prestador é verificado pela comunidade antes de aparecer."
-        : "Every provider is community-verified before appearing.",
+        ? "Cada serviço é publicado pelo próprio prestador. A comunidade avalia depois de usar."
+        : "Each service is posted by the provider. The community rates after use.",
       color: "#1F6FA6",
     },
     {
@@ -261,8 +276,8 @@ const AboutPage: React.FC = () => {
         ? "Como encontro um profissional de confiança?"
         : "How do I find a trusted professional?",
       a: isPT
-        ? "Explore a secção de Serviços. Todos os prestadores são verificados pela comunidade — pode ver classificações, comentários e zonas de atuação antes de contactar."
-        : "Browse the Services section. All providers are community-verified — check ratings, reviews, and service areas before contacting.",
+        ? "Explore a secção de Serviços. Pode ver classificações, comentários e zonas de atuação antes de contactar. Os perfis com histórico de avaliações ficam visíveis no topo."
+        : "Browse the Services section. Check ratings, reviews, and service areas before contacting. Profiles with a review history appear higher in the list.",
     },
     {
       id: "free",
@@ -273,12 +288,10 @@ const AboutPage: React.FC = () => {
     },
     {
       id: "trust",
-      q: isPT
-        ? "Como são verificados os prestadores?"
-        : "How are providers verified?",
+      q: isPT ? "Como funcionam as avaliações?" : "How do reviews work?",
       a: isPT
-        ? "Cada prestador é revisto manualmente antes de aparecer. Além disso, a própria comunidade avalia o trabalho e a pontualidade em cada serviço."
-        : "Each provider is manually reviewed before appearing. Beyond that, the community rates work quality and punctuality on every job.",
+        ? "Cada serviço é publicado pelo próprio prestador. A comunidade avalia depois de usar — qualidade do trabalho e pontualidade. Os perfis com histórico de avaliações ficam visíveis no topo."
+        : "Each service is posted by the provider themselves. The community rates after use — work quality and punctuality. Profiles with review history appear higher.",
     },
     {
       id: "payments",
@@ -288,6 +301,15 @@ const AboutPage: React.FC = () => {
       a: isPT
         ? "Não. O AllCascais liga diretamente o cliente ao profissional. Pagamento e condições são combinados diretamente entre as partes."
         : "No. AllCascais connects the client directly to the professional. Payment and terms are agreed directly between both parties.",
+    },
+    {
+      id: "business-model",
+      q: isPT
+        ? "Como é que o AllCascais se sustenta?"
+        : "How does AllCascais sustain itself?",
+      a: isPT
+        ? "Somos, por agora, um projeto comunitário sem fins lucrativos. No futuro poderemos oferecer destaques pagos a prestadores — mantendo sempre o essencial gratuito para os residentes."
+        : "For now we're a non-profit community project. In the future we may offer paid featured placements to providers — always keeping the core free for residents.",
     },
     {
       id: "business",
@@ -321,12 +343,12 @@ const AboutPage: React.FC = () => {
       ========================================================== */}
       <section className="relative">
         <div
-          className="h-[520px] sm:h-[560px] w-full bg-cover bg-center"
+          className="min-h-[420px] sm:min-h-[520px] w-full bg-cover bg-center"
           style={{ backgroundImage: "url('/cascais-about.jpg')" }}
         />
 
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/30 via-slate-900/65 to-slate-900/90" />
+        {/* Overlay — topo menos escuro para céu, fundo escuro para texto */}
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-900/50 via-slate-900/65 to-slate-900/90" />
 
         {/* Content */}
         <div className="absolute inset-0">
@@ -335,7 +357,7 @@ const AboutPage: React.FC = () => {
               {/* Badge */}
               <div
                 className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold shadow-md mb-6"
-                style={{ backgroundColor: `${BRAND}E6` }}
+                style={{ backgroundColor: `${BRAND}CC` }}
               >
                 <MapPin className="w-3.5 h-3.5" />
                 <span>
@@ -363,8 +385,8 @@ const AboutPage: React.FC = () => {
 
               <p className="max-w-2xl mx-auto text-sm sm:text-base text-white/85 leading-relaxed mb-8">
                 {isPT
-                  ? "AllCascais liga residentes e visitantes a profissionais locais verificados — sem intermediários, em português e inglês."
-                  : "AllCascais connects residents and visitors with verified local professionals — no middlemen, in Portuguese and English."}
+                  ? "AllCascais liga residentes e visitantes a profissionais locais — sem intermediários, em português e inglês."
+                  : "AllCascais connects residents and visitors with local professionals — no middlemen, in Portuguese and English."}
               </p>
 
               {/* Primary CTA + secondary */}
@@ -418,24 +440,57 @@ const AboutPage: React.FC = () => {
       </section>
 
       {/* =========================================================
-          STATS — Cialdini: concrete numbers
+          FOUNDER STORY — a alma da página (Miller/Godin)
       ========================================================== */}
-      <section className="max-w-5xl mx-auto px-4 pt-14 pb-10">
+      <section className="max-w-3xl mx-auto px-4 pt-16 pb-6">
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 sm:p-10">
+          <div className="flex flex-col sm:flex-row gap-6 items-start">
+            <div className="shrink-0 w-20 h-20 sm:w-28 sm:h-28 rounded-3xl bg-sky-50 border border-sky-100 flex items-center justify-center text-3xl sm:text-4xl">
+              🌉
+            </div>
+
+            <div className="min-w-0">
+              <div
+                className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] mb-3"
+                style={{ color: BRAND }}
+              >
+                <Heart className="w-4 h-4" />
+                {isPT ? "Porque é que isto existe" : "Why this exists"}
+              </div>
+
+              <p className="text-sm sm:text-base text-slate-700 leading-relaxed italic mb-4">
+                {isPT
+                  ? '"Cresci em Cascais. Vi a minha cidade tornar-se mais internacional, mais vibrante, mas também vi vizinhos recém-chegados a lutar para encontrar um eletricista, um dentista, uma limpeza de confiança. E vi profissionais locais que eu conhecia com a agenda vazia. Decidi construir a ponte."'
+                  : '"I grew up in Cascais. I watched my town become more international, more vibrant, but I also watched newly-arrived neighbours struggle to find an electrician, a dentist, a trustworthy cleaner. And I watched local professionals I knew with empty schedules. So I built the bridge."'}
+              </p>
+
+              <p className="text-sm font-semibold text-slate-800">
+                {isPT ? "— Fundador do AllCascais" : "— Founder of AllCascais"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =========================================================
+          STATS — Cialdini: afirmações verificáveis, não números inventados
+      ========================================================== */}
+      <section className="max-w-5xl mx-auto px-4 pt-8 pb-10">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
           {stats.map((s) => (
-            <div key={s.label} className="text-center">
+            <div
+              key={s.label}
+              className="text-center bg-white rounded-2xl border border-slate-100 shadow-sm py-5 px-3"
+            >
               <div className="flex items-center justify-center gap-1">
-                {s.icon === "star" && (
-                  <Star className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 fill-amber-400" />
-                )}
                 <span
-                  className="text-2xl sm:text-3xl font-bold"
+                  className="text-lg sm:text-xl font-bold"
                   style={{ color: BRAND }}
                 >
                   {s.value}
                 </span>
               </div>
-              <div className="text-xs sm:text-sm text-slate-500 mt-1">
+              <div className="text-[11px] sm:text-xs text-slate-500 mt-1">
                 {s.label}
               </div>
             </div>
@@ -514,7 +569,7 @@ const AboutPage: React.FC = () => {
             return (
               <div
                 key={v.title}
-                className="bg-white rounded-3xl border border-slate-100 p-6 hover:shadow-md hover:-translate-y-0.5 transition-all"
+                className="bg-white rounded-3xl border border-slate-100 p-6 hover:shadow-md transition-shadow"
               >
                 <div
                   className="w-12 h-12 rounded-2xl flex items-center justify-center mb-4"
@@ -576,7 +631,7 @@ const AboutPage: React.FC = () => {
       ========================================================== */}
       <section className="max-w-5xl mx-auto px-4 pb-16">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {/* Emergency */}
+          {/* Emergency — <a href="tel:"> direto, sem window.confirm */}
           <div className="rounded-3xl bg-red-50 border border-red-100 p-6">
             <div className="flex items-start gap-4">
               <div className="shrink-0 w-11 h-11 rounded-2xl bg-red-500 text-white flex items-center justify-center shadow-sm">
@@ -591,14 +646,13 @@ const AboutPage: React.FC = () => {
                     ? "O número 112 funciona em todo o país para polícia, ambulância e bombeiros."
                     : "112 works everywhere in the country for police, ambulance, and fire department."}
                 </p>
-                <button
-                  type="button"
-                  onClick={handleEmergencyClick}
+                <a
+                  href="tel:112"
                   className="inline-flex items-center gap-1.5 rounded-full bg-red-500 text-white text-xs font-semibold px-4 py-2 shadow-sm hover:bg-red-600 transition"
                 >
                   {isPT ? "Ligar 112" : "Call 112"}
                   <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+                </a>
               </div>
             </div>
           </div>
@@ -632,39 +686,29 @@ const AboutPage: React.FC = () => {
       </section>
 
       {/* =========================================================
-          BOTTOM CTA — one clear action
+          BOTTOM CTA — ação única e focada (Krug: diferente do hero)
       ========================================================== */}
       <section className="max-w-5xl mx-auto px-4 pb-16">
         <div className="rounded-3xl bg-gradient-to-br from-sky-50 via-white to-emerald-50 border border-slate-200 p-8 sm:p-10 text-center">
           <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-3">
-            {isPT ? "Pronto para começar?" : "Ready to get started?"}
+            {isPT ? "Comece por onde precisar." : "Start where you need."}
           </h2>
           <p className="text-sm sm:text-base text-slate-600 max-w-lg mx-auto mb-6">
             {isPT
-              ? "Explorar serviços é grátis. Publicar o seu também."
-              : "Browsing services is free. Listing yours is too."}
+              ? "Se está à procura de um serviço, comece pela pesquisa. Se oferece um, publique o seu perfil."
+              : "If you're looking for a service, start with a search. If you offer one, publish your profile."}
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={handleGoToServices}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full text-white px-6 py-3 text-sm font-bold shadow-md transition hover:opacity-95"
-              style={{ backgroundColor: BRAND }}
-            >
-              <Search className="w-4 h-4" />
-              {isPT ? "Explorar serviços" : "Explore services"}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleGoToCreateServices}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-white border border-slate-200 text-slate-800 px-6 py-3 text-sm font-semibold hover:bg-slate-50 transition"
-            >
-              <Building2 className="w-4 h-4" />
-              {isPT ? "Publicar o meu serviço" : "List my service"}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={handleGoToServices}
+            className="inline-flex items-center justify-center gap-2 rounded-full text-white px-7 py-3.5 text-sm font-bold shadow-md transition hover:opacity-95"
+            style={{ backgroundColor: BRAND }}
+          >
+            <Search className="w-4 h-4" />
+            {isPT ? "Começar agora" : "Get started"}
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
       </section>
     </div>

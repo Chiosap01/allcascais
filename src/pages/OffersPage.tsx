@@ -15,7 +15,10 @@ import {
   ArrowUpDown,
   Sparkles,
   AlertCircle,
+  LayoutGrid,
 } from "lucide-react";
+
+import CategorySheet from "../components/CategorySheet";
 
 import {
   CATEGORIES,
@@ -28,13 +31,20 @@ import type { CategoryId, Category, Subcategory } from "../data/categories";
 
 /* ---------------------------------------------------------
    DESIGN TOKENS
-   Opção B — o azul (BRAND) é a cor de marca consistente
-   entre páginas. O âmbar fica reservado para UMA coisa:
-   o CTA "Ver contacto" (trigger único de "isto é uma oferta").
 --------------------------------------------------------- */
 const BRAND = "#1F6FA6";
 const OFFER_ACCENT = "#F59E0B";
 const OFFER_ACCENT_HOVER = "#D97706";
+
+/* Categorias prioritárias para a grelha mobile */
+const PRIMARY_CATEGORY_IDS: CategoryId[] = [
+  "food",
+  "wellness-beauty",
+  "sports-outdoors",
+  "home-services",
+  "events-entertainment",
+  "professional",
+];
 
 /* ---------------------------------------------------------
    TYPES
@@ -246,7 +256,6 @@ const isRecentlyAdded = (createdAt?: string | null): boolean => {
 
 /* ---------------------------------------------------------
    CONFIRM DELETE MODAL
-   Norman: feedback claro, sem `window.confirm`
 --------------------------------------------------------- */
 const ConfirmDeleteModal: React.FC<{
   open: boolean;
@@ -330,10 +339,6 @@ const ConfirmDeleteModal: React.FC<{
 
 /* ---------------------------------------------------------
    OFFER CARD
-   Paleta reduzida: azul (BRAND) para UI, âmbar (OFFER_ACCENT)
-   apenas no CTA. Verde só para o desconto. Vermelho removido.
-   CTA primário acima da descrição. Imagem aspect-[4/3].
-   Painel de contacto com backdrop + pointer-events-auto.
 --------------------------------------------------------- */
 type OfferCardProps = {
   offer: Offer;
@@ -409,7 +414,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
     };
   }, [offer.description, showFullDescription]);
 
-  /* Norman: foco dentro do painel quando abre */
   useEffect(() => {
     if (showContact && contactPanelRef.current) {
       const focusable = contactPanelRef.current.querySelector<HTMLElement>(
@@ -419,7 +423,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
     }
   }, [showContact]);
 
-  /* Esc fecha o painel */
   useEffect(() => {
     if (!showContact) return;
     const onKey = (e: KeyboardEvent) => {
@@ -435,7 +438,7 @@ const OfferCard: React.FC<OfferCardProps> = ({
 
   return (
     <article className="relative flex flex-col bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden hover:border-slate-300 hover:shadow-md transition-[box-shadow,border-color] duration-200">
-      {/* IMAGE — aspect 4/3, mais cards visíveis por ecrã */}
+      {/* IMAGE */}
       <div className="relative">
         <div className="w-full aspect-[4/3] bg-slate-100 overflow-hidden">
           {offer.imageUrl ? (
@@ -459,10 +462,8 @@ const OfferCard: React.FC<OfferCardProps> = ({
           )}
         </div>
 
-        {/* Gradiente leve no topo para legibilidade das pills */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/40 to-transparent" />
 
-        {/* Pills no topo — só categoria de estado */}
         <div className="absolute top-3 left-3 flex flex-wrap gap-2 max-w-[70%]">
           {offer.highlight && (
             <span
@@ -491,13 +492,11 @@ const OfferCard: React.FC<OfferCardProps> = ({
 
       {/* CONTENT */}
       <div className="p-4 sm:p-5 flex flex-col gap-3 flex-1">
-        {/* Título + preço + info — o essencial em cima */}
         <div className="space-y-2">
           <h3 className="text-base sm:text-lg font-semibold text-slate-900 leading-tight">
             {offer.title}
           </h3>
 
-          {/* Preço dentro do card — clareza sobre fundo branco */}
           <div className="flex items-baseline gap-2 flex-wrap">
             <span className="text-xl sm:text-2xl font-extrabold text-slate-900">
               {primaryPrice}
@@ -514,7 +513,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
             )}
           </div>
 
-          {/* Hierarquia clara: quem > onde */}
           <div className="flex flex-wrap items-center gap-2">
             {offer.serviceName && (
               <span className="text-[13px] font-semibold text-slate-900">
@@ -538,7 +536,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
             )}
           </div>
 
-          {/* Meta pills — categoria / sub / recência / validade */}
           <div className="flex flex-wrap items-center gap-1.5 pt-1">
             <span className="inline-flex items-center rounded-full bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold text-slate-700 border border-slate-200">
               {getCategoryLabel(offer.categoryId, isPT)}
@@ -568,7 +565,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
           </div>
         </div>
 
-        {/* CTA — sempre visível antes da descrição (Miller/Krug) */}
         <div className="pt-1 flex items-center gap-2">
           <button
             type="button"
@@ -596,14 +592,12 @@ const OfferCard: React.FC<OfferCardProps> = ({
           )}
         </div>
 
-        {/* shortLabel — badge inline âmbar suave, sem bloco */}
         {offer.shortLabel && (
           <div className="inline-flex items-center gap-1.5 self-start text-[12px] font-semibold text-amber-800 bg-amber-50 border border-amber-100 rounded-full px-3 py-1">
             ✨ {offer.shortLabel}
           </div>
         )}
 
-        {/* Descrição — secundária, expansível inline */}
         {offer.description && (
           <div className="space-y-2">
             <p
@@ -634,7 +628,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
           </div>
         )}
 
-        {/* Gestão do dono */}
         {canDelete && (
           <div className="mt-auto pt-2 border-t border-slate-100 flex items-center justify-between">
             <span className="text-[11px] text-slate-400">
@@ -664,7 +657,7 @@ const OfferCard: React.FC<OfferCardProps> = ({
         )}
       </div>
 
-      {/* BACKDROP — bloqueia cliques no card por baixo, fecha ao clicar */}
+      {/* BACKDROP */}
       {showContact && (
         <button
           type="button"
@@ -675,7 +668,7 @@ const OfferCard: React.FC<OfferCardProps> = ({
         />
       )}
 
-      {/* PAINEL DE CONTACTO — top fixo, mantém imagem + título + preço visíveis */}
+      {/* CONTACT PANEL */}
       {showContact && (
         <div
           ref={contactPanelRef}
@@ -832,6 +825,7 @@ const OffersPage: React.FC = () => {
     OfferHighlight | "all"
   >("all");
   const [sortBy, setSortBy] = useState<SortOption>("recent");
+  const [showCategorySheet, setShowCategorySheet] = useState(false);
 
   const [dbOffers, setDbOffers] = useState<Offer[]>([]);
   const [loadingOffers, setLoadingOffers] = useState(true);
@@ -1031,7 +1025,7 @@ const OffersPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-transparent pb-10">
       {/* =========================================================
-          HERO — agora com BRAND em vez de âmbar (consistência com HomePage)
+          HERO
       ========================================================== */}
       <section className="relative overflow-hidden border-b border-slate-200/60 bg-gradient-to-b from-white via-white to-sky-50/40">
         <div
@@ -1099,7 +1093,7 @@ const OffersPage: React.FC = () => {
       </section>
 
       {/* =========================================================
-          CATEGORY STRIP — tudo BRAND
+          CATEGORY STRIP
       ========================================================== */}
       <section className="relative -mt-2 pb-4" aria-label="Offer categories">
         <div className="max-w-7xl mx-auto px-4">
@@ -1118,8 +1112,54 @@ const OffersPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="relative">
-                <div className="flex flex-nowrap sm:flex-wrap gap-2 overflow-x-auto sm:overflow-visible no-scrollbar py-1 pr-10 sm:pr-0">
+              {/* ---------- MOBILE: grelha 3×2 + Ver todas ---------- */}
+              <div className="sm:hidden">
+                <div className="grid grid-cols-3 gap-2">
+                  {PRIMARY_CATEGORY_IDS.map((id) => {
+                    const cat = CATEGORIES.find((c) => c.id === id);
+                    if (!cat) return null;
+                    const active = selectedCategory === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCategory(id);
+                          setSelectedSubcategory("all");
+                        }}
+                        className={[
+                          "flex flex-col items-center gap-1 p-3 rounded-2xl border transition",
+                          active
+                            ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6] shadow-sm"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                        ].join(" ")}
+                      >
+                        <span className="text-2xl" aria-hidden="true">
+                          {cat.icon}
+                        </span>
+                        <span className="text-[11px] font-semibold text-center leading-tight line-clamp-2">
+                          {getCategoryLabel(id, isPT)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowCategorySheet(true)}
+                  className="mt-2 w-full rounded-2xl border border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold py-2.5 transition inline-flex items-center justify-center gap-1.5"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  {isPT
+                    ? `Ver todas as ${CATEGORIES.length - 1} categorias`
+                    : `See all ${CATEGORIES.length - 1} categories`}
+                </button>
+              </div>
+
+              {/* ---------- DESKTOP: fila horizontal ---------- */}
+              <div className="hidden sm:block relative">
+                <div className="flex flex-wrap gap-2 py-1">
                   {displayCategories.map((category: Category) => {
                     const active = category.id === selectedCategory;
                     const isAll = category.id === "all";
@@ -1223,7 +1263,7 @@ const OffersPage: React.FC = () => {
       </section>
 
       {/* =========================================================
-          RESULTS BAR — filtros BRAND, não âmbar
+          RESULTS BAR
       ========================================================== */}
       <section className="max-w-7xl mx-auto px-4 pt-4 pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -1380,6 +1420,18 @@ const OffersPage: React.FC = () => {
         errorMsg={deleteError}
         onConfirm={confirmDelete}
         onCancel={closeDeleteModal}
+      />
+
+      {/* CATEGORY SHEET (mobile) */}
+      <CategorySheet
+        open={showCategorySheet}
+        isPT={isPT}
+        selectedCategory={selectedCategory as CategoryId}
+        onSelect={(id) => {
+          setSelectedCategory(id);
+          setSelectedSubcategory("all");
+        }}
+        onClose={() => setShowCategorySheet(false)}
       />
     </div>
   );
