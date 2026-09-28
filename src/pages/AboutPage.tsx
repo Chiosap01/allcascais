@@ -11,10 +11,8 @@ import {
   Heart,
   Globe,
   MapPin,
-  Star,
   ArrowRight,
   CheckCircle2,
-  Building2,
   Sparkles,
 } from "lucide-react";
 
