@@ -28,6 +28,10 @@ import { supabase } from "../supabase";
    Godin: permissão, não interrupção
    Krug: 3 campos, zero fricção
    Norman: feedback claro em todos os estados
+
+   Audit-driven change: payload now includes `phone: null`
+   so the shape matches the RealEstate MatchModal insert.
+   If you later unify the `leads` table, add `category` too.
 ========================================================= */
 type ContactSubject = "question" | "feedback" | "partnership";
 
@@ -105,12 +109,14 @@ const ContactModal: React.FC<{
     const subjectLine = SUBJECTS.find((s) => s.id === subject);
     const subjectLabel = isPT ? subjectLine?.pt : subjectLine?.en;
 
+    /* Unified lead payload shape — matches RealEstate MatchModal */
     const payload = {
       source: "landing-contact",
       page_url: window.location.href,
       language: isPT ? "pt" : "en",
       name: name.trim(),
       email: email.trim(),
+      phone: null,
       notes: message.trim(),
       meta: {
         subject: subjectLabel ?? subject,
@@ -365,9 +371,6 @@ const LandingPage: React.FC = () => {
     "services" | "offers" | "real-estate"
   >("services");
 
-  /* ---------- Search validation state (Norman) ---------- */
-  const [searchError, setSearchError] = useState<string | null>(null);
-
   /* ---------- Contact modal state ---------- */
   const [contactOpen, setContactOpen] = useState(false);
 
@@ -382,48 +385,6 @@ const LandingPage: React.FC = () => {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  /* ---------------------------------------------------------
-     TESTIMONIALS
-     Nota: estes depoimentos são ilustrativos enquanto não
-     existirem avaliações reais. Substituir por reais quando
-     houver, e remover a etiqueta "exemplo".
-  --------------------------------------------------------- */
-  const testimonials = [
-    {
-      id: "1",
-      name: "Sarah M.",
-      role: isPT ? "Expat no Estoril" : "Expat in Estoril",
-      avatar: "SM",
-      quote: isPT
-        ? "Encontrei um canalizador que falava inglês em 10 minutos. Salvou o meu domingo."
-        : "Found an English-speaking plumber in 10 minutes. Saved my Sunday.",
-      service: isPT ? "Canalização" : "Plumbing",
-      isExample: true,
-    },
-    {
-      id: "2",
-      name: "João P.",
-      role: isPT ? "Residente em Cascais" : "Cascais resident",
-      avatar: "JP",
-      quote: isPT
-        ? "Finalmente um sítio onde encontro profissionais de confiança sem pedir favores no Facebook."
-        : "Finally a place where I find trusted pros without asking favors on Facebook.",
-      service: isPT ? "Eletricidade" : "Electrical",
-      isExample: true,
-    },
-    {
-      id: "3",
-      name: "Emma L.",
-      role: isPT ? "Recém-chegada a Carcavelos" : "New to Carcavelos",
-      avatar: "EL",
-      quote: isPT
-        ? "Mudei-me há um mês e já usei o AllCascais três vezes. Nunca falhou."
-        : "Moved here a month ago and already used AllCascais three times. Never failed.",
-      service: isPT ? "Limpezas" : "Cleaning",
-      isExample: true,
-    },
-  ];
 
   /* ---------------------------------------------------------
      SEARCH TABS
@@ -470,11 +431,9 @@ const LandingPage: React.FC = () => {
 
   const SUGGESTIONS_BY_TAB = {
     services: isPT
-      ? ["Eletricista", "Canalizador", "Limpezas", "Dentista", "Restaurante"]
-      : ["Electrician", "Plumber", "Cleaning", "Dentist", "Restaurant"],
-    offers: isPT
-      ? ["Spa", "Surf", "Jantar", "Desconto", "Última hora"]
-      : ["Spa", "Surf", "Dinner", "Discount", "Last minute"],
+      ? ["Eletricista", "Limpezas", "Dentista"]
+      : ["Electrician", "Cleaning", "Dentist"],
+    offers: isPT ? ["Spa", "Surf", "Jantar"] : ["Spa", "Surf", "Dinner"],
     "real-estate": [],
   } as const;
 
@@ -493,15 +452,14 @@ const LandingPage: React.FC = () => {
 
   /* ---------------------------------------------------------
      HANDLERS
+     Krug: o botão nunca bloqueia. Sem query → vai para a lista.
+     Norman: não punimos o utilizador por não escrever nada.
   --------------------------------------------------------- */
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchTab === "real-estate") return;
 
     const q = searchQuery.trim();
-
-    /* Krug: o botão nunca bloqueia. Sem query → vai para a lista. */
-    setSearchError(null);
     navigate(
       q ? `${activeTab.route}?search=${encodeURIComponent(q)}` : activeTab.route
     );
@@ -510,7 +468,6 @@ const LandingPage: React.FC = () => {
   const handleSuggestionClick = (suggestion: string) => {
     if (searchTab === "real-estate") return;
     setSearchQuery(suggestion);
-    setSearchError(null);
     navigate(`${activeTab.route}?search=${encodeURIComponent(suggestion)}`);
   };
 
@@ -565,6 +522,33 @@ const LandingPage: React.FC = () => {
       icon: Home,
       image:
         "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?q=80&w=1000&auto=format&fit=crop",
+    },
+  ];
+
+  /* ---------------------------------------------------------
+     HOW IT WORKS STEPS (Miller: clear next step; Krug: no friction)
+  --------------------------------------------------------- */
+  const howItWorksSteps = [
+    {
+      icon: Search,
+      title: isPT ? "Descobre" : "Discover",
+      desc: isPT
+        ? "Pesquisa por serviço, zona ou categoria. Filtra por avaliação e vê quem está disponível."
+        : "Search by service, area or category. Filter by rating and see who's available.",
+    },
+    {
+      icon: MessageCircle,
+      title: isPT ? "Contacta" : "Contact",
+      desc: isPT
+        ? "Fala diretamente com o profissional — telefone, email ou redes. Sem intermediários."
+        : "Talk directly with the professional — phone, email or social. No middlemen.",
+    },
+    {
+      icon: CheckCircle2,
+      title: isPT ? "Avalia" : "Review",
+      desc: isPT
+        ? "Partilha a tua experiência e ajuda outros residentes a escolher bem."
+        : "Share your experience and help other residents choose well.",
     },
   ];
 
@@ -642,10 +626,7 @@ const LandingPage: React.FC = () => {
                           role="tab"
                           aria-selected={isActive}
                           aria-controls={`panel-${key}`}
-                          onClick={() => {
-                            setSearchTab(key);
-                            setSearchError(null);
-                          }}
+                          onClick={() => setSearchTab(key)}
                           className={[
                             "relative flex items-center justify-center gap-2 py-4 px-2 text-xs sm:text-sm font-semibold transition-all",
                             "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1F6FA6] focus-visible:ring-inset",
@@ -677,8 +658,6 @@ const LandingPage: React.FC = () => {
                 {/* =========================================================
                     CONTEÚDO DAS TABS
                     Altura fixa em todos os breakpoints → sem salto ao mudar de tab
-                    Norman: overflow-y-auto para nunca cortar o feedback de erro
-                    Krug:  feedback visível sem scroll manual
                 ========================================================== */}
                 <div
                   id={`panel-${searchTab}`}
@@ -702,52 +681,18 @@ const LandingPage: React.FC = () => {
                           {activeTab.question}
                         </label>
 
-                        <div
-                          className={[
-                            "flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 transition",
-                            searchError
-                              ? "border-red-300 focus-within:border-red-400 focus-within:ring-4 focus-within:ring-red-100"
-                              : "border-slate-200 focus-within:border-[#1F6FA6] focus-within:ring-4 focus-within:ring-[#1F6FA6]/15",
-                          ].join(" ")}
-                        >
+                        <div className="flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 border-slate-200 focus-within:border-[#1F6FA6] focus-within:ring-4 focus-within:ring-[#1F6FA6]/15 transition">
                           <Search className="w-5 h-5 text-slate-300 shrink-0" />
 
                           <input
                             id="hero-search"
                             type="text"
                             value={searchQuery}
-                            onChange={(e) => {
-                              setSearchQuery(e.target.value);
-                              if (searchError) setSearchError(null);
-                            }}
-                            onBlur={() => {
-                              if (!searchQuery.trim()) {
-                                setSearchError(
-                                  isPT
-                                    ? "Escreve o que procuras — ou prime Procurar para veres tudo."
-                                    : "Type what you need — or press Search to see all."
-                                );
-                              }
-                            }}
-                            aria-invalid={!!searchError}
-                            aria-describedby={
-                              searchError ? "search-error" : undefined
-                            }
+                            onChange={(e) => setSearchQuery(e.target.value)}
                             placeholder={activeTab.placeholder}
                             className="w-full text-base outline-none text-slate-800 placeholder-slate-400 bg-transparent"
                           />
                         </div>
-
-                        {searchError && (
-                          <p
-                            id="search-error"
-                            role="alert"
-                            className="mt-2 text-xs text-red-600 flex items-center gap-1.5"
-                          >
-                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                            {searchError}
-                          </p>
-                        )}
                       </div>
 
                       <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/70 px-4 py-3 shrink-0">
@@ -938,9 +883,6 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* FOUNDER STORY — movida para depois dos testimonials */}
-      {/* (removida daqui; reinserida abaixo) */}
-
       {/* MAIN CATEGORIES */}
       <section className="max-w-7xl mx-auto px-4 pt-16 pb-16">
         <div className="max-w-2xl mb-9">
@@ -1008,92 +950,114 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* TESTIMONIALS */}
+      {/* =========================================================
+          HOW IT WORKS
+          Substitui a secção de depoimentos.
+          Miller: passo-a-passo claro (StoryBrand)
+          Krug: 3 passos, sem fricção
+          Cialdini: compromisso através de clareza, sem prova social falsa
+      ========================================================== */}
       <section className="bg-white border-y border-slate-100">
         <div className="max-w-7xl mx-auto px-4 py-16">
-          <div className="text-center max-w-2xl mx-auto mb-10">
-            <div className="inline-flex items-center gap-2 text-amber-600 text-xs font-bold uppercase tracking-[0.15em] mb-3">
-              <Star className="w-4 h-4 fill-amber-500" />
-              {isPT ? "Histórias reais" : "Real stories"}
+          <div className="text-center max-w-2xl mx-auto mb-12">
+            <div className="inline-flex items-center gap-2 text-[#1F6FA6] text-xs font-bold uppercase tracking-[0.15em] mb-3">
+              <Sparkles className="w-4 h-4" />
+              {isPT ? "Como funciona" : "How it works"}
             </div>
 
             <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">
               {isPT
-                ? "O que dizem os residentes de Cascais"
-                : "What Cascais residents say"}
+                ? "Encontra, contacta, resolve."
+                : "Find, contact, resolve."}
             </h2>
 
             <p className="mt-3 text-slate-600 text-sm sm:text-base">
               {isPT
-                ? "Histórias reais de quem já usou o AllCascais para resolver o seu dia-a-dia."
-                : "Real stories from people who used AllCascais to solve their day-to-day."}
+                ? "Três passos simples. Sem intermediários, sem taxas escondidas."
+                : "Three simple steps. No middlemen, no hidden fees."}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {testimonials.map((t) => (
-              <div
-                key={t.id}
-                className="bg-slate-50 rounded-3xl border border-slate-100 p-6 hover:shadow-md transition"
-              >
-                <div className="flex items-center gap-1 mb-4">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star
-                      key={i}
-                      className="w-4 h-4 text-amber-400 fill-amber-400"
-                    />
-                  ))}
-                </div>
-
-                <p className="text-sm text-slate-700 leading-relaxed mb-5">
-                  "{t.quote}"
-                </p>
-
-                <div className="flex items-center gap-3 pt-4 border-t border-slate-200">
-                  <div className="w-10 h-10 rounded-full bg-[#1F6FA6] text-white flex items-center justify-center text-sm font-bold">
-                    {t.avatar}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6">
+            {howItWorksSteps.map((step, i) => {
+              const Icon = step.icon;
+              return (
+                <div key={step.title} className="relative text-center">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-sky-50 border border-sky-100 text-[#1F6FA6] mb-5">
+                    <Icon className="w-6 h-6" />
                   </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-slate-900">
-                      {t.name}
-                    </div>
-                    <div className="text-xs text-slate-500">{t.role}</div>
-                  </div>
-                  <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5">
-                    <CheckCircle2 className="w-3 h-3" />
-                    {t.service}
-                  </span>
-                </div>
 
-                {t.isExample && (
-                  <p className="mt-3 text-[10px] text-slate-400 italic">
-                    {isPT
-                      ? "Exemplo ilustrativo — substituir por avaliações reais quando existirem."
-                      : "Illustrative example — replace with real reviews once available."}
+                  <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#1F6FA6] mb-2">
+                    {isPT ? `Passo ${i + 1}` : `Step ${i + 1}`}
+                  </div>
+
+                  <h3 className="text-base font-bold text-slate-900 mb-2">
+                    {step.title}
+                  </h3>
+
+                  <p className="text-sm text-slate-600 leading-relaxed max-w-xs mx-auto">
+                    {step.desc}
                   </p>
-                )}
-              </div>
-            ))}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-12 text-center">
+            <button
+              type="button"
+              onClick={() => navigate("/services")}
+              className="group inline-flex items-center justify-center gap-2 rounded-full bg-[#1F6FA6] text-white px-7 py-3.5 text-sm font-bold shadow-md hover:bg-[#195c8a] hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1F6FA6]"
+            >
+              <Search className="w-4 h-4" />
+              {isPT ? "Começar a explorar" : "Start exploring"}
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+
+            <p className="mt-3 text-xs text-slate-500">
+              {isPT
+                ? "Grátis para residentes. Sem comissões."
+                : "Free for residents. No commissions."}
+            </p>
           </div>
         </div>
       </section>
 
-      {/* FOUNDER STORY — movida para aqui, depois dos testimonials */}
+      {/* =========================================================
+    FOUNDER STORY
+========================================================= */}
       <section className="max-w-3xl mx-auto px-4 py-16">
         <div className="bg-white rounded-3xl border border-slate-100 shadow-xl p-6 sm:p-8">
-          <div className="flex items-start gap-4">
+          <div className="flex items-start gap-4 sm:gap-5">
             <div className="shrink-0 w-12 h-12 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center">
               <Quote className="w-5 h-5 text-[#1F6FA6]" />
             </div>
 
-            <div>
+            <div className="min-w-0">
+              {/* Quote — Version A: the neighbour moment */}
               <p className="text-sm sm:text-base text-slate-700 leading-relaxed italic">
                 {isPT
-                  ? '"Cresci em Cascais. Vi a minha cidade tornar-se mais internacional, mais vibrante, mas também vi vizinhos recém-chegados a lutar para encontrar um eletricista, um dentista, uma limpeza de confiança. E vi profissionais locais que eu conhecia com a agenda vazia. Decidi construir a ponte."'
-                  : '"I grew up in Cascais. I watched my town become more international, more vibrant, but I also watched newly-arrived neighbours struggle to find an electrician, a dentist, a trustworthy cleaner. And I watched local professionals I knew with empty schedules. So I built the bridge."'}
+                  ? "Ao mudar-se para Estoril, Sarah levou três semanas para encontrar um canalizador que falasse inglês. Naquele mesmo mês, João, que é eletricista em Cascais há duas décadas, estava com a agenda um pouco livre. Notei que o problema não era a falta de profissionais. Era necessário conectá-los. Fundei o AllCascais com esse propósito: um local onde quem precisa pode se conectar diretamente com quem sabe, sem intermediários."
+                  : "It took Sarah three weeks to find an English-speaking plumber after she moved to Estoril. That same month, João, an electrician in Cascais for 20 years, had half an empty schedule. I realized it wasn’t a lack of professionals. It was a failure of connection. So I created AllCascais. A place where those who know, find those who need. No intermediaries."}
               </p>
-              <div className="mt-3 text-xs text-slate-500">
-                — {isPT ? "Fundador do AllCascais" : "Founder of AllCascais"}
+
+              {/* Signature block — honest, specific, human */}
+              <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-sm font-semibold text-slate-700 shrink-0">
+                  {/* Replace with initials or avatar */}
+                  {isPT ? "AC" : "AC"}
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-slate-900">
+                    {/* Replace with your name */}
+                    [Paulo Chiosa]
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {isPT
+                      ? "Fundador, AllCascais · Cascais, 2025"
+                      : "Founder, AllCascais · Cascais, 2025"}
+                  </div>
+                </div>
               </div>
             </div>
           </div>

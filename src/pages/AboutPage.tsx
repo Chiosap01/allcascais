@@ -471,28 +471,86 @@ const AboutPage: React.FC = () => {
       </section>
 
       {/* =========================================================
-          STATS — Cialdini: afirmações verificáveis, não números inventados
-      ========================================================== */}
-      <section className="max-w-5xl mx-auto px-4 pt-8 pb-10">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
-          {stats.map((s) => (
-            <div
-              key={s.label}
-              className="text-center bg-white rounded-2xl border border-slate-100 shadow-sm py-5 px-3"
-            >
-              <div className="flex items-center justify-center gap-1">
-                <span
-                  className="text-lg sm:text-xl font-bold"
-                  style={{ color: BRAND }}
-                >
-                  {s.value}
-                </span>
-              </div>
-              <div className="text-[11px] sm:text-xs text-slate-500 mt-1">
-                {s.label}
+    FOUNDER STORY
+========================================================== */}
+      <section className="max-w-3xl mx-auto px-4 pt-16 pb-6">
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr]">
+            {/* Photo column — replace the emoji with a real photo */}
+            <div className="relative bg-gradient-to-br from-sky-50 to-slate-50 border-b sm:border-b-0 sm:border-r border-slate-100 flex items-center justify-center min-h-[180px] sm:min-h-full">
+              {/*
+          PHOTO GUIDANCE:
+          - Replace this entire block with:
+            <img
+              src="/founder.jpg"
+              alt="[O teu nome], fundador do AllCascais"
+              className="w-full h-full object-cover"
+            />
+          - Warm, casual, taken in Cascais. Not a LinkedIn headshot.
+          - Café, beach, street in the old town — anywhere real.
+        */}
+              <div className="text-center px-6 py-8">
+                <div className="text-4xl mb-2" aria-hidden="true">
+                  🌉
+                </div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  {isPT ? "Foto em breve" : "Photo coming soon"}
+                </div>
               </div>
             </div>
-          ))}
+
+            {/* Content column */}
+            <div className="p-6 sm:p-8">
+              <div
+                className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.15em] mb-4"
+                style={{ color: BRAND }}
+              >
+                <Heart className="w-4 h-4" />
+                {isPT ? "Porque é que isto existe" : "Why this exists"}
+              </div>
+
+              {/* Quote — Version A: the neighbour moment */}
+              <p className="text-sm sm:text-base text-slate-700 leading-relaxed italic">
+                {isPT
+                  ? "Ao mudar-se para Estoril, Sarah levou três semanas para encontrar um canalizador que falasse inglês. Naquele mesmo mês, João, que é eletricista em Cascais há duas décadas, estava com a agenda um pouco livre. Notei que o problema não era a falta de profissionais. Era necessário conectá-los. Fundei o AllCascais com esse propósito: um local onde quem precisa pode se conectar diretamente com quem sabe, sem intermediários."
+                  : "It took Sarah three weeks to find an English-speaking plumber after she moved to Estoril. That same month, João, an electrician in Cascais for 20 years, had half an empty schedule. I realized it wasn’t a lack of professionals. It was a failure of connection. So I created AllCascais. A place where those who know, find those who need. No intermediaries."}
+              </p>
+
+              {/* Signature block — honest, specific, human */}
+              <div className="mt-6 pt-5 border-t border-slate-100 flex items-center gap-3">
+                <div className="w-11 h-11 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-sm font-semibold text-slate-700 shrink-0">
+                  {/* Replace with initials or avatar */}
+                  PC
+                </div>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold text-slate-900">
+                    {/* Replace with your name */}
+                    [Paulo Chiosa]
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {isPT
+                      ? "Fundador, AllCascais · Cascais, 2025"
+                      : "Founder, AllCascais · Cascais, 2025"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Mission statement — right after the story */}
+              <div className="mt-6 pt-5 border-t border-slate-100">
+                <div
+                  className="text-xs font-bold uppercase tracking-[0.15em] mb-2"
+                  style={{ color: BRAND }}
+                >
+                  {isPT ? "A nossa missão" : "Our mission"}
+                </div>
+                <p className="text-sm text-slate-700 leading-relaxed">
+                  {isPT
+                    ? "Ligar residentes e profissionais em Cascais — em português e inglês, sem comissões, sem intermediários. Quem precisa encontra quem sabe."
+                    : "Connect residents and professionals in Cascais — in Portuguese and English, with no commissions, no middlemen. Those who need find those who know."}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
