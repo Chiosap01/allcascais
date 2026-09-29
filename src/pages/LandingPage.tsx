@@ -1045,7 +1045,7 @@ const LandingPage: React.FC = () => {
               <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-sm font-semibold text-slate-700 shrink-0">
                   {/* Replace with initials or avatar */}
-                  {isPT ? "AC" : "AC"}
+                  {isPT ? "PC" : "PC"}
                 </div>
                 <div className="min-w-0">
                   <div className="text-sm font-semibold text-slate-900">
