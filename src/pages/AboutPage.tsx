@@ -193,29 +193,6 @@ const AboutPage: React.FC = () => {
   const handleGoToServices = () => navigate("/services");
   const handleGoToCreateServices = () => navigate("/service-listing");
 
-  /* ---------- CONTENT ---------- */
-  /* Stats honestos — afirmam o que somos, não números que não temos */
-  const stats = [
-    {
-      value: isPT ? "Grátis" : "Free",
-      label: isPT
-        ? "Para residentes e prestadores"
-        : "For residents and providers",
-    },
-    {
-      value: isPT ? "Sem comissões" : "No fees",
-      label: isPT ? "Contacto direto" : "Direct contact",
-    },
-    {
-      value: "PT / EN",
-      label: isPT ? "Dois idiomas" : "Two languages",
-    },
-    {
-      value: isPT ? "Local" : "Local",
-      label: isPT ? "Focado em Cascais" : "Focused on Cascais",
-    },
-  ];
-
   const steps = [
     {
       icon: Search,
