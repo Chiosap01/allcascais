@@ -18,7 +18,7 @@ import {
 /* ---------------------------------------------------------
    DESIGN TOKENS
 --------------------------------------------------------- */
-const BRAND = "#1F6FA6";
+const BRAND = "#1F1F3D";
 const BRAND_HOVER = "#155A87";
 
 /* ---------------------------------------------------------
@@ -462,13 +462,13 @@ const ResetPasswordPage: React.FC = () => {
               <>
                 A sua conta,
                 <br />
-                <span className="text-sky-200">protegida.</span>
+                <span className="text-slate-100">protegida.</span>
               </>
             ) : (
               <>
                 Your account,
                 <br />
-                <span className="text-sky-200">protected.</span>
+                <span className="text-slate-100">protected.</span>
               </>
             )}
           </h2>

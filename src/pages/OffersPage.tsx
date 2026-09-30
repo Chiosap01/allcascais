@@ -32,7 +32,7 @@ import type { CategoryId, Category, Subcategory } from "../data/categories";
 /* ---------------------------------------------------------
    DESIGN TOKENS
 --------------------------------------------------------- */
-const BRAND = "#1F6FA6";
+const BRAND = "#1F1F3D";
 const OFFER_ACCENT = "#F59E0B";
 const OFFER_ACCENT_HOVER = "#D97706";
 
@@ -156,7 +156,7 @@ const highlightPillClass = (highlight?: OfferHighlight) => {
     return "bg-emerald-50/95 text-emerald-700 border-emerald-100";
   if (highlight === "last-minute")
     return "bg-amber-50/95 text-amber-800 border-amber-100";
-  return "bg-sky-50/95 text-sky-800 border-sky-100";
+  return "bg-slate-50/95 text-sky-800 border-sky-100";
 };
 
 const languageFlag = (code: string) => {
@@ -614,7 +614,7 @@ const OfferCard: React.FC<OfferCardProps> = ({
               <button
                 type="button"
                 onClick={() => setShowFullDescription((v) => !v)}
-                className="text-[12px] font-semibold text-[#1F6FA6] hover:text-[#195c8a] underline underline-offset-2"
+                className="text-[12px] font-semibold text-[#1F1F3D] hover:text-[#15152E] underline underline-offset-2"
               >
                 {showFullDescription
                   ? isPT
@@ -737,7 +737,7 @@ const OfferCard: React.FC<OfferCardProps> = ({
                 className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 hover:bg-slate-100 transition"
               >
                 <Globe className="w-4 h-4 text-slate-500 shrink-0" />
-                <span className="font-semibold text-[#1F6FA6] underline truncate">
+                <span className="font-semibold text-[#1F1F3D] underline truncate">
                   {offer.website}
                 </span>
               </a>
@@ -758,7 +758,7 @@ const OfferCard: React.FC<OfferCardProps> = ({
                       href={s.url!}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 px-2.5 py-1 text-[10px] font-medium text-slate-600 hover:border-[#1F6FA6] hover:text-[#1F6FA6] transition"
+                      className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 px-2.5 py-1 text-[10px] font-medium text-slate-600 hover:border-[#1F1F3D] hover:text-[#1F1F3D] transition"
                     >
                       {s.name}
                     </a>
@@ -1027,7 +1027,7 @@ const OffersPage: React.FC = () => {
       {/* =========================================================
           HERO
       ========================================================== */}
-      <section className="relative overflow-hidden border-b border-slate-200/60 bg-gradient-to-b from-white via-white to-sky-50/40">
+      <section className="relative overflow-hidden border-b border-slate-200/60 bg-gradient-to-b from-white via-white to-slate-50/40">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
@@ -1038,7 +1038,7 @@ const OffersPage: React.FC = () => {
 
         <div className="relative max-w-5xl mx-auto px-4 pt-10 sm:pt-14 pb-8">
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200/70 bg-sky-50/80 px-3 py-1 text-[11px] font-semibold text-[#1F6FA6] backdrop-blur">
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-200/70 bg-slate-50/80 px-3 py-1 text-[11px] font-semibold text-[#1F1F3D] backdrop-blur">
               <Sparkles className="w-3.5 h-3.5" />
               {isPT
                 ? "Ofertas de moradores locais"
@@ -1072,7 +1072,7 @@ const OffersPage: React.FC = () => {
                       : "E.g. spa, surf, dinner, discount…"
                   }
                   aria-label={isPT ? "Pesquisar ofertas" : "Search offers"}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-12 pr-12 py-4 text-sm sm:text-base shadow-sm outline-none focus:ring-4 focus:border-[#1F6FA6]/40 transition"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-12 pr-12 py-4 text-sm sm:text-base shadow-sm outline-none focus:ring-4 focus:border-[#1F1F3D]/40 transition"
                   style={{ ["--tw-ring-color" as any]: `${BRAND}22` }}
                 />
 
@@ -1130,7 +1130,7 @@ const OffersPage: React.FC = () => {
                         className={[
                           "flex flex-col items-center gap-1 p-3 rounded-2xl border transition",
                           active
-                            ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6] shadow-sm"
+                            ? "border-[#1F1F3D] bg-slate-50 text-[#1F1F3D] shadow-sm"
                             : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
                         ].join(" ")}
                       >
@@ -1183,7 +1183,7 @@ const OffersPage: React.FC = () => {
                           "shrink-0 rounded-2xl border transition flex items-center gap-2 text-xs font-semibold",
                           isAll ? "px-3.5 py-2" : "px-3 py-2",
                           active
-                            ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6] shadow-sm"
+                            ? "border-[#1F1F3D] bg-slate-50 text-[#1F1F3D] shadow-sm"
                             : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700",
                         ].join(" ")}
                       >
@@ -1222,7 +1222,7 @@ const OffersPage: React.FC = () => {
                     className={[
                       "shrink-0 rounded-2xl border px-3.5 py-2 transition flex items-center gap-2 text-xs font-semibold",
                       selectedSubcategory === "all"
-                        ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6]"
+                        ? "border-[#1F1F3D] bg-slate-50 text-[#1F1F3D]"
                         : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700",
                     ].join(" ")}
                   >
@@ -1244,7 +1244,7 @@ const OffersPage: React.FC = () => {
                         className={[
                           "shrink-0 rounded-2xl border px-3 py-2 transition flex items-center gap-2 text-xs font-semibold",
                           active
-                            ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6]"
+                            ? "border-[#1F1F3D] bg-slate-50 text-[#1F1F3D]"
                             : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700",
                         ].join(" ")}
                       >
@@ -1307,7 +1307,7 @@ const OffersPage: React.FC = () => {
                       className={[
                         "px-2.5 py-1 rounded-full text-xs font-semibold transition",
                         active
-                          ? "bg-sky-100 text-[#1F6FA6]"
+                          ? "bg-slate-100 text-[#1F1F3D]"
                           : "text-slate-500 hover:text-slate-800",
                       ].join(" ")}
                     >
@@ -1324,7 +1324,7 @@ const OffersPage: React.FC = () => {
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
                 aria-label={isPT ? "Ordenar" : "Sort"}
-                className="appearance-none rounded-full bg-white border border-slate-200 pl-8 pr-7 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 transition"
+                className="appearance-none rounded-full bg-white border border-slate-200 pl-8 pr-7 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 transition"
               >
                 <option value="recent">
                   {isPT ? "Mais recentes" : "Most recent"}

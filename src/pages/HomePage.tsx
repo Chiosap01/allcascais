@@ -35,8 +35,8 @@ import type { CategoryId, Category, Subcategory } from "../data/categories";
 /* ---------------------------------------------------------
    DESIGN TOKENS
 --------------------------------------------------------- */
-const BRAND = "#1F6FA6";
-const BRAND_HOVER = "#195c8a";
+const BRAND = "#1F1F3D";
+const BRAND_HOVER = "#15152E";
 
 /* Categorias prioritárias para a grelha mobile (Weinschenk: 6 itens = scan instantâneo) */
 const PRIMARY_CATEGORY_IDS: CategoryId[] = [
@@ -291,7 +291,7 @@ const RatingModal: React.FC<{ service: Service; onClose: () => void }> = ({
       <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 px-3">
         <div className="w-full max-w-md rounded-3xl bg-white shadow-xl border border-slate-100">
           <div className="px-5 py-6 text-center">
-            <div className="w-14 h-14 rounded-full bg-sky-50 border border-sky-100 flex items-center justify-center mx-auto mb-4 text-2xl">
+            <div className="w-14 h-14 rounded-full bg-slate-50 border border-sky-100 flex items-center justify-center mx-auto mb-4 text-2xl">
               🔒
             </div>
             <h2 className="text-base font-semibold text-slate-900 mb-1">
@@ -430,7 +430,7 @@ const RatingModal: React.FC<{ service: Service; onClose: () => void }> = ({
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={3}
-              className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:border-[#1F6FA6]/40"
+              className="w-full rounded-2xl border border-slate-200 px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:border-[#1F1F3D]/40"
               style={{ ["--tw-ring-color" as any]: `${BRAND}55` }}
             />
           </div>
@@ -859,7 +859,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowFullDescription((v) => !v)}
-                  className="text-[11px] text-[#1F6FA6] underline underline-offset-2 hover:text-[#195c8a]"
+                  className="text-[11px] text-[#1F1F3D] underline underline-offset-2 hover:text-[#15152E]"
                 >
                   {showFullDescription
                     ? isPT
@@ -984,7 +984,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
                   className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 hover:bg-slate-100 transition"
                 >
                   <Globe className="w-4 h-4 text-slate-500 shrink-0" />
-                  <span className="font-semibold text-[#1F6FA6] underline truncate">
+                  <span className="font-semibold text-[#1F1F3D] underline truncate">
                     {service.website}
                   </span>
                 </a>
@@ -1005,7 +1005,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
                         href={s.url!}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 px-2.5 py-1 text-[10px] font-medium text-slate-600 hover:border-[#1F6FA6] hover:text-[#1F6FA6] transition"
+                        className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 px-2.5 py-1 text-[10px] font-medium text-slate-600 hover:border-[#1F1F3D] hover:text-[#1F1F3D] transition"
                       >
                         {s.name}
                       </a>
@@ -1315,7 +1315,7 @@ const HomePage: React.FC = () => {
       {/* =========================================================
           HERO
       ========================================================== */}
-      <section className="relative overflow-hidden border-b border-slate-200/60 bg-gradient-to-b from-white via-white to-sky-50/40">
+      <section className="relative overflow-hidden border-b border-slate-200/60 bg-gradient-to-b from-white via-white to-slate-50/40">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0"
@@ -1360,7 +1360,7 @@ const HomePage: React.FC = () => {
                       : "E.g. physio, cleaning, surf, hairdresser…"
                   }
                   aria-label={isPT ? "Pesquisar serviços" : "Search services"}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-12 pr-12 py-4 text-sm sm:text-base shadow-sm outline-none focus:ring-4 focus:border-[#1F6FA6]/40 transition"
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-12 pr-12 py-4 text-sm sm:text-base shadow-sm outline-none focus:ring-4 focus:border-[#1F1F3D]/40 transition"
                   style={{ ["--tw-ring-color" as any]: `${BRAND}22` }}
                 />
 
@@ -1420,7 +1420,7 @@ const HomePage: React.FC = () => {
                         className={[
                           "flex flex-col items-center gap-1 p-3 rounded-2xl border transition",
                           active
-                            ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6] shadow-sm"
+                            ? "border-[#1F1F3D] bg-slate-50 text-[#1F1F3D] shadow-sm"
                             : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
                         ].join(" ")}
                       >
@@ -1473,7 +1473,7 @@ const HomePage: React.FC = () => {
                           "shrink-0 rounded-2xl border transition flex items-center gap-2 text-xs font-semibold",
                           isAll ? "px-3.5 py-2" : "px-3 py-2",
                           active
-                            ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6] shadow-sm"
+                            ? "border-[#1F1F3D] bg-slate-50 text-[#1F1F3D] shadow-sm"
                             : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700",
                         ].join(" ")}
                       >
@@ -1513,7 +1513,7 @@ const HomePage: React.FC = () => {
                       className={[
                         "shrink-0 rounded-2xl border px-3.5 py-2 transition flex items-center gap-2 text-xs font-semibold",
                         selectedSubcategory === "all"
-                          ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6]"
+                          ? "border-[#1F1F3D] bg-slate-50 text-[#1F1F3D]"
                           : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700",
                       ].join(" ")}
                     >
@@ -1535,7 +1535,7 @@ const HomePage: React.FC = () => {
                           className={[
                             "shrink-0 rounded-2xl border px-3 py-2 transition flex items-center gap-2 text-xs font-semibold",
                             active
-                              ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6]"
+                              ? "border-[#1F1F3D] bg-slate-50 text-[#1F1F3D]"
                               : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700",
                           ].join(" ")}
                         >
@@ -1606,7 +1606,7 @@ const HomePage: React.FC = () => {
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
                 aria-label={isPT ? "Ordenar" : "Sort"}
-                className="appearance-none rounded-full bg-white border border-slate-200 pl-8 pr-7 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 transition"
+                className="appearance-none rounded-full bg-white border border-slate-200 pl-8 pr-7 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 transition"
               >
                 <option value="recent">
                   {isPT ? "Mais recentes" : "Most recent"}

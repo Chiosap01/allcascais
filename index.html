@@ -1,43 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt">
   <head>
-    <!-- Meta Pixel Code -->
-    <script>
-      !(function (f, b, e, v, n, t, s) {
-        if (f.fbq) return;
-        n = f.fbq = function () {
-          n.callMethod
-            ? n.callMethod.apply(n, arguments)
-            : n.queue.push(arguments);
-        };
-        if (!f._fbq) f._fbq = n;
-        n.push = n;
-        n.loaded = !0;
-        n.version = "2.0";
-        n.queue = [];
-        t = b.createElement(e);
-        t.async = !0;
-        t.src = v;
-        s = b.getElementsByTagName(e)[0];
-        s.parentNode.insertBefore(t, s);
-      })(
-        window,
-        document,
-        "script",
-        "https://connect.facebook.net/en_US/fbevents.js"
-      );
-      fbq("init", "917705753985751");
-      fbq("track", "PageView");
-    </script>
-    <noscript
-      ><img
-        height="1"
-        width="1"
-        style="display: none"
-        src="https://www.facebook.com/tr?id=917705753985751&ev=PageView&noscript=1"
-    /></noscript>
-    <!-- End Meta Pixel Code -->
-
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
@@ -49,11 +12,12 @@
     />
 
     <!-- Cores e aparência -->
-    <meta name="theme-color" content="#1F6FA6" />
+    <meta name="theme-color" content="#1F1F3D" />
     <meta name="color-scheme" content="light" />
 
     <!-- Favicons -->
     <link rel="icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
@@ -94,9 +58,13 @@
     />
     <meta name="twitter:image" content="https://allcascais.com/og-image.jpg" />
 
-    <!-- Idioma alternativo (PT/EN) -->
+    <!--
+      hreflang: removido o /en porque não existe rota separada.
+      O idioma é gerido por contexto React, não por URL.
+      Quando implementares /en como rota real, adiciona de volta:
+        <link rel="alternate" hreflang="en" href="https://allcascais.com/en" />
+    -->
     <link rel="alternate" hreflang="pt" href="https://allcascais.com/" />
-    <link rel="alternate" hreflang="en" href="https://allcascais.com/en" />
     <link rel="alternate" hreflang="x-default" href="https://allcascais.com/" />
 
     <!-- Schema.org — LocalBusiness -->
@@ -114,7 +82,7 @@
           "streetAddress": "Avenida Costa Pinto, n.º 60, Sala B, 1.º andar esquerdo",
           "addressLocality": "Cascais",
           "addressRegion": "Lisboa",
-          "postalCode": "2750",
+          "postalCode": "2750-374",
           "addressCountry": "PT"
         },
         "email": "info@allcascais.com",

@@ -20,7 +20,7 @@ import {
 /* ---------------------------------------------------------
    DESIGN TOKENS
 --------------------------------------------------------- */
-const BRAND = "#1F6FA6";
+const BRAND = "#1F1F3D";
 
 /* ---------------------------------------------------------
    TYPES
@@ -372,7 +372,7 @@ const AboutPage: React.FC = () => {
                   <>
                     A ligação direta entre
                     <br className="hidden sm:block" />
-                    <span className="text-sky-200">
+                    <span className="text-slate-100">
                       residentes e profissionais.
                     </span>
                   </>
@@ -380,7 +380,7 @@ const AboutPage: React.FC = () => {
                   <>
                     The direct link between
                     <br className="hidden sm:block" />
-                    <span className="text-sky-200">
+                    <span className="text-slate-100">
                       residents and professionals.
                     </span>
                   </>
@@ -477,8 +477,8 @@ const AboutPage: React.FC = () => {
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
           <div className="flex flex-col sm:flex-row">
             {/* Photo — circular on mobile, strip on desktop */}
-            <div className="sm:w-[200px] sm:shrink-0 sm:bg-gradient-to-br sm:from-sky-50 sm:to-slate-50 sm:border-r sm:border-slate-100 flex items-start sm:items-stretch justify-center pt-6 sm:pt-0 px-6 sm:px-0">
-              <div className="w-20 h-20 sm:w-full sm:h-full rounded-full sm:rounded-none overflow-hidden bg-slate-100 border border-slate-200 sm:border-0 flex items-center justify-center text-xl font-bold text-[#1F6FA6]">
+            <div className="sm:w-[200px] sm:shrink-0 sm:bg-gradient-to-br sm:from-slate-50 sm:to-slate-50 sm:border-r sm:border-slate-100 flex items-start sm:items-stretch justify-center pt-6 sm:pt-0 px-6 sm:px-0">
+              <div className="w-20 h-20 sm:w-full sm:h-full rounded-full sm:rounded-none overflow-hidden bg-slate-100 border border-slate-200 sm:border-0 flex items-center justify-center text-xl font-bold text-[#1F1F3D]">
                 <img
                   src="/founder.jpg"
                   alt="Paulo Chiosa, fundador do AllCascais"
@@ -594,10 +594,10 @@ const AboutPage: React.FC = () => {
                 key={p.id}
                 type="button"
                 onClick={p.onClick}
-                className="group text-left bg-white rounded-3xl border border-slate-100 p-6 hover:shadow-md hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1F6FA6]/40"
+                className="group text-left bg-white rounded-3xl border border-slate-100 p-6 hover:shadow-md hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1F1F3D]/40"
               >
-                <div className="w-12 h-12 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center mb-4">
-                  <Icon className="w-6 h-6 text-[#1F6FA6]" />
+                <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-sky-100 flex items-center justify-center mb-4">
+                  <Icon className="w-6 h-6 text-[#1F1F3D]" />
                 </div>
                 <h3 className="text-base font-bold text-slate-900 mb-2">
                   {p.title}
@@ -715,7 +715,7 @@ const AboutPage: React.FC = () => {
         <div className="rounded-3xl bg-slate-900 text-white p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row items-start gap-5">
             <div className="shrink-0 w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center">
-              <MessageCircle className="w-6 h-6 text-sky-300" />
+              <MessageCircle className="w-6 h-6 text-slate-200" />
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-base sm:text-lg font-bold text-white mb-1.5">
@@ -774,7 +774,7 @@ const AboutPage: React.FC = () => {
           BOTTOM CTA
       ========================================================== */}
       <section className="max-w-5xl mx-auto px-4 pb-16">
-        <div className="rounded-3xl bg-gradient-to-br from-sky-50 via-white to-emerald-50 border border-slate-200 p-8 sm:p-10 text-center">
+        <div className="rounded-3xl bg-gradient-to-br from-slate-50 via-white to-emerald-50 border border-slate-200 p-8 sm:p-10 text-center">
           <h2 className="text-xl sm:text-2xl font-bold text-slate-900 mb-3">
             {isPT ? "Pronto para começar?" : "Ready to get started?"}
           </h2>
@@ -787,7 +787,7 @@ const AboutPage: React.FC = () => {
           <button
             type="button"
             onClick={handleGoToServices}
-            className="inline-flex items-center justify-center gap-2 rounded-full text-white px-7 py-3.5 text-sm font-bold shadow-md transition hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1F6FA6]"
+            className="inline-flex items-center justify-center gap-2 rounded-full text-white px-7 py-3.5 text-sm font-bold shadow-md transition hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1F1F3D]"
             style={{ backgroundColor: BRAND }}
           >
             <Search className="w-4 h-4" />

@@ -26,13 +26,15 @@ import {
   Plus,
   SlidersHorizontal,
   Loader2,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 
 /* ---------------------------------------------------------
    DESIGN TOKENS
 --------------------------------------------------------- */
-const BRAND = "#1F6FA6";
-const BRAND_HOVER = "#195c8a";
+const BRAND = "#1F1F3D";
+const BRAND_HOVER = "#15152E";
 const SUCCESS = "#10B981";
 
 /* ---------------------------------------------------------
@@ -339,11 +341,8 @@ const PropertySkeleton: React.FC = () => (
 const PageSkeleton: React.FC = () => (
   <div className="min-h-screen bg-[#FAF8F4] py-4">
     <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
-      {/* Hero skeleton — aproxima a altura real */}
       <div className="h-56 sm:h-64 rounded-3xl bg-slate-200 border border-slate-100 shadow-sm mb-6 animate-pulse" />
-      {/* Filters skeleton */}
       <div className="h-32 rounded-3xl bg-white border border-slate-100 shadow-sm mb-6 animate-pulse" />
-      {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {Array.from({ length: 6 }).map((_, i) => (
           <PropertySkeleton key={i} />
@@ -355,7 +354,6 @@ const PageSkeleton: React.FC = () => (
 
 /* ---------------------------------------------------------
    CONFIRM DELETE MODAL
-   Norman: feedback claro, sem `window.confirm`
 --------------------------------------------------------- */
 const ConfirmDeleteModal: React.FC<{
   open: boolean;
@@ -440,8 +438,6 @@ const ConfirmDeleteModal: React.FC<{
 
 /* ---------------------------------------------------------
    MATCH MODAL
-   Norman: feedback dentro do modal, sem `alert()`
-   Godin: permissão antes do pedido
 --------------------------------------------------------- */
 const MatchModal: React.FC<{
   open: boolean;
@@ -463,7 +459,6 @@ const MatchModal: React.FC<{
 
   const firstInputRef = useRef<HTMLInputElement | null>(null);
 
-  /* Reset ao fechar */
   useEffect(() => {
     if (!open) {
       const t = setTimeout(() => {
@@ -480,7 +475,6 @@ const MatchModal: React.FC<{
     }
   }, [open, initialType]);
 
-  /* Focus + ESC */
   useEffect(() => {
     if (!open) return;
     const t = setTimeout(() => firstInputRef.current?.focus(), 100);
@@ -586,7 +580,6 @@ const MatchModal: React.FC<{
         className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-center justify-between px-5 sm:px-7 py-4 border-b border-slate-100 bg-slate-50/80 sticky top-0 z-10">
           <div>
             <div className="text-[11px] font-semibold" style={{ color: BRAND }}>
@@ -622,7 +615,6 @@ const MatchModal: React.FC<{
           </button>
         </div>
 
-        {/* Success state */}
         {status === "success" && (
           <div className="px-5 sm:px-7 py-12 text-center">
             <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-4">
@@ -637,7 +629,6 @@ const MatchModal: React.FC<{
           </div>
         )}
 
-        {/* Form */}
         {status !== "success" && (
           <form onSubmit={handleSubmit} className="p-5 sm:p-7" noValidate>
             <div className="flex gap-2 mb-4">
@@ -659,7 +650,7 @@ const MatchModal: React.FC<{
                 className={[
                   "flex-1 rounded-full border px-4 py-2 text-xs font-semibold transition",
                   matchType === "owner"
-                    ? "bg-sky-50 text-[#1F6FA6]"
+                    ? "bg-slate-50 text-[#1F1F3D]"
                     : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
                 ].join(" ")}
                 style={
@@ -679,7 +670,7 @@ const MatchModal: React.FC<{
                   ref={firstInputRef}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition"
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 bg-white transition"
                   placeholder={isPT ? "O seu nome" : "Your name"}
                   autoComplete="name"
                   required
@@ -694,7 +685,7 @@ const MatchModal: React.FC<{
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition"
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 bg-white transition"
                   placeholder="email@exemplo.com"
                   autoComplete="email"
                   required
@@ -709,7 +700,7 @@ const MatchModal: React.FC<{
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition"
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 bg-white transition"
                   placeholder="+351 ..."
                   autoComplete="tel"
                 />
@@ -729,7 +720,7 @@ const MatchModal: React.FC<{
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={4}
-                  className="rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition resize-none"
+                  className="rounded-2xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 bg-white transition resize-none"
                   placeholder={
                     matchType === "owner"
                       ? isPT
@@ -845,7 +836,7 @@ const RealEstatePage: React.FC = () => {
   const [loadingProperties, setLoadingProperties] = useState(true);
   const [propertiesError, setPropertiesError] = useState<string | null>(null);
 
-  /* ---------- OVERLAY STATE (unificado) ---------- */
+  /* ---------- OVERLAY STATE ---------- */
   const [overlay, setOverlay] = useState<Overlay>("none");
 
   /* ---------- PROPERTY MODAL ---------- */
@@ -868,6 +859,17 @@ const RealEstatePage: React.FC = () => {
   /* ---------- DELETE MODAL ---------- */
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  /* ---------- TOAST (confirmação após remover) ---------- */
+  const [toast, setToast] = useState<{
+    text: string;
+    tone: "success" | "error";
+  } | null>(null);
+
+  const showToast = (text: string, tone: "success" | "error" = "success") => {
+    setToast({ text, tone });
+    setTimeout(() => setToast(null), 3200);
+  };
 
   /* ---------- GUIDES ---------- */
   const [openGuide, setOpenGuide] = useState<GuideKey | null>(null);
@@ -1193,7 +1195,6 @@ const RealEstatePage: React.FC = () => {
     );
   };
 
-  /* Krug: um clique copia + mostra. Sem dois passos. */
   const handleCopyAgentEmail = async () => {
     if (!selectedProperty?.agentEmail) return;
     try {
@@ -1216,6 +1217,21 @@ const RealEstatePage: React.FC = () => {
     navigate(`/properties/${id}/edit`);
   };
 
+  /* Editar diretamente do cartão — sem abrir o modal */
+  const handleEditFromCard = (property: Property) => {
+    if (!user) return;
+    navigate(`/properties/${property.id}/edit`);
+  };
+
+  /* Remover diretamente do cartão — abre o modal de confirmação */
+  const handleDeleteFromCard = (property: Property) => {
+    if (!user) return;
+    setSelectedProperty(property);
+    setDeleteError(null);
+    setDeleteBusy(false);
+    setOverlay("delete");
+  };
+
   const openDeleteListingModal = () => {
     setDeleteError(null);
     setDeleteBusy(false);
@@ -1225,7 +1241,13 @@ const RealEstatePage: React.FC = () => {
   const closeDeleteListingModal = () => {
     if (deleteBusy) return;
     setDeleteError(null);
-    setOverlay("property");
+    /* Se o modal de propriedade não estava aberto antes (veio do cartão),
+       volta a "none"; se estava, volta para "property". */
+    setOverlay(
+      selectedProperty && user && selectedProperty.ownerId === user.id
+        ? "property"
+        : "none"
+    );
   };
 
   const confirmDeleteListing = async () => {
@@ -1251,8 +1273,13 @@ const RealEstatePage: React.FC = () => {
       return;
     }
 
+    const removedTitle = selectedProperty.title;
     setProperties((prev) => prev.filter((p) => p.id !== selectedProperty.id));
     closePropertyModal();
+    showToast(
+      isPT ? `"${removedTitle}" removido.` : `"${removedTitle}" removed.`,
+      "success"
+    );
   };
 
   /* ---------- MATCH MODAL HANDLERS ---------- */
@@ -1359,9 +1386,8 @@ const RealEstatePage: React.FC = () => {
     <div className="min-h-screen bg-[#FAF8F4] py-4">
       <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
         {/* =========================================================
-    HERO — uma CTA primária, uma secundária (Cooper)
-    Direita preenchida com trust strip (Wathan)
-========================================================== */}
+            HERO
+        ========================================================== */}
         <section className="mb-6">
           <div className="relative overflow-hidden rounded-3xl border border-slate-200 shadow-sm bg-slate-900">
             <div
@@ -1380,7 +1406,6 @@ const RealEstatePage: React.FC = () => {
 
             <div className="relative px-5 py-6 sm:px-8 sm:py-8 lg:py-10">
               <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-                {/* Left — content */}
                 <div className="min-w-0 max-w-2xl">
                   <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">
                     <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -1402,7 +1427,6 @@ const RealEstatePage: React.FC = () => {
                       : "Homes, areas, and services that make moving easier — no middlemen."}
                   </p>
 
-                  {/* CTAs — empilhadas em mobile, lado a lado em desktop */}
                   <div className="mt-5 flex flex-col sm:flex-row gap-2">
                     <button
                       type="button"
@@ -1423,7 +1447,6 @@ const RealEstatePage: React.FC = () => {
                     </button>
                   </div>
 
-                  {/* Scroll cue em mobile */}
                   <div className="mt-6 flex items-center gap-2 lg:hidden text-[11px] text-white/60">
                     <ChevronDown className="w-4 h-4 animate-bounce" />
                     <span>
@@ -1434,8 +1457,8 @@ const RealEstatePage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Right — trust strip (apenas em desktop, escondido em mobile) */}
-                <div className="hidden lg:flex flex-col gap-2 shrink-0">
+                {/* Trust strip — agora também visível em mobile */}
+                <div className="flex flex-wrap lg:flex-col gap-2 shrink-0">
                   {[
                     isPT ? "Contacto direto" : "Direct contact",
                     isPT ? "Sem intermediários" : "No middlemen",
@@ -1443,7 +1466,7 @@ const RealEstatePage: React.FC = () => {
                   ].map((label) => (
                     <div
                       key={label}
-                      className="flex items-center gap-2 text-xs font-medium text-white/90 bg-white/10 backdrop-blur border border-white/15 rounded-full px-3 py-1.5"
+                      className="flex items-center gap-2 text-[11px] sm:text-xs font-medium text-white/90 bg-white/10 backdrop-blur border border-white/15 rounded-full px-3 py-1.5"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
                       <span>{label}</span>
@@ -1460,7 +1483,6 @@ const RealEstatePage: React.FC = () => {
         ========================================================== */}
         <section className="mb-6 sticky top-2 sm:top-3 z-20" ref={filtersRef}>
           <div className="bg-white/95 backdrop-blur rounded-3xl shadow-md border border-slate-100 px-4 sm:px-6 py-4">
-            {/* Header row */}
             <div className="flex items-center justify-between gap-3 mb-4">
               <div>
                 <div className="text-sm font-semibold text-slate-800">
@@ -1512,7 +1534,6 @@ const RealEstatePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Primary filters */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
@@ -1521,7 +1542,7 @@ const RealEstatePage: React.FC = () => {
                 <select
                   value={buyRent}
                   onChange={(e) => setBuyRent(e.target.value as BuyRent)}
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition"
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 bg-white transition"
                 >
                   <option value="all">{isPT ? "Todos" : "All"}</option>
                   <option value="buy">{isPT ? "Comprar" : "Buy"}</option>
@@ -1539,7 +1560,7 @@ const RealEstatePage: React.FC = () => {
                     setLocationArea(e.target.value);
                     setLocationNeighborhood("all");
                   }}
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition"
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 bg-white transition"
                 >
                   <option value="all">{isPT ? "Todas" : "All"}</option>
                   {locations.map((loc) => (
@@ -1559,7 +1580,7 @@ const RealEstatePage: React.FC = () => {
                   onChange={(e) =>
                     setPropertyType(e.target.value as PropertyType)
                   }
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition"
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 bg-white transition"
                 >
                   <option value="all">{isPT ? "Todos" : "All"}</option>
                   <option value="apartment">
@@ -1585,7 +1606,7 @@ const RealEstatePage: React.FC = () => {
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(e.target.value)}
                   disabled={buyRent === "all"}
-                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white disabled:opacity-50 transition"
+                  className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 bg-white disabled:opacity-50 transition"
                 >
                   <option value="any">
                     {buyRent === "all"
@@ -1619,7 +1640,7 @@ const RealEstatePage: React.FC = () => {
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as SortOption)}
-                    className="w-full appearance-none rounded-xl border border-slate-200 pl-8 pr-7 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition"
+                    className="w-full appearance-none rounded-xl border border-slate-200 pl-8 pr-7 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 bg-white transition"
                   >
                     <option value="default">
                       {isPT ? "Recomendado" : "Recommended"}
@@ -1642,7 +1663,6 @@ const RealEstatePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Advanced filters */}
             {showMoreFilters && (
               <div className="mt-4 pt-4 border-t border-slate-100">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1653,7 +1673,7 @@ const RealEstatePage: React.FC = () => {
                     <select
                       value={bedrooms}
                       onChange={(e) => setBedrooms(e.target.value)}
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition"
+                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 bg-white transition"
                     >
                       <option value="any">{isPT ? "Qualquer" : "Any"}</option>
                       <option value="1">1+</option>
@@ -1671,7 +1691,7 @@ const RealEstatePage: React.FC = () => {
                     <select
                       value={bathrooms}
                       onChange={(e) => setBathrooms(e.target.value)}
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition"
+                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 bg-white transition"
                     >
                       <option value="any">{isPT ? "Qualquer" : "Any"}</option>
                       <option value="1">1+</option>
@@ -1688,7 +1708,7 @@ const RealEstatePage: React.FC = () => {
                     <select
                       value={minArea}
                       onChange={(e) => setMinArea(e.target.value)}
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition"
+                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 bg-white transition"
                     >
                       <option value="any">
                         {isPT ? "Sem mín." : "No min"}
@@ -1708,7 +1728,7 @@ const RealEstatePage: React.FC = () => {
                     <select
                       value={maxArea}
                       onChange={(e) => setMaxArea(e.target.value)}
-                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition"
+                      className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 bg-white transition"
                     >
                       <option value="any">
                         {isPT ? "Sem máx." : "No max"}
@@ -1732,7 +1752,7 @@ const RealEstatePage: React.FC = () => {
                           onChange={(e) =>
                             setLocationNeighborhood(e.target.value)
                           }
-                          className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 bg-white transition"
+                          className="rounded-xl border border-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 bg-white transition"
                         >
                           <option value="all">{isPT ? "Todos" : "All"}</option>
                           {neighborhoodsForArea.map((n) => (
@@ -1747,7 +1767,6 @@ const RealEstatePage: React.FC = () => {
               </div>
             )}
 
-            {/* Applied chips */}
             {appliedChips.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-2 items-center">
                 {appliedChips.map((c) => (
@@ -1833,7 +1852,7 @@ const RealEstatePage: React.FC = () => {
         </section>
 
         {/* =========================================================
-            PROPERTY GRID — erro ≠ vazio (Norman)
+            PROPERTY GRID
         ========================================================== */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-10 items-start">
           {propertiesError ? (
@@ -1891,6 +1910,7 @@ const RealEstatePage: React.FC = () => {
             filteredProperties.map((property) => {
               const coverImage = property.images?.[0] ?? property.image;
               const ppsm = calcPricePerSqm(property);
+              const isPropertyOwner = !!user && property.ownerId === user.id;
 
               return (
                 <article
@@ -1901,8 +1921,38 @@ const RealEstatePage: React.FC = () => {
                   onKeyDown={(e) =>
                     e.key === "Enter" && openPropertyModal(property)
                   }
-                  className="group cursor-pointer bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg transition-shadow duration-200"
+                  className="group cursor-pointer bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg transition-shadow duration-200 relative"
                 >
+                  {/* Owner action buttons — top-right over the image */}
+                  {isPropertyOwner && (
+                    <div className="absolute top-2 right-2 z-10 flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditFromCard(property);
+                        }}
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/95 backdrop-blur shadow-sm text-slate-700 hover:bg-white hover:text-[#1F1F3D] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1F1F3D]/40"
+                        aria-label={isPT ? "Editar anúncio" : "Edit listing"}
+                        title={isPT ? "Editar anúncio" : "Edit listing"}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteFromCard(property);
+                        }}
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-white/95 backdrop-blur shadow-sm text-slate-700 hover:bg-red-50 hover:text-red-600 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                        aria-label={isPT ? "Remover anúncio" : "Remove listing"}
+                        title={isPT ? "Remover anúncio" : "Remove listing"}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+
                   {coverImage ? (
                     <div className="w-full aspect-[4/3] overflow-hidden bg-slate-100">
                       <img
@@ -2155,7 +2205,6 @@ const RealEstatePage: React.FC = () => {
             </div>
 
             <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-              {/* Gallery */}
               <div className="md:w-1/2 border-b md:border-b-0 md:border-r border-slate-100 flex flex-col bg-slate-900/5">
                 <div className="relative w-full bg-slate-900/5">
                   <div className="relative w-full aspect-[16/10] md:aspect-[16/11] overflow-hidden">
@@ -2228,7 +2277,7 @@ const RealEstatePage: React.FC = () => {
                           onClick={() => setActiveImageIndex(idx)}
                           className={`w-20 aspect-[4/3] rounded-xl overflow-hidden border transition shrink-0 ${
                             idx === activeImageIndex
-                              ? "border-[#1F6FA6]"
+                              ? "border-[#1F1F3D]"
                               : "border-transparent opacity-80 hover:opacity-100"
                           }`}
                         >
@@ -2245,7 +2294,6 @@ const RealEstatePage: React.FC = () => {
                 )}
               </div>
 
-              {/* Info panel */}
               <div className="md:w-1/2 flex flex-col overflow-y-auto bg-gradient-to-b from-white to-slate-50">
                 <div className="p-5 sm:p-7 space-y-5">
                   <div className="flex flex-wrap items-center gap-2">
@@ -2484,22 +2532,23 @@ const RealEstatePage: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleEditListing}
-                        className="inline-flex items-center justify-center rounded-full bg-amber-500 text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow hover:bg-amber-600 transition"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-full border border-slate-300 bg-white text-slate-800 text-xs sm:text-sm font-semibold px-4 py-2 hover:bg-slate-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1F1F3D]/30"
                       >
+                        <Pencil className="w-3.5 h-3.5" />
                         {isPT ? "Editar anúncio" : "Edit listing"}
                       </button>
                       <button
                         type="button"
                         onClick={openDeleteListingModal}
-                        className="inline-flex items-center justify-center rounded-full bg-red-600 text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow hover:bg-red-700 transition"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-full bg-red-600 text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow-sm hover:bg-red-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
                       >
+                        <Trash2 className="w-3.5 h-3.5" />
                         {isPT ? "Remover anúncio" : "Remove listing"}
                       </button>
                     </div>
                   )}
                 </div>
 
-                {/* Contact footer */}
                 <div className="mt-auto border-t border-slate-200 bg-white/95 backdrop-blur px-5 sm:px-7 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="text-[11px] sm:text-xs text-slate-600">
@@ -2581,6 +2630,31 @@ const RealEstatePage: React.FC = () => {
         onConfirm={confirmDeleteListing}
         onCancel={closeDeleteListingModal}
       />
+
+      {/* =========================================================
+          TOAST (confirmação de ação)
+      ========================================================== */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] pointer-events-none px-4">
+          <div
+            className={[
+              "inline-flex items-center gap-2 rounded-full px-4 py-2.5 shadow-xl text-sm font-semibold",
+              toast.tone === "success"
+                ? "bg-slate-900 text-white"
+                : "bg-red-600 text-white",
+            ].join(" ")}
+            role="status"
+            aria-live="polite"
+          >
+            {toast.tone === "success" ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 shrink-0" />
+            )}
+            <span>{toast.text}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -173,7 +173,7 @@ const ContactModal: React.FC<{
         {/* Header */}
         <div className="flex items-start justify-between gap-3 px-5 sm:px-6 py-4 border-b border-slate-100 bg-slate-50/70">
           <div className="min-w-0">
-            <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#1F6FA6] mb-1">
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[#1F1F3D] mb-1">
               <MessageCircle className="w-3.5 h-3.5" />
               {isPT ? "Fala connosco" : "Talk to us"}
             </div>
@@ -187,7 +187,7 @@ const ContactModal: React.FC<{
           <button
             type="button"
             onClick={onClose}
-            className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1F6FA6]"
+            className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1F1F3D]"
             aria-label={isPT ? "Fechar" : "Close"}
           >
             <X className="w-4 h-4" />
@@ -230,9 +230,9 @@ const ContactModal: React.FC<{
                       type="button"
                       onClick={() => setSubject(s.id)}
                       className={[
-                        "px-3.5 py-1.5 rounded-full text-xs font-semibold border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1F6FA6]",
+                        "px-3.5 py-1.5 rounded-full text-xs font-semibold border transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1F1F3D]",
                         active
-                          ? "bg-sky-50 border-[#1F6FA6] text-[#1F6FA6]"
+                          ? "bg-slate-50 border-[#1F1F3D] text-[#1F1F3D]"
                           : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50",
                       ].join(" ")}
                       aria-pressed={active}
@@ -258,7 +258,7 @@ const ContactModal: React.FC<{
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F6FA6]/40 focus:ring-[#1F6FA6]/15 transition"
+                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F1F3D]/40 focus:ring-[#1F1F3D]/15 transition"
                 placeholder={isPT ? "O teu nome" : "Your name"}
                 autoComplete="name"
                 required
@@ -278,7 +278,7 @@ const ContactModal: React.FC<{
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F6FA6]/40 focus:ring-[#1F6FA6]/15 transition"
+                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F1F3D]/40 focus:ring-[#1F1F3D]/15 transition"
                 placeholder="email@exemplo.com"
                 autoComplete="email"
                 required
@@ -298,7 +298,7 @@ const ContactModal: React.FC<{
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 rows={4}
-                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F6FA6]/40 focus:ring-[#1F6FA6]/15 transition resize-none"
+                className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F1F3D]/40 focus:ring-[#1F1F3D]/15 transition resize-none"
                 placeholder={
                   isPT ? "Escreve a tua mensagem..." : "Write your message..."
                 }
@@ -326,7 +326,7 @@ const ContactModal: React.FC<{
             <button
               type="submit"
               disabled={status === "submitting"}
-              className="w-full inline-flex items-center justify-center gap-2 rounded-xl text-white text-sm font-semibold py-3 shadow-md transition disabled:opacity-60 disabled:cursor-not-allowed bg-[#1F6FA6] hover:bg-[#195c8a] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1F6FA6]"
+              className="w-full inline-flex items-center justify-center gap-2 rounded-xl text-white text-sm font-semibold py-3 shadow-md transition disabled:opacity-60 disabled:cursor-not-allowed bg-[#1F1F3D] hover:bg-[#15152E] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1F1F3D]"
             >
               {status === "submitting" ? (
                 <>
@@ -346,7 +346,7 @@ const ContactModal: React.FC<{
               {isPT ? "Ou envia diretamente para " : "Or email us directly at "}
               <a
                 href="mailto:info@allcascais.com"
-                className="font-semibold text-[#1F6FA6] hover:underline"
+                className="font-semibold text-[#1F1F3D] hover:underline"
               >
                 info@allcascais.com
               </a>
@@ -398,8 +398,8 @@ const LandingPage: React.FC = () => {
         ? "Ex: canalizador, dentista, limpezas..."
         : "E.g. plumber, dentist, cleaning...",
       accentClass:
-        "bg-[#1F6FA6] hover:bg-[#195c8a] focus-visible:ring-[#1F6FA6]",
-      text: "text-[#1F6FA6]",
+        "bg-[#1F1F3D] hover:bg-[#15152E] focus-visible:ring-[#1F1F3D]",
+      text: "text-[#1F1F3D]",
       icon: Search,
     },
     offers: {
@@ -490,7 +490,7 @@ const LandingPage: React.FC = () => {
         ? "Profissionais, restaurantes, saúde, casa, atividades e mais."
         : "Professionals, restaurants, health, home, activities and more.",
       cta: isPT ? "Explorar serviços" : "Explore services",
-      accent: "#1F6FA6",
+      accent: "#1F1F3D",
       icon: Search,
       image:
         "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=1000&auto=format&fit=crop",
@@ -585,12 +585,12 @@ const LandingPage: React.FC = () => {
               {isPT ? (
                 <>
                   Em Cascais,
-                  <span className="block text-sky-200">tudo resolvido.</span>
+                  <span className="block text-indigo-200">tudo resolvido.</span>
                 </>
               ) : (
                 <>
                   In Cascais,
-                  <span className="block text-sky-200">
+                  <span className="block text-slate-100">
                     everything handled.
                   </span>
                 </>
@@ -629,7 +629,7 @@ const LandingPage: React.FC = () => {
                           onClick={() => setSearchTab(key)}
                           className={[
                             "relative flex items-center justify-center gap-2 py-4 px-2 text-xs sm:text-sm font-semibold transition-all",
-                            "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1F6FA6] focus-visible:ring-inset",
+                            "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1F1F3D] focus-visible:ring-inset",
                             isActive
                               ? "bg-white text-slate-900"
                               : "text-slate-500 hover:text-slate-800 hover:bg-white/70",
@@ -642,7 +642,7 @@ const LandingPage: React.FC = () => {
                             <span
                               className={`absolute bottom-0 left-0 right-0 h-[3px] ${
                                 key === "services"
-                                  ? "bg-[#1F6FA6]"
+                                  ? "bg-[#1F1F3D]"
                                   : key === "offers"
                                   ? "bg-amber-500"
                                   : "bg-emerald-600"
@@ -681,7 +681,7 @@ const LandingPage: React.FC = () => {
                           {activeTab.question}
                         </label>
 
-                        <div className="flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 border-slate-200 focus-within:border-[#1F6FA6] focus-within:ring-4 focus-within:ring-[#1F6FA6]/15 transition">
+                        <div className="flex items-center gap-3 rounded-2xl border bg-white px-4 py-3 border-slate-200 focus-within:border-[#1F1F3D] focus-within:ring-4 focus-within:ring-[#1F1F3D]/15 transition">
                           <Search className="w-5 h-5 text-slate-300 shrink-0" />
 
                           <input
@@ -886,7 +886,7 @@ const LandingPage: React.FC = () => {
       {/* MAIN CATEGORIES */}
       <section className="max-w-7xl mx-auto px-4 pt-16 pb-16">
         <div className="max-w-2xl mb-9">
-          <div className="flex items-center gap-2 text-[#1F6FA6] text-xs font-bold uppercase tracking-[0.15em] mb-3">
+          <div className="flex items-center gap-2 text-[#1F1F3D] text-xs font-bold uppercase tracking-[0.15em] mb-3">
             <Sparkles className="w-4 h-4" />
             AllCascais
           </div>
@@ -912,7 +912,7 @@ const LandingPage: React.FC = () => {
                 key={cat.id}
                 type="button"
                 onClick={() => handleCategoryClick(cat.route)}
-                className="group relative h-[390px] overflow-hidden rounded-[28px] text-left shadow-md hover:shadow-2xl transition-all duration-500 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#1F6FA6]/40"
+                className="group relative h-[390px] overflow-hidden rounded-[28px] text-left shadow-md hover:shadow-2xl transition-all duration-500 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#1F1F3D]/40"
               >
                 <img
                   src={cat.image}
@@ -960,7 +960,7 @@ const LandingPage: React.FC = () => {
       <section className="bg-white border-y border-slate-100">
         <div className="max-w-7xl mx-auto px-4 py-16">
           <div className="text-center max-w-2xl mx-auto mb-12">
-            <div className="inline-flex items-center gap-2 text-[#1F6FA6] text-xs font-bold uppercase tracking-[0.15em] mb-3">
+            <div className="inline-flex items-center gap-2 text-[#1F1F3D] text-xs font-bold uppercase tracking-[0.15em] mb-3">
               <Sparkles className="w-4 h-4" />
               {isPT ? "Como funciona" : "How it works"}
             </div>
@@ -983,11 +983,11 @@ const LandingPage: React.FC = () => {
               const Icon = step.icon;
               return (
                 <div key={step.title} className="relative text-center">
-                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-sky-50 border border-sky-100 text-[#1F6FA6] mb-5">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-50 border border-sky-100 text-[#1F1F3D] mb-5">
                     <Icon className="w-6 h-6" />
                   </div>
 
-                  <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#1F6FA6] mb-2">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#1F1F3D] mb-2">
                     {isPT ? `Passo ${i + 1}` : `Step ${i + 1}`}
                   </div>
 
@@ -1007,7 +1007,7 @@ const LandingPage: React.FC = () => {
             <button
               type="button"
               onClick={() => navigate("/services")}
-              className="group inline-flex items-center justify-center gap-2 rounded-full bg-[#1F6FA6] text-white px-7 py-3.5 text-sm font-bold shadow-md hover:bg-[#195c8a] hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1F6FA6]"
+              className="group inline-flex items-center justify-center gap-2 rounded-full bg-[#1F1F3D] text-white px-7 py-3.5 text-sm font-bold shadow-md hover:bg-[#15152E] hover:-translate-y-0.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1F1F3D]"
             >
               <Search className="w-4 h-4" />
               {isPT ? "Começar a explorar" : "Start exploring"}
@@ -1029,8 +1029,8 @@ const LandingPage: React.FC = () => {
       <section className="max-w-3xl mx-auto px-4 py-16">
         <div className="bg-white rounded-3xl border border-slate-100 shadow-xl p-6 sm:p-8">
           <div className="flex items-start gap-4 sm:gap-5">
-            <div className="shrink-0 w-12 h-12 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center">
-              <Quote className="w-5 h-5 text-[#1F6FA6]" />
+            <div className="shrink-0 w-12 h-12 rounded-2xl bg-slate-50 border border-sky-100 flex items-center justify-center">
+              <Quote className="w-5 h-5 text-[#1F1F3D]" />
             </div>
 
             <div className="min-w-0">
@@ -1067,12 +1067,12 @@ const LandingPage: React.FC = () => {
       {/* BUSINESS CTA */}
       <section className="max-w-7xl mx-auto px-4 pb-16">
         <div className="relative overflow-hidden rounded-[32px] bg-slate-950 px-6 py-10 sm:px-10 sm:py-12">
-          <div className="absolute -right-20 -top-32 w-80 h-80 rounded-full bg-sky-500/20 blur-3xl" />
+          <div className="absolute -right-20 -top-32 w-80 h-80 rounded-full bg-slate-500/20 blur-3xl" />
           <div className="absolute -left-20 -bottom-32 w-80 h-80 rounded-full bg-emerald-500/10 blur-3xl" />
 
           <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 text-sky-300 text-xs uppercase tracking-[0.15em] font-bold mb-4">
+              <div className="inline-flex items-center gap-2 text-slate-200 text-xs uppercase tracking-[0.15em] font-bold mb-4">
                 <Star className="w-4 h-4" />
                 AllCascais for business
               </div>
@@ -1118,7 +1118,7 @@ const LandingPage: React.FC = () => {
                 onClick={() => navigate("/service-listing")}
                 className="group w-full lg:w-auto inline-flex items-center justify-center gap-3 rounded-2xl bg-white text-slate-900 px-8 py-5 font-bold text-base shadow-xl hover:bg-slate-50 transition-all hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
               >
-                <Sparkles className="w-5 h-5 text-[#1F6FA6]" />
+                <Sparkles className="w-5 h-5 text-[#1F1F3D]" />
                 {isPT ? "Publicar o meu serviço" : "List my service"}
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
               </button>
@@ -1138,12 +1138,12 @@ const LandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 text-xs sm:text-sm text-slate-600">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-[#1F6FA6]" />
+              <ShieldCheck className="w-4 h-4 text-[#1F1F3D]" />
               {isPT ? "Comunidade verificada" : "Community verified"}
             </div>
 
             <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-[#1F6FA6]" />
+              <MapPin className="w-4 h-4 text-[#1F1F3D]" />
               Cascais, Portugal
             </div>
           </div>
@@ -1158,10 +1158,10 @@ const LandingPage: React.FC = () => {
           type="button"
           onClick={() => setContactOpen(true)}
           className={[
-            "fixed bottom-5 right-5 z-30 group flex items-center gap-2 rounded-full bg-[#1F6FA6] text-white pl-4 pr-5 py-3 shadow-2xl",
-            "hover:bg-[#195c8a] hover:-translate-y-0.5",
+            "fixed bottom-5 right-5 z-30 group flex items-center gap-2 rounded-full bg-[#1F1F3D] text-white pl-4 pr-5 py-3 shadow-2xl",
+            "hover:bg-[#15152E] hover:-translate-y-0.5",
             "transition-all duration-300",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1F6FA6]",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#1F1F3D]",
           ].join(" ")}
           aria-label={isPT ? "Falar connosco" : "Talk to us"}
         >

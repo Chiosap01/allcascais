@@ -34,8 +34,8 @@ import type { CategoryId, Category, Subcategory } from "../data/categories";
 /* ---------------------------------------------------------
    DESIGN TOKENS
 --------------------------------------------------------- */
-const BRAND = "#1F6FA6";
-const BRAND_HOVER = "#195c8a";
+const BRAND = "#1F1F3D";
+const BRAND_HOVER = "#15152E";
 
 /* ---------------------------------------------------------
    TYPES

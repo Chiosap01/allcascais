@@ -93,7 +93,7 @@ const CategorySheet: React.FC<CategorySheetProps> = ({
               className={[
                 "flex items-center gap-2.5 p-3 rounded-2xl border transition text-left",
                 selectedCategory === "all"
-                  ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6]"
+                  ? "border-[#1F1F3D] bg-slate-50 text-[#1F1F3D]"
                   : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
               ].join(" ")}
             >
@@ -116,7 +116,7 @@ const CategorySheet: React.FC<CategorySheetProps> = ({
                   className={[
                     "flex items-center gap-2.5 p-3 rounded-2xl border transition text-left",
                     active
-                      ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6]"
+                      ? "border-[#1F1F3D] bg-slate-50 text-[#1F1F3D]"
                       : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
                   ].join(" ")}
                 >

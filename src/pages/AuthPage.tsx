@@ -23,7 +23,7 @@ import {
 /* ---------------------------------------------------------
    DESIGN TOKENS
 --------------------------------------------------------- */
-const BRAND = "#1F6FA6";
+const BRAND = "#1F1F3D";
 const BRAND_HOVER = "#155A87";
 
 type Mode = "signin" | "signup";
@@ -584,7 +584,7 @@ const AuthPage: React.FC = () => {
                       type="checkbox"
                       checked={acceptedTerms}
                       onChange={(e) => setAcceptedTerms(e.target.checked)}
-                      className="mt-0.5 rounded border-slate-300 text-[#1F6FA6] focus:ring-[#1F6FA6]/30"
+                      className="mt-0.5 rounded border-slate-300 text-[#1F1F3D] focus:ring-[#1F1F3D]/30"
                     />
                     <span className="text-[11px] text-slate-600 leading-relaxed">
                       {isPT ? (
@@ -761,7 +761,7 @@ const AuthPage: React.FC = () => {
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-16 py-12 text-white w-full">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 backdrop-blur px-3 py-1.5 text-[11px] font-semibold self-start mb-6">
-            <Sparkles className="w-3.5 h-3.5 text-sky-300" />
+            <Sparkles className="w-3.5 h-3.5 text-slate-200" />
             <span>{isPT ? "Comunidade de Cascais" : "Cascais community"}</span>
           </div>
 
@@ -771,13 +771,13 @@ const AuthPage: React.FC = () => {
               <>
                 Encontra profissionais
                 <br />
-                <span className="text-sky-200">de confiança.</span>
+                <span className="text-slate-100">de confiança.</span>
               </>
             ) : (
               <>
                 Find trusted
                 <br />
-                <span className="text-sky-200">professionals.</span>
+                <span className="text-slate-100">professionals.</span>
               </>
             )}
           </h2>
@@ -801,7 +801,7 @@ const AuthPage: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-1">
-                <Users className="w-4 h-4 text-sky-300" />
+                <Users className="w-4 h-4 text-slate-200" />
                 <span className="text-xl font-bold">140+</span>
               </div>
               <div className="text-[11px] text-white/60 mt-0.5">

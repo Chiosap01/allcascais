@@ -103,8 +103,8 @@ const PrimaryBtn = ({
     {...props}
     className={cls(
       ButtonBase,
-      "bg-[#1F6FA6] text-white shadow-md shadow-slate-900/10",
-      "hover:bg-[#195c8a] hover:-translate-y-px",
+      "bg-[#1F1F3D] text-white shadow-md shadow-slate-900/10",
+      "hover:bg-[#15152E] hover:-translate-y-px",
       "px-5 py-2.5 text-xs",
       className
     )}
@@ -169,7 +169,7 @@ function toneStyles(tone?: GuideTone) {
   if (tone === "tip")
     return "border-emerald-200/70 bg-emerald-50/88 backdrop-blur-md shadow-[0_10px_32px_-20px_rgba(2,6,23,0.50)] ring-1 ring-slate-900/5";
   if (tone === "checklist")
-    return "border-sky-200/70 bg-sky-50/88 backdrop-blur-md shadow-[0_10px_32px_-20px_rgba(2,6,23,0.50)] ring-1 ring-slate-900/5";
+    return "border-sky-200/70 bg-slate-50/88 backdrop-blur-md shadow-[0_10px_32px_-20px_rgba(2,6,23,0.50)] ring-1 ring-slate-900/5";
   return "border-white/35 bg-white/86 backdrop-blur-md shadow-[0_10px_32px_-20px_rgba(2,6,23,0.50)] ring-1 ring-slate-900/5";
 }
 
@@ -1424,7 +1424,7 @@ Timeline: ${ownerTimeline || "—"}`;
                           key={i}
                           className="flex gap-2 text-xs sm:text-sm text-slate-800"
                         >
-                          <span className="mt-1.5 inline-block w-1.5 h-1.5 rounded-full bg-[#1F6FA6]" />
+                          <span className="mt-1.5 inline-block w-1.5 h-1.5 rounded-full bg-[#1F1F3D]" />
                           <span>{t(b)}</span>
                         </li>
                       ))}
@@ -1671,7 +1671,7 @@ Timeline: ${ownerTimeline || "—"}`;
           >
             <div className="flex items-center justify-between px-5 sm:px-7 py-4 border-b border-white/25 bg-white/45 backdrop-blur-lg">
               <div>
-                <div className="text-[11px] font-semibold text-[#1F6FA6]">
+                <div className="text-[11px] font-semibold text-[#1F1F3D]">
                   {matchType === "owner"
                     ? isPT
                       ? "Para proprietários"
@@ -1775,7 +1775,7 @@ Timeline: ${ownerTimeline || "—"}`;
                       className={cls(
                         "flex-1 rounded-full border px-4 py-2 text-xs font-semibold transition backdrop-blur-md",
                         matchType === "owner"
-                          ? "border-[#1F6FA6]/60 bg-blue-50/85 text-[#1F6FA6] shadow-sm"
+                          ? "border-[#1F1F3D]/60 bg-blue-50/85 text-[#1F1F3D] shadow-sm"
                           : "border-white/35 bg-white/55 text-slate-800 hover:bg-white/70"
                       )}
                     >

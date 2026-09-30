@@ -35,8 +35,8 @@ import type { CategoryId, Category, Subcategory } from "../data/categories";
 /* ---------------------------------------------------------
    DESIGN TOKENS
 --------------------------------------------------------- */
-const BRAND = "#1F6FA6";
-const BRAND_HOVER = "#195c8a";
+const BRAND = "#1F1F3D";
+const BRAND_HOVER = "#15152E";
 
 /* ---------------------------------------------------------
    TYPES
@@ -570,8 +570,8 @@ const ServiceProfilePage: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
         <div className="bg-white rounded-3xl shadow-md border border-slate-100 p-8 text-center max-w-md">
-          <div className="w-16 h-16 rounded-2xl bg-sky-50 flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-8 h-8 text-[#1F6FA6]" />
+          <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-[#1F1F3D]" />
           </div>
           <h2 className="text-lg font-semibold text-slate-900 mb-2">
             {isPT ? "Inicie sessão" : "Sign in"}
@@ -666,7 +666,7 @@ const ServiceProfilePage: React.FC = () => {
                             className={[
                               "inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition",
                               active
-                                ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6] shadow-sm"
+                                ? "border-[#1F1F3D] bg-slate-50 text-[#1F1F3D] shadow-sm"
                                 : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
                             ].join(" ")}
                           >
@@ -700,7 +700,7 @@ const ServiceProfilePage: React.FC = () => {
                               className={[
                                 "inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition",
                                 active
-                                  ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6] shadow-sm"
+                                  ? "border-[#1F1F3D] bg-slate-50 text-[#1F1F3D] shadow-sm"
                                   : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
                               ].join(" ")}
                             >
@@ -732,7 +732,7 @@ const ServiceProfilePage: React.FC = () => {
                       )
                     }
                     maxLength={SERVICE_NAME_MAX_LENGTH}
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F6FA6]/40 transition"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F1F3D]/40 transition"
                     style={{ ["--tw-ring-color" as any]: `${BRAND}22` }}
                     placeholder={
                       isPT
@@ -763,7 +763,7 @@ const ServiceProfilePage: React.FC = () => {
                     }
                     rows={5}
                     maxLength={DESCRIPTION_MAX_LENGTH}
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F6FA6]/40 transition"
+                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F1F3D]/40 transition"
                     style={{ ["--tw-ring-color" as any]: `${BRAND}22` }}
                     placeholder={
                       isPT
@@ -797,7 +797,7 @@ const ServiceProfilePage: React.FC = () => {
                           className={[
                             "inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-semibold transition",
                             active
-                              ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6] shadow-sm"
+                              ? "border-[#1F1F3D] bg-slate-50 text-[#1F1F3D] shadow-sm"
                               : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
                           ].join(" ")}
                         >
@@ -819,7 +819,7 @@ const ServiceProfilePage: React.FC = () => {
                       type="email"
                       value={contactEmail}
                       onChange={(e) => setContactEmail(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F6FA6]/40 transition"
+                      className="w-full rounded-xl border border-slate-200 pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F1F3D]/40 transition"
                       style={{ ["--tw-ring-color" as any]: `${BRAND}22` }}
                       placeholder="email@example.com"
                     />
@@ -843,7 +843,7 @@ const ServiceProfilePage: React.FC = () => {
                           .slice(0, 9);
                         setPhone(onlyDigits);
                       }}
-                      className="flex-1 rounded-r-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F6FA6]/40 transition"
+                      className="flex-1 rounded-r-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F1F3D]/40 transition"
                       style={{ ["--tw-ring-color" as any]: `${BRAND}22` }}
                       placeholder="912345678"
                     />
@@ -863,7 +863,7 @@ const ServiceProfilePage: React.FC = () => {
                       type="text"
                       value={website}
                       onChange={(e) => setWebsite(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F6FA6]/40 transition"
+                      className="w-full rounded-xl border border-slate-200 pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F1F3D]/40 transition"
                       style={{ ["--tw-ring-color" as any]: `${BRAND}22` }}
                       placeholder="https://..."
                     />
@@ -985,7 +985,7 @@ const ServiceProfilePage: React.FC = () => {
                           className={[
                             "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition",
                             active
-                              ? "border-[#1F6FA6] bg-sky-50 text-[#1F6FA6]"
+                              ? "border-[#1F1F3D] bg-slate-50 text-[#1F1F3D]"
                               : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
                           ].join(" ")}
                         >
@@ -1045,7 +1045,7 @@ const ServiceProfilePage: React.FC = () => {
                             type="text"
                             value={s.value}
                             onChange={(e) => s.setter(e.target.value)}
-                            className="w-full rounded-xl border border-slate-200 pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F6FA6]/40 transition"
+                            className="w-full rounded-xl border border-slate-200 pl-10 pr-3 py-2.5 text-sm focus:outline-none focus:ring-4 focus:border-[#1F1F3D]/40 transition"
                             style={{
                               ["--tw-ring-color" as any]: `${BRAND}22`,
                             }}
@@ -1093,7 +1093,7 @@ const ServiceProfilePage: React.FC = () => {
                                 e.target.value
                               )
                             }
-                            className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 disabled:bg-slate-50 disabled:text-slate-400 transition"
+                            className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 disabled:bg-slate-50 disabled:text-slate-400 transition"
                           />
                         </div>
                         <div className="col-span-3">
@@ -1108,7 +1108,7 @@ const ServiceProfilePage: React.FC = () => {
                                 e.target.value
                               )
                             }
-                            className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 disabled:bg-slate-50 disabled:text-slate-400 transition"
+                            className="w-full rounded-lg border border-slate-200 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 disabled:bg-slate-50 disabled:text-slate-400 transition"
                           />
                         </div>
                         <div className="col-span-2 flex justify-center">

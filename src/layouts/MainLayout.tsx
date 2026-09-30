@@ -18,8 +18,8 @@ import {
    DESIGN TOKENS (consistency — Wathan)
 --------------------------------------------------------- */
 const TOKENS = {
-  brand: "#1F6FA6",
-  brandHover: "#195c8a",
+  brand: "#1F1F3D",
+  brandHover: "#15152E",
   radius: {
     pill: "rounded-full",
     md: "rounded-2xl",
@@ -180,7 +180,7 @@ const MainLayout: FC<MainLayoutProps> = ({ children }) => {
                         navLinkBase,
                         "inline-flex items-center gap-2",
                         isActive
-                          ? "bg-sky-50 text-[#1F6FA6] font-semibold"
+                          ? "bg-slate-50 text-[#1F1F3D] font-semibold"
                           : "text-slate-600 hover:text-slate-900 hover:bg-slate-50",
                       ].join(" ")
                     }
@@ -202,7 +202,7 @@ const MainLayout: FC<MainLayoutProps> = ({ children }) => {
                 id="language-select"
                 value={language}
                 onChange={(e) => setLanguage(e.target.value as LanguageCode)}
-                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#1F6FA6]/30 transition"
+                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-[#1F1F3D]/30 transition"
               >
                 {LANGUAGES.map((lang) => (
                   <option key={lang.id} value={lang.id}>
@@ -219,11 +219,11 @@ const MainLayout: FC<MainLayoutProps> = ({ children }) => {
                     <button
                       type="button"
                       onClick={() => setUserMenuOpen((v) => !v)}
-                      className="inline-flex items-center gap-2 rounded-full pl-1 pr-2.5 py-1 bg-sky-50 border border-sky-200 hover:bg-sky-100 transition"
+                      className="inline-flex items-center gap-2 rounded-full pl-1 pr-2.5 py-1 bg-slate-50 border border-sky-200 hover:bg-slate-100 transition"
                       aria-label={isPT ? "Menu de utilizador" : "User menu"}
                       aria-expanded={userMenuOpen}
                     >
-                      <div className="w-8 h-8 rounded-full overflow-hidden bg-[#1F6FA6] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                      <div className="w-8 h-8 rounded-full overflow-hidden bg-[#1F1F3D] flex items-center justify-center text-white text-xs font-bold shrink-0">
                         {userAvatarUrl ? (
                           <img
                             src={userAvatarUrl}
@@ -242,7 +242,7 @@ const MainLayout: FC<MainLayoutProps> = ({ children }) => {
                         {/* User header */}
                         <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/60">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full overflow-hidden bg-[#1F6FA6] flex items-center justify-center text-white text-sm font-bold shrink-0">
+                            <div className="w-10 h-10 rounded-full overflow-hidden bg-[#1F1F3D] flex items-center justify-center text-white text-sm font-bold shrink-0">
                               {userAvatarUrl ? (
                                 <img
                                   src={userAvatarUrl}
@@ -365,7 +365,7 @@ const MainLayout: FC<MainLayoutProps> = ({ children }) => {
                       [
                         "flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl text-[10px] font-semibold transition min-w-0 flex-1",
                         isActive
-                          ? "text-[#1F6FA6] bg-sky-50"
+                          ? "text-[#1F1F3D] bg-slate-50"
                           : "text-slate-500 hover:text-slate-800",
                       ].join(" ")
                     }
@@ -389,17 +389,17 @@ const MainLayout: FC<MainLayoutProps> = ({ children }) => {
               <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-600">
                 <Link
                   to="/about"
-                  className="hover:text-[#1F6FA6] transition font-medium"
+                  className="hover:text-[#1F1F3D] transition font-medium"
                 >
                   {isPT ? "Sobre" : "About"}
                 </Link>
-                <Link to="/terms" className="hover:text-[#1F6FA6] transition">
+                <Link to="/terms" className="hover:text-[#1F1F3D] transition">
                   {isPT ? "Termos" : "Terms"}
                 </Link>
-                <Link to="/privacy" className="hover:text-[#1F6FA6] transition">
+                <Link to="/privacy" className="hover:text-[#1F1F3D] transition">
                   {isPT ? "Privacidade" : "Privacy"}
                 </Link>
-                <Link to="/cookies" className="hover:text-[#1F6FA6] transition">
+                <Link to="/cookies" className="hover:text-[#1F1F3D] transition">
                   Cookies
                 </Link>
               </div>
@@ -434,7 +434,7 @@ const MenuItem: FC<MenuItemProps> = ({
   accent,
 }) => {
   const accentClasses = {
-    sky: "bg-sky-50 text-[#1F6FA6] border-sky-100",
+    sky: "bg-slate-50 text-[#1F1F3D] border-sky-100",
     amber: "bg-amber-50 text-amber-700 border-amber-100",
     emerald: "bg-emerald-50 text-emerald-700 border-emerald-100",
   };
