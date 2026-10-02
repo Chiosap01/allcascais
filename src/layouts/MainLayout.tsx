@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { ReactNode, FC } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import ScrollToTop from "../components/ScrollToTop";
 import {
   Home,
   Search,
@@ -144,6 +145,7 @@ const MainLayout: FC<MainLayoutProps> = ({ children }) => {
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage }}>
+      <ScrollToTop />
       <div className="min-h-screen flex flex-col bg-transparent">
         {/* =========================================================
             HEADER
