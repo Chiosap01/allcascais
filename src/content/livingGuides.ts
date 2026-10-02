@@ -24,7 +24,7 @@ export type LivingGuideFAQ = {
 export type LivingGuideTemplate = {
   title: Localized;
   description?: Localized;
-  copyText: Localized; // what gets copied to clipboard
+  copyText: Localized;
 };
 
 export type LivingGuide = {
@@ -34,13 +34,11 @@ export type LivingGuide = {
   readTime: Localized;
   chips: Localized[];
 
-  // Scan + share boosters
   audience?: Localized[];
   takeaways?: Localized[];
   updatedAt?: string;
 
-  // NEW: FB-group magnets
-  sharePost?: Localized; // a ready-to-post mini text
+  sharePost?: Localized;
   faqs?: LivingGuideFAQ[];
   templates?: LivingGuideTemplate[];
 
@@ -65,19 +63,22 @@ const NOTE_LEGAL: Localized = {
 };
 
 export const LIVING_GUIDES: LivingGuide[] = [
-  // 1) Areas
+  /* =========================================================
+     1) Areas
+     Leitura: ~5 min (checklist + 3 testes + micro-zonas detalhadas)
+  ========================================================= */
   {
     key: "areas",
     title: {
-      pt: "Onde viver em Cascais: 9 micro-zonas + teste de 2 minutos",
-      en: "Where to live in Cascais: 9 micro-areas + a 2-minute test",
+      pt: "Onde viver em Cascais: 7 micro-zonas + teste de 2 minutos",
+      en: "Where to live in Cascais: 7 micro-areas + a 2-minute test",
     },
     subtitle: {
       pt: "Escolha sem arrependimento (3 testes práticos + checklist).",
       en: "Choose confidently (3 practical tests + a checklist).",
     },
-    readTime: { pt: "3–4 min", en: "3–4 min" },
-    updatedAt: "2026-01-10",
+    readTime: { pt: "5 min", en: "5 min" },
+    updatedAt: "2026-10-02",
     chips: [{ pt: "✅ Checklist pronta", en: "✅ Ready checklist" }],
     audience: [
       {
@@ -99,37 +100,34 @@ export const LIVING_GUIDES: LivingGuide[] = [
         en: "Test noise/parking for 10 minutes (windows open).",
       },
       {
-        pt: "Faça o trajeto real para trabalho/escola/saúde (sem assumir).",
-        en: "Do the real commute to work/school/health (no guessing).",
+        pt: "Faça o trajeto real para trabalho/escola/saúde.",
+        en: "Do the real commute to work/school/health.",
       },
     ],
-
-    // Updated: more specific + shareable (micro-areas)
     sharePost: {
       pt: `🏡 Cascais (micro-zonas) — guia rápido (2 min)
 
-Cascais Centro = tudo a pé
-Estoril / São João = residencial + acessos
-Monte Estoril = vista + “premium”
-São Pedro = surf/local vibe
-Carcavelos = praia grande + mais perto de Lisboa
+Cascais Centro = tudo a pé, mas caro (€5.500–7.500/m²)
+Estoril / São João = residencial + comboio + clássico (€4.500–6.500/m²)
+Monte Estoril = vista + premium, ruas estreitas
+São Pedro = surf/local, boa vibe
+Carcavelos = praia grande + comboio + mais perto de Lisboa (€4.500–5.500/m²)
 Parede = tranquila + autenticidade
-Alcabideche / S. Domingos de Rana = mais espaço/garagem (carro)
+Alcabideche / S. Domingos de Rana = mais espaço/garagem (€3.200–4.000/m²)
 
-Diz-me: budget + escola/trabalho + “carro ou comboio?” e eu devolvo 3 zonas recomendadas.`,
+Diz-me: budget + escola/trabalho + "carro ou comboio?" e eu devolvo 3 zonas recomendadas.`,
       en: `🏡 Cascais micro-areas — 2-minute cheat sheet
 
-Cascais Center = walk-everywhere
-Estoril / São João = residential + access
-Monte Estoril = views + “premium”
-São Pedro = surf/local vibe
-Carcavelos = big beach + closer to Lisbon
+Cascais Center = walk-everywhere, but pricey (€5,500–7,500/m²)
+Estoril / São João = residential + train + classic (€4,500–6,500/m²)
+Monte Estoril = views + premium, narrow streets
+São Pedro = surf/local, great vibe
+Carcavelos = big beach + train + closer to Lisbon (€4,500–5,500/m²)
 Parede = quieter + authentic
-Alcabideche / S. Domingos de Rana = more space/garage (car-friendly)
+Alcabideche / S. Domingos de Rana = more space/garage (€3,200–4,000/m²)
 
 Tell me: budget + school/work + train vs car, and I’ll reply with 3 recommended areas.`,
     },
-
     templates: [
       {
         title: {
@@ -170,10 +168,7 @@ Thanks!`,
         },
       },
       {
-        q: {
-          pt: "Comboio é essencial?",
-          en: "Is the train essential?",
-        },
+        q: { pt: "Comboio é essencial?", en: "Is the train essential?" },
         a: {
           pt: "Se faz Lisboa com frequência, estar perto de comboio pode reduzir stress e custos. Se usa mais carro, priorize acessos e estacionamento real.",
           en: "If you commute to Lisbon often, being near the train can reduce stress and costs. If you mostly drive, prioritize access and real parking.",
@@ -190,7 +185,6 @@ Thanks!`,
         },
       },
     ],
-
     sections: [
       {
         heading: {
@@ -217,7 +211,6 @@ Thanks!`,
           },
         ],
       },
-
       {
         heading: {
           pt: "Como decidir sem arrependimento (o método dos 3 testes)",
@@ -238,8 +231,6 @@ Thanks!`,
           },
         ],
       },
-
-      // NEW: Fast pick by lifestyle (optional but very scannable)
       {
         heading: {
           pt: "Escolha rápida (por estilo de vida)",
@@ -252,12 +243,12 @@ Thanks!`,
             en: "Walk-everywhere + restaurants: Cascais (Center/Marina).",
           },
           {
-            pt: "Quero ‘clássico’ + calma + acessos: Estoril / São João do Estoril.",
+            pt: "Quero 'clássico' + calma + acessos: Estoril / São João do Estoril.",
             en: "Classic + calm + access: Estoril / São João do Estoril.",
           },
           {
-            pt: "Quero vista + charme + ‘premium’: Monte Estoril.",
-            en: "Views + charm + ‘premium’: Monte Estoril.",
+            pt: "Quero vista + charme + 'premium': Monte Estoril.",
+            en: "Views + charm + 'premium': Monte Estoril.",
           },
           {
             pt: "Quero praia grande + surf + mais perto de Lisboa: Carcavelos.",
@@ -273,7 +264,6 @@ Thanks!`,
           },
         ],
       },
-
       {
         heading: {
           pt: "Sinais de que a zona é a certa",
@@ -295,7 +285,6 @@ Thanks!`,
           },
         ],
       },
-
       {
         heading: {
           pt: "Erros comuns (que custam tempo e dinheiro)",
@@ -317,11 +306,10 @@ Thanks!`,
           },
         ],
       },
-
       {
         heading: {
-          pt: "Dica AllCascais (o teu diferencial)",
-          en: "AllCascais tip (your advantage)",
+          pt: "Dica AllCascais",
+          en: "AllCascais tip",
         },
         tone: "tip",
         body: {
@@ -329,10 +317,8 @@ Thanks!`,
           en: "Use local services as an area filter: if you’re fitness-focused, stay near studios/clubs; if family-focused, stay near schools/activities; if mobility matters, evaluate access + support services.",
         },
       },
-
       { heading: { pt: "Nota", en: "Note" }, body: NOTE_LEGAL },
     ],
-
     ctas: [
       {
         kind: "getMatched",
@@ -345,14 +331,13 @@ Thanks!`,
         kind: "browseHomes",
         label: { pt: "Ver opções agora", en: "See options now" },
       },
-      {
-        kind: "viewServices",
-        label: { pt: "Encontrar ajuda local", en: "Find local help" },
-      },
     ],
   },
 
-  // 2) Buying
+  /* =========================================================
+     2) Buying
+     Leitura: ~6 min
+  ========================================================= */
   {
     key: "buying",
     title: {
@@ -363,8 +348,8 @@ Thanks!`,
       pt: "Critérios, documentos, impostos e passos — para evitar erros caros.",
       en: "Criteria, documents, taxes, and steps — to avoid costly mistakes.",
     },
-    readTime: { pt: "4–5 min", en: "4–5 min" },
-    updatedAt: "2026-01-10",
+    readTime: { pt: "6 min", en: "6 min" },
+    updatedAt: "2026-10-02",
     chips: [
       { pt: "✅ Passos claros", en: "✅ Clear steps" },
       { pt: "€ Erros caros", en: "€ Costly mistakes" },
@@ -394,6 +379,58 @@ Thanks!`,
         en: "Compare context + condition + €/m² (not only price).",
       },
     ],
+    templates: [
+      {
+        title: {
+          pt: "Pedido de documentos ao vendedor/agente",
+          en: "Request documents from seller/agent",
+        },
+        description: {
+          pt: "Antes de fazer uma proposta séria.",
+          en: "Before making a serious offer.",
+        },
+        copyText: {
+          pt: `Olá, antes de avançar com uma proposta, pode enviar por favor:
+- Caderneta predial atualizada
+- Certidão permanente do registo predial
+- Certificado energético (classe + validade)
+- Licença de utilização (quando aplicável)
+- Plantas / áreas oficiais
+- Últimas atas de condomínio + valor mensal
+Obrigado!`,
+          en: `Hi, before moving forward with an offer, could you please send:
+- Updated property tax registry (caderneta predial)
+- Land registry certificate (certidão permanente)
+- Energy certificate (rating + validity)
+- Use permit (when applicable)
+- Floor plans / official areas
+- Latest condo meeting minutes + monthly fee
+Thanks!`,
+        },
+      },
+    ],
+    faqs: [
+      {
+        q: {
+          pt: "Quanto devo reservar além do preço?",
+          en: "How much should I budget beyond the price?",
+        },
+        a: {
+          pt: "Tipicamente 8–10% acima do preço: IMT + Imposto de Selo 0,8% + escritura/registos (~€1.200) + (se crédito) IS do crédito 0,6%. Ver o guia 'Custos reais' para números concretos.",
+          en: "Typically 8–10% above price: IMT + 0.8% Stamp Duty + closing/registry (~€1,200) + (if financed) mortgage stamp duty 0.6%. See 'Real costs' guide for concrete numbers.",
+        },
+      },
+      {
+        q: {
+          pt: "Quanto tempo entre CPCV e escritura?",
+          en: "How long between CPCV and deed?",
+        },
+        a: {
+          pt: "Em regra 30–90 dias (4–8 semanas). Com documentos preparados antecipadamente, pode encurtar para 4–5 semanas.",
+          en: "Typically 30–90 days (4–8 weeks). With documents prepared in advance, can be shortened to 4–5 weeks.",
+        },
+      },
+    ],
     sections: [
       {
         heading: {
@@ -407,8 +444,8 @@ Thanks!`,
             en: "1) Set 3 non-negotiables (area, type, total budget).",
           },
           {
-            pt: "2) Financiamento: pré-aprovação ou plano claro (evita perder negócios).",
-            en: "2) Financing: pre-approval or clear plan (avoids losing deals).",
+            pt: "2) Financiamento: pré-aprovação antes de ver casas.",
+            en: "2) Financing: pre-approval before viewing homes.",
           },
           {
             pt: "3) Shortlist (5–12 imóveis) + visitas com checklist.",
@@ -485,12 +522,37 @@ Thanks!`,
             en: "IMT: transfer tax (progressive; depends on property type and use).",
           },
           {
-            pt: "Se houver crédito: pode existir Imposto de Selo sobre o montante do empréstimo (varia por prazo/estrutura).",
-            en: "If financing: there may be stamp duty on the mortgage amount (varies by term/structure).",
+            pt: "Se houver crédito: Imposto de Selo 0,6% sobre o montante do empréstimo.",
+            en: "If financing: Stamp Duty 0.6% on the mortgage amount.",
+          },
+          {
+            pt: "Escritura + registos: ~€1.200.",
+            en: "Closing + registry: ~€1,200.",
           },
           {
             pt: "Anual: IMI (taxa municipal) + condomínio + seguros/manutenção.",
             en: "Annual: IMI (municipal tax) + condo + insurance/upkeep.",
+          },
+        ],
+      },
+      {
+        heading: {
+          pt: "Prazos reais em Cascais",
+          en: "Real timelines in Cascais",
+        },
+        tone: "tip",
+        bullets: [
+          {
+            pt: "CPCV → Escritura: 30–90 dias (4–8 semanas típico).",
+            en: "CPCV → Deed: 30–90 days (4–8 weeks typical).",
+          },
+          {
+            pt: "Com documentos prontos: pode encurtar para 4–5 semanas.",
+            en: "With documents ready: can be shortened to 4–5 weeks.",
+          },
+          {
+            pt: "Sinal no CPCV: tipicamente 10–30% do preço.",
+            en: "Deposit at CPCV: typically 10–30% of price.",
           },
         ],
       },
@@ -519,8 +581,8 @@ Thanks!`,
         tone: "warning",
         bullets: [
           {
-            pt: "Preço “bom demais” sem documentos prontos.",
-            en: "Too-good-to-be-true price with missing docs.",
+            pt: "Preço “bom demais” sem documentos prontos (ex: Monte Estoril a €3.000/m²).",
+            en: "Too-good-to-be-true price with missing docs (e.g. Monte Estoril at €3,000/m²).",
           },
           {
             pt: "Inconsistências entre áreas/descrição e documentos.",
@@ -554,7 +616,10 @@ Thanks!`,
     ],
   },
 
-  // 3) Renting
+  /* =========================================================
+     3) Renting
+     Leitura: ~4 min
+  ========================================================= */
   {
     key: "renting",
     title: {
@@ -565,8 +630,8 @@ Thanks!`,
       pt: "Contratos, cauções, inventário e prazos — para assinar com confiança.",
       en: "Contracts, deposits, inventory, timelines — sign with confidence.",
     },
-    readTime: { pt: "3–4 min", en: "3–4 min" },
-    updatedAt: "2026-01-10",
+    readTime: { pt: "4 min", en: "4 min" },
+    updatedAt: "2026-10-02",
     chips: [
       { pt: "✅ Checklist", en: "✅ Checklist" },
       { pt: "📝 Contrato", en: "📝 Contract" },
@@ -593,6 +658,52 @@ Thanks!`,
       {
         pt: "Confirme o que está incluído (condomínio, água, internet, parking).",
         en: "Confirm what’s included (condo, water, internet, parking).",
+      },
+    ],
+    templates: [
+      {
+        title: {
+          pt: "Mensagem para pedir contrato antes de assinar",
+          en: "Message to ask for the contract before signing",
+        },
+        copyText: {
+          pt: `Olá! Antes da assinatura, pode enviar por favor:
+- Minuta do contrato (duração, renovação, denúncia)
+- Caução (valor) e condições de devolução
+- Despesas incluídas (condomínio, água, internet, estacionamento)
+- Comprovativo de propriedade ou autorização do senhorio
+- IBAN para pagamentos
+Obrigado!`,
+          en: `Hi! Before signing, could you please send:
+- Draft contract (duration, renewal, termination)
+- Deposit amount and return conditions
+- Included expenses (condo, water, internet, parking)
+- Proof of ownership or landlord authorization
+- IBAN for payments
+Thanks!`,
+        },
+      },
+    ],
+    faqs: [
+      {
+        q: {
+          pt: "Devo pagar caução antes de ver o contrato?",
+          en: "Should I pay a deposit before seeing the contract?",
+        },
+        a: {
+          pt: "Não. Peça sempre a minuta primeiro. Caução sem contrato escrito é o erro nº1 no arrendamento.",
+          en: "No. Always ask for the draft first. Deposit without a written contract is the #1 rental mistake.",
+        },
+      },
+      {
+        q: {
+          pt: "Como fazer inventário ao entrar?",
+          en: "How do I do a move-in inventory?",
+        },
+        a: {
+          pt: "Percorra todas as divisões com o senhorio/agente, tire fotos/vídeo com data, liste defeitos e envie por email no mesmo dia.",
+          en: "Walk every room with the landlord/agent, take dated photos/video, list defects, and email it the same day.",
+        },
       },
     ],
     sections: [
@@ -697,23 +808,19 @@ Thanks!`,
     ctas: [
       {
         kind: "getMatched",
-        label: { pt: "Quero recomendações", en: "Get recomendations" },
+        label: { pt: "Quero recomendações", en: "Get recommendations" },
       },
       {
         kind: "browseHomes",
         label: { pt: "Ver arrendamentos", en: "Browse rentals" },
       },
-      {
-        kind: "viewServices",
-        label: {
-          pt: "Serviços úteis (mudança)",
-          en: "Useful services (moving)",
-        },
-      },
     ],
   },
 
-  // 4) Costs
+  /* =========================================================
+     4) Costs
+     Leitura: ~8 min (guia + calculadora interativa)
+  ========================================================= */
   {
     key: "costs",
     title: {
@@ -724,11 +831,11 @@ Thanks!`,
       pt: "Planeie impostos, escritura, obras e manutenção — sem surpresas.",
       en: "Plan for taxes, closing, renovations, and upkeep — no surprises.",
     },
-    readTime: { pt: "3–4 min", en: "3–4 min" },
-    updatedAt: "2026-01-10",
+    readTime: { pt: "3 min + calculadora", en: "3 min + calculator" },
+    updatedAt: "2026-10-02",
     chips: [
       { pt: "€ Custo total", en: "€ Total cost" },
-      { pt: "✅ Modelo", en: "✅ Model" },
+      { pt: "🧮 Calculadora", en: "🧮 Calculator" },
     ],
     audience: [
       {
@@ -782,6 +889,35 @@ Thanks!`,
       },
       {
         heading: {
+          pt: "Exemplo real (para perceber a lógica)",
+          en: "Real example (to understand the logic)",
+        },
+        tone: "checklist",
+        bullets: [
+          {
+            pt: "T3 em Carcavelos a €550.000 (HPP).",
+            en: "T3 in Carcavelos at €550,000 (primary home).",
+          },
+          {
+            pt: "IMT: ~€26.900. IS compra: €4.400. IS crédito: ~€1.650.",
+            en: "IMT: ~€26,900. Stamp Duty purchase: €4,400. Mortgage stamp: ~€1,650.",
+          },
+          {
+            pt: "Escritura + registos + advogado: ~€2.100.",
+            en: "Closing + registry + lawyer: ~€2,100.",
+          },
+          {
+            pt: "Total 1º ano: ~€585.000 (antes de obras).",
+            en: "Total 1st year: ~€585,000 (before renovations).",
+          },
+          {
+            pt: "Se precisar de pintura + AC + 1 janela: +€6.500.",
+            en: "If you need paint + AC + 1 window: +€6,500.",
+          },
+        ],
+      },
+      {
+        heading: {
           pt: "Impostos: o que normalmente existe",
           en: "Taxes: what typically applies",
         },
@@ -796,52 +932,37 @@ Thanks!`,
             en: "Purchase: 0.8% Stamp Duty (purchase).",
           },
           {
-            pt: "Anual: IMI (taxa municipal). Em Cascais, foi aprovada taxa geral de 0,35% para 2026 (com medidas para HPP).",
-            en: "Annual: IMI (municipal tax). In Cascais, a 0.35% general rate was approved for 2026 (with measures for primary homes).",
+            pt: "Crédito: Imposto de Selo 0,6% sobre o montante.",
+            en: "Mortgage: 0.6% Stamp Duty on the amount.",
+          },
+          {
+            pt: "Anual: IMI (taxa municipal). Em Cascais, 0,35% para 2026 (com reduções para HPP).",
+            en: "Annual: IMI (municipal tax). In Cascais, 0.35% for 2026 (with HPP reductions).",
           },
         ],
       },
       {
         heading: {
-          pt: "Obras: reserve margem (regra prática)",
-          en: "Renovations: keep a buffer (practical rule)",
+          pt: "Custos de obras típicos em Cascais (2026)",
+          en: "Typical renovation costs in Cascais (2026)",
         },
         tone: "warning",
         bullets: [
           {
-            pt: "Se o imóvel está “habitável mas antigo”: reserve uma margem para melhorias nos primeiros 12 meses.",
-            en: "If it’s livable but dated: keep a buffer for improvements in the first 12 months.",
+            pt: "Pintura T2 (total, com material): €1.500–4.000.",
+            en: "T2 painting (total, with material): €1,500–4,000.",
           },
           {
-            pt: "Se há humidade/caixilharia antiga: peça avaliação técnica antes de avançar.",
-            en: "If there’s humidity/old windows: get a technical assessment before moving forward.",
+            pt: "Janela PVC vidro duplo (standard): €200–450/unidade.",
+            en: "PVC double-glazed window (standard): €200–450/unit.",
           },
           {
-            pt: "Condomínio: confirme se há obras previstas (pode virar “surpresa”).",
-            en: "Condo: confirm planned works (surprises happen here).",
-          },
-        ],
-      },
-      {
-        heading: {
-          pt: "Mini-calculadora mental (em 30 segundos)",
-          en: "30-second mental calculator",
-        },
-        tone: "checklist",
-        bullets: [
-          { pt: "Preço do imóvel", en: "Home price" },
-          {
-            pt: "+ impostos de compra (IMT + IS 0,8%)",
-            en: "+ purchase taxes (IMT + 0.8% stamp duty)",
-          },
-          { pt: "+ custos de escritura/serviços", en: "+ closing/services" },
-          {
-            pt: "+ 12 meses de condomínio + seguros",
-            en: "+ 12 months condo + insurance",
+            pt: "AC multi-split T3 (3 unidades + instalação): €3.500–7.000.",
+            en: "T3 multi-split AC (3 units + install): €3,500–7,000.",
           },
           {
-            pt: "+ margem de obras (se aplicável)",
-            en: "+ renovation buffer (if needed)",
+            pt: "Certificado energético (T2/T3): ~€40,50 + perito.",
+            en: "Energy certificate (T2/T3): ~€40.50 + assessor.",
           },
         ],
       },
@@ -863,7 +984,10 @@ Thanks!`,
     ],
   },
 
-  // 5) Moving
+  /* =========================================================
+     5) Moving
+     Leitura: ~5 min
+  ========================================================= */
   {
     key: "moving",
     title: {
@@ -874,8 +998,8 @@ Thanks!`,
       pt: "Tarefas e serviços essenciais — do básico ao dia-a-dia.",
       en: "Essential tasks and services — from basics to daily life.",
     },
-    readTime: { pt: "4–5 min", en: "4–5 min" },
-    updatedAt: "2026-01-10",
+    readTime: { pt: "5 min", en: "5 min" },
+    updatedAt: "2026-10-02",
     chips: [
       { pt: "✅ 7 dias", en: "✅ 7 days" },
       { pt: "✅ 30 dias", en: "✅ 30 days" },
@@ -903,6 +1027,30 @@ Thanks!`,
       {
         pt: "Defina mobilidade: carro vs comboio vs caminhável.",
         en: "Decide mobility: car vs train vs walkable.",
+      },
+    ],
+    templates: [
+      {
+        title: {
+          pt: "Mensagem para marcar mudança + limpeza",
+          en: "Message to book moving + cleaning",
+        },
+        copyText: {
+          pt: `Olá! Preciso de orçamento para:
+- Mudança: de ___ para ___ em Cascais
+- Data prevista: ___
+- Volume aproximado: ___ m³ (ou fotos)
+- Serviços extra: montagem/desmontagem? embalagem?
+- Limpeza antes/depois?
+Obrigado!`,
+          en: `Hi! I need a quote for:
+- Moving: from ___ to ___ in Cascais
+- Target date: ___
+- Approximate volume: ___ m³ (or photos)
+- Extra services: assembly/disassembly? packing?
+- Cleaning before/after?
+Thanks!`,
+        },
       },
     ],
     sections: [
@@ -954,6 +1102,27 @@ Thanks!`,
       },
       {
         heading: {
+          pt: "Custos de mudança (referência 2026)",
+          en: "Moving costs (2026 reference)",
+        },
+        tone: "tip",
+        bullets: [
+          {
+            pt: "Mudança local (<80km): €120–400 (média €260).",
+            en: "Local move (<80km): €120–400 (avg €260).",
+          },
+          {
+            pt: "Mudança especializada: média €491.",
+            en: "Specialized moving: avg €491.",
+          },
+          {
+            pt: "Peça sempre 2–3 orçamentos e confirme seguros incluídos.",
+            en: "Always get 2–3 quotes and confirm included insurance.",
+          },
+        ],
+      },
+      {
+        heading: {
           pt: "Se tem filhos (atalho para decidir bem)",
           en: "If you have kids (decision shortcut)",
         },
@@ -981,17 +1150,16 @@ Thanks!`,
         label: { pt: "Encontrar ajuda local", en: "Find local help" },
       },
       {
-        kind: "getMatched",
-        label: {
-          pt: "Ajudar-me a escolher zona",
-          en: "Help me choose an area",
-        },
+        kind: "browseHomes",
+        label: { pt: "Ver imóveis", en: "Browse homes" },
       },
-      { kind: "browseHomes", label: { pt: "Ver imóveis", en: "Browse homes" } },
     ],
   },
 
-  // 6) Owners
+  /* =========================================================
+     6) Owners
+     Leitura: ~5 min + calculadora de venda
+  ========================================================= */
   {
     key: "owners",
     title: {
@@ -999,15 +1167,14 @@ Thanks!`,
       en: "Selling in Cascais: a listing that gets viewings",
     },
     subtitle: {
-      pt: "Apresentação + narrativa local (sem “anúncios iguais”).",
-      en: "Presentation + local narrative (no “same listing” vibe).",
+      pt: "Apresentação + narrativa local + calculadora de líquido.",
+      en: "Presentation + local narrative + net proceeds calculator.",
     },
-    readTime: { pt: "4–5 min", en: "4–5 min" },
-    updatedAt: "2026-01-13",
+    readTime: { pt: "5 min + calculadora", en: "5 min + calculator" },
+    updatedAt: "2026-10-02",
     chips: [
       { pt: "📸 Fotos", en: "📸 Photos" },
-      { pt: "🧠 Narrativa", en: "🧠 Story" },
-      { pt: "✅ Leads", en: "✅ Leads" },
+      { pt: "🧮 Calculadora", en: "🧮 Calculator" },
     ],
     audience: [
       {
@@ -1029,8 +1196,32 @@ Thanks!`,
         en: "Sell “life” (area/routine/services), not just walls.",
       },
       {
-        pt: "CTA simples e rápido (slots de visita + resposta rápida).",
-        en: "Keep CTAs simple (viewing slots + fast replies).",
+        pt: "Calcule o líquido antes de negociar (comissão + IVA + mais-valias).",
+        en: "Calculate net proceeds before negotiating (fee + VAT + capital gains).",
+      },
+    ],
+    templates: [
+      {
+        title: {
+          pt: "Resposta rápida a um lead interessado",
+          en: "Fast reply to an interested lead",
+        },
+        description: {
+          pt: "Norman: responder rápido = maior conversão.",
+          en: "Norman: fast replies = higher conversion.",
+        },
+        copyText: {
+          pt: `Olá! Obrigado pelo interesse. Tenho slots para visita:
+- Amanhã ___ às ___
+- Sábado ___ às ___
+Qual funciona melhor? Se preferir, posso enviar planta + áreas + condomínio já.
+Obrigado!`,
+          en: `Hi! Thanks for your interest. I have viewing slots:
+- Tomorrow ___ at ___
+- Saturday ___ at ___
+Which works best? If you prefer, I can send floorplan + areas + condo fee right away.
+Thanks!`,
+        },
       },
     ],
     sections: [
@@ -1057,25 +1248,25 @@ Thanks!`,
       },
       {
         heading: {
-          pt: "Checklist do anúncio que se destaca (sem gastar muito)",
-          en: "A standout listing checklist (without spending a lot)",
+          pt: "Checklist do anúncio que se destaca",
+          en: "A standout listing checklist",
         },
         tone: "checklist",
         bullets: [
           {
-            pt: "1) Fotos: luz natural, ângulos certos, casa arrumada (sem excessos).",
-            en: "1) Photos: natural light, correct angles, tidy home (no clutter).",
+            pt: "1) Fotos: luz natural, ângulos certos, casa arrumada.",
+            en: "1) Photos: natural light, correct angles, tidy home.",
           },
           {
             pt: "2) Título: claro e específico (tipologia + zona + diferencial real).",
             en: "2) Title: clear and specific (type + area + real differentiator).",
           },
           {
-            pt: "3) Descrição: curta, com bullets, e sem “palavras vazias”.",
+            pt: "3) Descrição: curta, com bullets, sem “palavras vazias”.",
             en: "3) Description: short, bullet-based, no empty words.",
           },
           {
-            pt: "4) Info que reduz dúvidas: áreas, condomínio, CE, estacionamento, obras feitas.",
+            pt: "4) Info que reduz dúvidas: áreas, condomínio, CE, estacionamento, obras.",
             en: "4) Info that reduces doubts: areas, condo, energy cert, parking, renovations.",
           },
           {
@@ -1086,8 +1277,29 @@ Thanks!`,
       },
       {
         heading: {
-          pt: "A estratégia AllCascais (o ‘blue ocean’ local)",
-          en: "The AllCascais strategy (your local ‘blue ocean’)",
+          pt: "Comissão de agência em Cascais (2026)",
+          en: "Agency commission in Cascais (2026)",
+        },
+        tone: "tip",
+        bullets: [
+          {
+            pt: "Padrão: 5% + IVA (23%).",
+            en: "Standard: 5% + VAT (23%).",
+          },
+          {
+            pt: "Variação na Linha de Cascais: 4–6% + IVA.",
+            en: "Range in Cascais line: 4–6% + VAT.",
+          },
+          {
+            pt: "Proprietários que tentam vender sozinhos podem perder 10–15% do valor real.",
+            en: "Owners trying to sell alone can lose 10–15% of real value.",
+          },
+        ],
+      },
+      {
+        heading: {
+          pt: "A estratégia AllCascais",
+          en: "The AllCascais strategy",
         },
         tone: "tip",
         body: {
@@ -1147,13 +1359,6 @@ Thanks!`,
       {
         kind: "browseHomes",
         label: { pt: "Ver mercado em Cascais", en: "See Cascais market" },
-      },
-      {
-        kind: "viewServices",
-        label: {
-          pt: "Serviços para preparar a casa",
-          en: "Services to prep your home",
-        },
       },
     ],
   },

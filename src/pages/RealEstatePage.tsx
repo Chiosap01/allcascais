@@ -28,6 +28,13 @@ import {
   Loader2,
   Pencil,
   Trash2,
+  BookOpen,
+  Calculator,
+  Map,
+  Coins,
+  KeyRound,
+  Wallet,
+  Truck,
 } from "lucide-react";
 
 /* ---------------------------------------------------------
@@ -132,7 +139,11 @@ type PropertyRow = {
   created_at?: string | null;
 };
 
-type GuideKey = "buying" | "renting" | "costs" | "areas";
+/**
+ * Guide keys must match the ones used in `livingGuides.ts` and the
+ * LivingGuidePage route (/living/guides/:key).
+ */
+type GuideKey = "areas" | "buying" | "renting" | "costs" | "owners" | "moving";
 
 type Overlay = "none" | "property" | "match" | "delete";
 
@@ -244,82 +255,143 @@ const isValidEmail = (value: string) =>
 
 /* ---------------------------------------------------------
    GUIDES CONTENT
+   - "tools" = calculadoras interativas (destaque visual)
+   - "guides" = guias de leitura (grid compacto)
+   Cada key tem de existir em livingGuides.ts e ter rota
+   /living/guides/:key.
 --------------------------------------------------------- */
-const GUIDES: {
+type GuideCategory = "tools" | "guides";
+
+type GuideMeta = {
   key: GuideKey;
+  category: GuideCategory;
   titlePt: string;
   titleEn: string;
   descPt: string;
   descEn: string;
-  bulletsPt: string[];
-  bulletsEn: string[];
-}[] = [
+  Icon: React.ComponentType<{ className?: string }>;
+  badgePt: string;
+  badgeEn: string;
+  bulletsPt: [string, string];
+  bulletsEn: [string, string];
+};
+
+const GUIDES: GuideMeta[] = [
+  /* ---------- Tools (calculadoras) ---------- */
+  {
+    key: "costs",
+    category: "tools",
+    titlePt: "Custos reais",
+    titleEn: "Real costs",
+    descPt: "IMT 2026, escritura e obras — calculados.",
+    descEn: "2026 IMT, closing and works — calculated.",
+    Icon: Calculator,
+    badgePt: "🧮 Calculadora",
+    badgeEn: "🧮 Calculator",
+    bulletsPt: [
+      "IMT 2026 (Continente) + Imposto do Selo já calculados.",
+      "Pense no custo total no 1º ano, não só no preço.",
+    ],
+    bulletsEn: [
+      "2026 IMT (Mainland) + Stamp Duty included.",
+      "Think total first-year cost, not only price.",
+    ],
+  },
+  {
+    key: "owners",
+    category: "tools",
+    titlePt: "Vender em Cascais",
+    titleEn: "Selling in Cascais",
+    descPt: "Líquido estimado: comissão, IVA e mais-valias.",
+    descEn: "Estimated net: agency, VAT and capital gains.",
+    Icon: Coins,
+    badgePt: "🧮 Calculadora",
+    badgeEn: "🧮 Calculator",
+    bulletsPt: [
+      "Comissão, IVA, crédito e mais-valias — estimados.",
+      "Veja o líquido que fica no bolso antes de decidir.",
+    ],
+    bulletsEn: [
+      "Agency, VAT, mortgage and capital gains — estimated.",
+      "See your net proceeds before you decide.",
+    ],
+  },
+
+  /* ---------- Guides (leitura) ---------- */
   {
     key: "areas",
+    category: "guides",
     titlePt: "Zonas de Cascais",
     titleEn: "Cascais areas",
     descPt: "Escolha a zona certa: estilo, acessos e ambiente.",
     descEn: "Pick the right area: vibe, access, and lifestyle.",
+    Icon: Map,
+    badgePt: "Mapa",
+    badgeEn: "Map",
     bulletsPt: [
-      "Pense no seu dia-a-dia: praia, escolas, commute, tranquilidade.",
-      "Visite em horários diferentes (manhã, tarde, noite).",
-      "Compare estacionamento, ruído e acessos.",
+      "Do Guincho ao Estoril: cada zona tem um ritmo diferente.",
+      "Visite em horários diferentes antes de decidir.",
     ],
     bulletsEn: [
-      "Optimize for your day-to-day: beach, schools, commute, quiet.",
-      "Visit at different times (morning, afternoon, evening).",
-      "Compare parking, noise, and access.",
+      "From Guincho to Estoril: each area has its own pace.",
+      "Visit at different times before you decide.",
     ],
   },
   {
     key: "buying",
+    category: "guides",
     titlePt: "Comprar em Cascais",
     titleEn: "Buying in Cascais",
     descPt: "O essencial: critérios, documentos e passos.",
     descEn: "The essentials: criteria, docs, and steps.",
+    Icon: KeyRound,
+    badgePt: "Guia",
+    badgeEn: "Guide",
     bulletsPt: [
-      "Defina 3 não-negociáveis (zona, tipologia, orçamento).",
-      "Peça sempre caderneta, licença de utilização, CE, e plantas.",
-      "Negocie com base em comparáveis (€/m²) e estado do imóvel.",
+      "Defina 3 não-negociáveis antes de visitar.",
+      "Peça caderneta, licença, CE e plantas.",
     ],
     bulletsEn: [
-      "Set 3 non-negotiables (area, type, budget).",
-      "Always request key docs (license, certificate, plans).",
-      "Negotiate using comparables (€/m²) and condition.",
+      "Set 3 non-negotiables before you visit.",
+      "Ask for license, usage permit, energy cert, plans.",
     ],
   },
   {
     key: "renting",
+    category: "guides",
     titlePt: "Arrendar em Cascais",
     titleEn: "Renting in Cascais",
-    descPt: "Como evitar surpresas: contratos, cauções e prazos.",
-    descEn: "Avoid surprises: contracts, deposits, and timelines.",
+    descPt: "Contratos, cauções e prazos — sem surpresas.",
+    descEn: "Contracts, deposits and timelines — no surprises.",
+    Icon: Wallet,
+    badgePt: "Guia",
+    badgeEn: "Guide",
     bulletsPt: [
       "Confirme duração do contrato e condições de renovação.",
-      "Verifique despesas incluídas (condomínio, água, internet).",
       "Faça inventário (fotos) no check-in.",
     ],
     bulletsEn: [
       "Confirm contract duration and renewal terms.",
-      "Check what's included (condo fees, water, internet).",
       "Do an inventory (photos) at check-in.",
     ],
   },
   {
-    key: "costs",
-    titlePt: "Custos reais",
-    titleEn: "Real costs",
-    descPt: "Impostos, escritura, obras e manutenção.",
-    descEn: "Taxes, closing, renovations, and upkeep.",
+    key: "moving",
+    category: "guides",
+    titlePt: "Mudar-se para Cascais",
+    titleEn: "Moving to Cascais",
+    descPt: "Checklist 7 dias + 30 dias para se instalar bem.",
+    descEn: "7-day + 30-day checklist to settle in well.",
+    Icon: Truck,
+    badgePt: "Checklist",
+    badgeEn: "Checklist",
     bulletsPt: [
-      "Reserve margem para obras/pequenas reparações.",
-      "Considere custos anuais (IMI, condomínio, manutenção).",
-      "Pense no custo total (não só no preço).",
+      "Internet, água e energia: marque logo (slots acabam).",
+      "Inventário com fotos no dia 1 e reporte problemas.",
     ],
     bulletsEn: [
-      "Keep a buffer for repairs/renovations.",
-      "Consider yearly costs (tax, condo fees, maintenance).",
-      "Optimize for total cost, not only price.",
+      "Internet, water, energy: book early (slots go fast).",
+      "Photo inventory on day 1 and report issues.",
     ],
   },
 ];
@@ -797,6 +869,102 @@ const MatchModal: React.FC<{
 };
 
 /* ---------------------------------------------------------
+   TOOL CARD — calculadoras interativas (destaque)
+--------------------------------------------------------- */
+const ToolCard: React.FC<{
+  guide: GuideMeta;
+  isPT: boolean;
+  onOpen: (key: GuideKey) => void;
+}> = ({ guide, isPT, onOpen }) => {
+  const Icon = guide.Icon;
+  const title = isPT ? guide.titlePt : guide.titleEn;
+  const desc = isPT ? guide.descPt : guide.descEn;
+  const badge = isPT ? guide.badgePt : guide.badgeEn;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(guide.key)}
+      className="group text-left rounded-3xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/60 to-white shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
+    >
+      <div className="p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+            <Icon className="w-5 h-5" />
+          </div>
+
+          <span className="inline-flex items-center rounded-full bg-white border border-emerald-200 text-[10px] font-semibold text-emerald-800 px-2.5 py-0.5">
+            {badge}
+          </span>
+        </div>
+
+        <h3 className="text-base font-semibold text-slate-900">{title}</h3>
+        <p className="mt-1.5 text-[12px] text-slate-700 leading-relaxed">
+          {desc}
+        </p>
+
+        <div className="mt-5 pt-4 border-t border-emerald-100 flex items-center justify-between">
+          <span className="text-[12px] font-semibold inline-flex items-center gap-1 text-emerald-700">
+            {isPT ? "Abrir calculadora" : "Open calculator"}
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+          </span>
+          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700/70">
+            {isPT ? "Interativo" : "Interactive"}
+          </span>
+        </div>
+      </div>
+    </button>
+  );
+};
+
+/* ---------------------------------------------------------
+   GUIDE CARD — guias de leitura (compacto)
+--------------------------------------------------------- */
+const GuideCard: React.FC<{
+  guide: GuideMeta;
+  isPT: boolean;
+  onOpen: (key: GuideKey) => void;
+}> = ({ guide, isPT, onOpen }) => {
+  const Icon = guide.Icon;
+  const title = isPT ? guide.titlePt : guide.titleEn;
+  const desc = isPT ? guide.descPt : guide.descEn;
+  const badge = isPT ? guide.badgePt : guide.badgeEn;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(guide.key)}
+      className="group text-left rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1F1F3D]/30"
+    >
+      <div className="p-4 sm:p-5">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center shrink-0 text-[#1F1F3D]">
+            <Icon className="w-4 h-4" />
+          </div>
+
+          <span className="inline-flex items-center rounded-full bg-slate-50 border border-slate-200 text-[10px] font-semibold text-slate-700 px-2 py-0.5">
+            {badge}
+          </span>
+        </div>
+
+        <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+        <p className="mt-1 text-[12px] text-slate-600 leading-relaxed">
+          {desc}
+        </p>
+
+        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+          <span className="text-[12px] font-semibold inline-flex items-center gap-1 text-[#1F1F3D]">
+            {isPT ? "Ler guia" : "Read guide"}
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+          </span>
+          <BookOpen className="w-3.5 h-3.5 text-slate-300 group-hover:text-[#1F1F3D] transition-colors" />
+        </div>
+      </div>
+    </button>
+  );
+};
+
+/* ---------------------------------------------------------
    MAIN COMPONENT
 --------------------------------------------------------- */
 const RealEstatePage: React.FC = () => {
@@ -811,7 +979,6 @@ const RealEstatePage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [buyRent, setBuyRent] = useState<BuyRent>("all");
 
-  /* Aplica ?buyRent= da URL — reage a mudanças de URL */
   useEffect(() => {
     const buyRentParam = searchParams.get("buyRent");
     if (buyRentParam === "buy" || buyRentParam === "rent") {
@@ -860,7 +1027,7 @@ const RealEstatePage: React.FC = () => {
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  /* ---------- TOAST (confirmação após remover) ---------- */
+  /* ---------- TOAST ---------- */
   const [toast, setToast] = useState<{
     text: string;
     tone: "success" | "error";
@@ -871,10 +1038,7 @@ const RealEstatePage: React.FC = () => {
     setTimeout(() => setToast(null), 3200);
   };
 
-  /* ---------- GUIDES ---------- */
-  const [openGuide, setOpenGuide] = useState<GuideKey | null>(null);
-
-  /* ---------- SCROLL LOCK (único) ---------- */
+  /* ---------- SCROLL LOCK ---------- */
   useEffect(() => {
     document.body.style.overflow = overlay !== "none" ? "hidden" : "";
     return () => {
@@ -1158,6 +1322,11 @@ const RealEstatePage: React.FC = () => {
   const locationLabel = (p: Property) =>
     p.neighborhood ? `${p.location} · ${p.neighborhood}` : p.location;
 
+  /* ---------- GUIDE NAV ---------- */
+  const handleOpenGuide = (guideKey: GuideKey) => {
+    navigate(`/living/guides/${guideKey}`);
+  };
+
   /* ---------- MODAL HANDLERS ---------- */
   const openPropertyModal = (property: Property) => {
     lastFocusedElRef.current = document.activeElement as HTMLElement | null;
@@ -1217,13 +1386,11 @@ const RealEstatePage: React.FC = () => {
     navigate(`/properties/${id}/edit`);
   };
 
-  /* Editar diretamente do cartão — sem abrir o modal */
   const handleEditFromCard = (property: Property) => {
     if (!user) return;
     navigate(`/properties/${property.id}/edit`);
   };
 
-  /* Remover diretamente do cartão — abre o modal de confirmação */
   const handleDeleteFromCard = (property: Property) => {
     if (!user) return;
     setSelectedProperty(property);
@@ -1241,8 +1408,6 @@ const RealEstatePage: React.FC = () => {
   const closeDeleteListingModal = () => {
     if (deleteBusy) return;
     setDeleteError(null);
-    /* Se o modal de propriedade não estava aberto antes (veio do cartão),
-       volta a "none"; se estava, volta para "property". */
     setOverlay(
       selectedProperty && user && selectedProperty.ownerId === user.id
         ? "property"
@@ -1423,8 +1588,8 @@ const RealEstatePage: React.FC = () => {
 
                   <p className="mt-3 text-sm sm:text-base text-white/85 max-w-2xl">
                     {isPT
-                      ? "Casas, zonas e serviços úteis para o dia-a-dia sem intermediários."
-                      : "Homes, areas, and services that make moving easier — no middlemen."}
+                      ? "Do Guincho a Carcavelos, do centro ao Estoril. Imóveis locais, sem comissões."
+                      : "From Guincho to Carcavelos, from the centre to Estoril. Local homes, no commissions."}
                   </p>
 
                   <div className="mt-5 flex flex-col sm:flex-row gap-2">
@@ -1455,23 +1620,6 @@ const RealEstatePage: React.FC = () => {
                         : "Scroll to browse homes"}
                     </span>
                   </div>
-                </div>
-
-                {/* Trust strip — agora também visível em mobile */}
-                <div className="flex flex-wrap lg:flex-col gap-2 shrink-0">
-                  {[
-                    isPT ? "Contacto direto" : "Direct contact",
-                    isPT ? "Sem intermediários" : "No middlemen",
-                    isPT ? "PT / EN" : "EN / PT",
-                  ].map((label) => (
-                    <div
-                      key={label}
-                      className="flex items-center gap-2 text-[11px] sm:text-xs font-medium text-white/90 bg-white/10 backdrop-blur border border-white/15 rounded-full px-3 py-1.5"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
-                      <span>{label}</span>
-                    </div>
-                  ))}
                 </div>
               </div>
             </div>
@@ -1923,7 +2071,6 @@ const RealEstatePage: React.FC = () => {
                   }
                   className="group cursor-pointer bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg transition-shadow duration-200 relative"
                 >
-                  {/* Owner action buttons — top-right over the image */}
                   {isPropertyOwner && (
                     <div className="absolute top-2 right-2 z-10 flex gap-1.5">
                       <button
@@ -2065,91 +2212,70 @@ const RealEstatePage: React.FC = () => {
         </section>
 
         {/* =========================================================
-            GUIDES
+            DECISION TOOLS + GUIDES
+            Weinschenk: hierarquia por função
+            Krug: 6 itens visíveis sem "ver todos"
+            Miller: título promete valor
         ========================================================== */}
-        <section className="pb-8">
-          <div className="mb-4">
-            <h2 className="text-sm sm:text-base font-semibold text-slate-900">
-              {isPT ? "Guias rápidos" : "Quick guides"}
-            </h2>
-            <p className="mt-0.5 text-[11px] sm:text-xs text-slate-600">
+        <section className="pb-10 pt-2">
+          {/* Section header */}
+          <div className="max-w-2xl mb-6">
+            <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#1F1F3D] mb-2">
+              <Sparkles className="w-3.5 h-3.5" />
+              {isPT ? "Viver em Cascais" : "Living in Cascais"}
+            </div>
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-900">
               {isPT
-                ? "Conteúdo curto e útil — pensado para Cascais."
-                : "Short, practical content — tailored for Cascais."}
+                ? "Antes de decidir, vê isto."
+                : "Before you decide, see this."}
+            </h2>
+            <p className="mt-1.5 text-xs sm:text-sm text-slate-600">
+              {isPT
+                ? "Ferramentas e guias com contexto local — impostos, zonas, prazos e mais."
+                : "Tools and guides with local context — taxes, areas, timelines and more."}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {GUIDES.map((g) => {
-              const isOpen = openGuide === g.key;
-              const title = isPT ? g.titlePt : g.titleEn;
-              const desc = isPT ? g.descPt : g.descEn;
-              const bullets = isPT ? g.bulletsPt : g.bulletsEn;
+          {/* Tools (calculadoras) — destaque */}
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">
+                🧮 {isPT ? "Ferramentas" : "Tools"}
+              </div>
+              <div className="h-px flex-1 bg-emerald-200/60" />
+            </div>
 
-              return (
-                <div
-                  key={g.key}
-                  className="rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setOpenGuide(isOpen ? null : g.key)}
-                    className="w-full text-left p-5 hover:bg-slate-50 transition"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="text-sm font-semibold text-slate-900">
-                          {title}
-                        </div>
-                        <div className="mt-1 text-[11px] sm:text-xs text-slate-600">
-                          {desc}
-                        </div>
-                      </div>
-                      <div className="shrink-0 w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-                        {isOpen ? (
-                          <ChevronUp className="w-3.5 h-3.5" />
-                        ) : (
-                          <ChevronDown className="w-3.5 h-3.5" />
-                        )}
-                      </div>
-                    </div>
-                  </button>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {GUIDES.filter((g) => g.category === "tools").map((guide) => (
+                <ToolCard
+                  key={guide.key}
+                  guide={guide}
+                  isPT={isPT}
+                  onOpen={handleOpenGuide}
+                />
+              ))}
+            </div>
+          </div>
 
-                  {isOpen && (
-                    <div className="px-5 pb-5">
-                      <div className="rounded-2xl bg-slate-50 border border-slate-100 p-4">
-                        <ul className="list-disc pl-5 text-[11px] sm:text-xs text-slate-700 space-y-2">
-                          {bullets.map((b) => (
-                            <li key={b}>{b}</li>
-                          ))}
-                        </ul>
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openMatch("buyer")}
-                            className="inline-flex items-center gap-1.5 rounded-full text-white text-xs font-semibold px-4 py-2 shadow-sm transition hover:opacity-90"
-                            style={{ backgroundColor: SUCCESS }}
-                          >
-                            <Sparkles className="w-3.5 h-3.5" />
-                            {isPT ? "Pedir ajuda" : "Get help"}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setOpenGuide(null);
-                              scrollToFilters();
-                            }}
-                            className="inline-flex items-center gap-1.5 rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 hover:bg-slate-50 transition"
-                          >
-                            {isPT ? "Voltar aos imóveis" : "Back to homes"}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+          {/* Guides (leitura) — grid compacto */}
+          <div>
+            <div className="flex items-center gap-3 mb-3">
+              <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600">
+                📖 {isPT ? "Guias" : "Guides"}
+              </div>
+              <div className="h-px flex-1 bg-slate-200" />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {GUIDES.filter((g) => g.category === "guides").map((guide) => (
+                <GuideCard
+                  key={guide.key}
+                  guide={guide}
+                  isPT={isPT}
+                  onOpen={handleOpenGuide}
+                />
+              ))}
+            </div>
           </div>
         </section>
       </div>
@@ -2632,7 +2758,7 @@ const RealEstatePage: React.FC = () => {
       />
 
       {/* =========================================================
-          TOAST (confirmação de ação)
+          TOAST
       ========================================================== */}
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] pointer-events-none px-4">

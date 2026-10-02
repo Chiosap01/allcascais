@@ -4,43 +4,41 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useLanguage } from "../layouts/MainLayout";
 import { getLivingGuide, LIVING_GUIDES } from "../content/livingGuides";
 import { supabase } from "../supabase";
+import { RotateCcw, Mail, Check, ArrowRight } from "lucide-react";
 
-/**
- * NOTE:
- * Your LivingGuide type (in livingGuides.ts) currently does NOT include optional fields like:
- * - updatedAt, sharePost, templates, faqs, tone
- * This page supports them safely by casting guide to an extended type with optional extras.
- */
-
+/* =========================================================
+   TYPES
+========================================================= */
 type Localized = { pt: string; en: string };
 
 type GuideTone = "default" | "tip" | "warning" | "checklist";
 
 type LivingGuideExtras = {
-  updatedAt?: string; // ISO date string
+  audience?: Localized[];
+  takeaways?: Localized[];
+  updatedAt?: string;
   sharePost?: Localized;
   templates?: Array<{
     title: Localized;
     description?: Localized;
     copyText: Localized;
   }>;
-  faqs?: Array<{
-    q: Localized;
-    a: Localized;
-  }>;
-  // allow tone at section-level
-  sections?: Array<{
-    tone?: GuideTone;
-  }>;
+  faqs?: Array<{ q: Localized; a: Localized }>;
+  sections?: Array<{ tone?: GuideTone }>;
 };
 
 type MatchType = "buyer" | "owner";
 type PurchaseUse = "hpp" | "hab";
 type YesNo = "yes" | "no";
 
-// ----------------------------
-// Helpers
-// ----------------------------
+type CalcSummary = {
+  title: string;
+  rows: Array<{ label: string; value: string }>;
+};
+
+/* =========================================================
+   HELPERS
+========================================================= */
 const eur = (n: number, isPT: boolean) =>
   "€" + Math.round(n).toLocaleString(isPT ? "pt-PT" : "en-US");
 
@@ -54,12 +52,25 @@ const toNumber = (v: string) => {
 
 const pct = (n: number) => (n * 100).toFixed(2).replace(/\.00$/, "") + "%";
 
-// ----------------------------
-// Premium UI helpers (glass + noise + buttons)
-// ----------------------------
 const cls = (...a: Array<string | undefined | false | null>) =>
   a.filter(Boolean).join(" ");
 
+/* Próximo guia recomendado — cria uma jornada lógica (Weinschenk) */
+const NEXT_GUIDE_MAP: Record<string, string> = {
+  areas: "costs",
+  buying: "costs",
+  renting: "moving",
+  costs: "buying",
+  moving: "areas",
+  owners: "costs",
+};
+
+/* Ícones das takeaways — dual coding (Weinschenk) */
+const TAKEAWAY_ICONS = ["🎯", "🔍", "✅"];
+
+/* =========================================================
+   UI PRIMITIVES
+========================================================= */
 const GlassSurface = ({
   children,
   className,
@@ -75,15 +86,6 @@ const GlassSurface = ({
       className
     )}
   >
-    {/* Soft noise texture */}
-    <div
-      className="pointer-events-none absolute inset-0 rounded-3xl opacity-[0.10]"
-      style={{
-        backgroundImage:
-          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.25'/%3E%3C/svg%3E\")",
-      }}
-    />
-    {/* Gradient sheen */}
     <div className="pointer-events-none absolute inset-0 rounded-3xl bg-linear-to-b from-white/30 to-transparent" />
     <div className="relative">{children}</div>
   </div>
@@ -92,7 +94,7 @@ const GlassSurface = ({
 const ButtonBase =
   "inline-flex items-center justify-center rounded-full font-semibold transition " +
   "focus:outline-none focus:ring-2 focus:ring-cyan-400/80 focus:ring-offset-2 focus:ring-offset-white/40 " +
-  "active:translate-y-[1px] active:scale-[0.99]";
+  "active:translate-y-[1px] active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed";
 
 const PrimaryBtn = ({
   children,
@@ -163,25 +165,41 @@ const Pill = ({ children }: { children: React.ReactNode }) => (
   </span>
 );
 
+/* ---------- TONE SYSTEM ---------- */
 function toneStyles(tone?: GuideTone) {
   if (tone === "warning")
-    return "border-amber-200/70 bg-amber-50/88 backdrop-blur-md shadow-[0_10px_32px_-20px_rgba(2,6,23,0.50)] ring-1 ring-slate-900/5";
+    return "border-amber-300/80 bg-amber-50/92 backdrop-blur-md shadow-[0_10px_32px_-20px_rgba(2,6,23,0.50)] ring-1 ring-amber-200/60";
   if (tone === "tip")
-    return "border-emerald-200/70 bg-emerald-50/88 backdrop-blur-md shadow-[0_10px_32px_-20px_rgba(2,6,23,0.50)] ring-1 ring-slate-900/5";
+    return "border-emerald-300/80 bg-emerald-50/92 backdrop-blur-md shadow-[0_10px_32px_-20px_rgba(2,6,23,0.50)] ring-1 ring-emerald-200/60";
   if (tone === "checklist")
-    return "border-sky-200/70 bg-slate-50/88 backdrop-blur-md shadow-[0_10px_32px_-20px_rgba(2,6,23,0.50)] ring-1 ring-slate-900/5";
+    return "border-sky-300/80 bg-sky-50/92 backdrop-blur-md shadow-[0_10px_32px_-20px_rgba(2,6,23,0.50)] ring-1 ring-sky-200/60";
   return "border-white/35 bg-white/86 backdrop-blur-md shadow-[0_10px_32px_-20px_rgba(2,6,23,0.50)] ring-1 ring-slate-900/5";
 }
 
-// ----------------------------
-// IMT / taxes
-// ----------------------------
+/* Hierarquia visual por tom (Weinschenk) */
+function tonePadding(tone?: GuideTone) {
+  if (tone === "checklist" || tone === "warning") return "p-6 sm:p-8";
+  return "p-5 sm:p-6";
+}
 
-/**
- * IMT 2026 (Continente) – Cascais = Continente.
- * Uses marginal rates + "parcela a abater" for bracketed ranges,
- * and unique rates for upper ranges.
- */
+function toneIcon(tone?: GuideTone): string | null {
+  if (tone === "warning") return "⚠️";
+  if (tone === "tip") return "💡";
+  if (tone === "checklist") return "✅";
+  return null;
+}
+
+function toneLabel(tone: GuideTone | undefined, isPT: boolean): string | null {
+  if (!tone || tone === "default") return null;
+  if (tone === "warning") return isPT ? "Atenção" : "Attention";
+  if (tone === "tip") return isPT ? "Dica" : "Tip";
+  if (tone === "checklist") return isPT ? "Checklist" : "Checklist";
+  return null;
+}
+
+/* =========================================================
+   TAX CALCULATORS
+========================================================= */
 function calcIMT_2026_continente(
   price: number,
   use: PurchaseUse,
@@ -189,7 +207,6 @@ function calcIMT_2026_continente(
 ) {
   const p = clamp0(price);
 
-  // Continente – HPP
   const tableHPP = [
     { upTo: 106_346, rate: 0.0, abate: 0 },
     { upTo: 145_470, rate: 0.02, abate: 2_126.92 },
@@ -198,13 +215,11 @@ function calcIMT_2026_continente(
     { upTo: 660_982, rate: 0.08, abate: 13_763.35 },
   ] as const;
 
-  // Continente – HPP (Jovens <= 35)
   const tableHPPYoung = [
     { upTo: 330_539, rate: 0.0, abate: 0 },
     { upTo: 660_982, rate: 0.08, abate: 26_443.12 },
   ] as const;
 
-  // Continente – Habitação (não HPP)
   const tableHab = [
     { upTo: 106_346, rate: 0.01, abate: 0 },
     { upTo: 145_470, rate: 0.02, abate: 1_063.46 },
@@ -216,9 +231,6 @@ function calcIMT_2026_continente(
   const bracketCalc = (rate: number, abate: number) =>
     Math.max(0, p * rate - abate);
 
-  // Unique-rate zones:
-  // > 660_982 and <= 1_150_853: 6%
-  // > 1_150_853: 7.5%
   const unique6Upper = 1_150_853;
 
   if (use === "hpp") {
@@ -248,12 +260,6 @@ function calcStampDutyPurchase(price: number) {
   return clamp0(price) * 0.008;
 }
 
-/**
- * Stamp duty on mortgage:
- * - < 1 year: 0.04% per month (or fraction)
- * - 1 to <5 years: 0.5%
- * - >=5 years: 0.6%
- */
 function calcStampDutyMortgage(loanAmount: number, termYears: number) {
   const loan = clamp0(loanAmount);
   const y = clamp0(termYears);
@@ -267,9 +273,9 @@ function calcStampDutyMortgage(loanAmount: number, termYears: number) {
   return loan * 0.006;
 }
 
-// ----------------------------
-// Inputs
-// ----------------------------
+/* =========================================================
+   INPUTS
+========================================================= */
 const NumField = ({
   label,
   value,
@@ -325,43 +331,165 @@ const ToggleChip = ({
   </button>
 );
 
-// ----------------------------
-// Calculators
-// ----------------------------
-function RealCostsCalculator({ isPT }: { isPT: boolean }) {
-  const [priceStr, setPriceStr] = useState("650000");
-  const [use, setUse] = useState<PurchaseUse>("hpp");
-  const [youngU35, setYoungU35] = useState<YesNo>("no");
+/* =========================================================
+   EMAIL CAPTURE
+========================================================= */
+const EmailCaptureInline: React.FC<{
+  isPT: boolean;
+  summary: CalcSummary;
+  onCancel: () => void;
+  onSent: () => void;
+}> = ({ isPT, summary, onCancel, onSent }) => {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const [loanStr, setLoanStr] = useState("0");
-  const [termStr, setTermStr] = useState("30");
+  const handleSend = async () => {
+    setErrorMsg(null);
 
-  // editable typical fees
-  const [notaryFeesStr, setNotaryFeesStr] = useState("1200");
-  const [registryFeesStr, setRegistryFeesStr] = useState("450");
-  const [lawyerFeesStr, setLawyerFeesStr] = useState("800");
-  const [bankFeesStr, setBankFeesStr] = useState("600");
+    const trimmed = email.trim();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setErrorMsg(
+        isPT ? "Introduza um email válido." : "Please enter a valid email."
+      );
+      return;
+    }
 
-  // optional IMI estimate (needs VPT)
-  const [vptStr, setVptStr] = useState("");
-  const cascaisIMIRate = 0.0035; // 0.35%
-  const cascaisHPPDiscount = 0.15; // 15% discount for HPP
+    setStatus("sending");
+
+    try {
+      const { error } = await supabase.from("leads").insert({
+        source: "living-guides",
+        page_url: window.location.href,
+        language: isPT ? "pt" : "en",
+        name: "",
+        email: trimmed,
+        phone: null,
+        notes: summary.title,
+        meta: {
+          kind: "calculator",
+          title: summary.title,
+          rows: summary.rows,
+        },
+      });
+
+      if (error) throw error;
+
+      onSent();
+    } catch (err) {
+      console.error(err);
+      setStatus("error");
+      setErrorMsg(
+        isPT
+          ? "Não conseguimos registar. Tente novamente."
+          : "We couldn't save it. Please try again."
+      );
+    }
+  };
+
+  return (
+    <div className="mt-3 rounded-2xl border border-emerald-200/70 bg-emerald-50/70 backdrop-blur-md p-3 shadow-sm">
+      <div className="text-[11px] font-semibold text-slate-800 mb-2">
+        {isPT
+          ? "Para onde enviamos este cálculo?"
+          : "Where should we send this calculation?"}
+      </div>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="email@exemplo.com"
+          autoComplete="email"
+          className="flex-1 rounded-xl border border-white/60 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/60 shadow-sm"
+          disabled={status === "sending"}
+        />
+        <div className="flex gap-2">
+          <GhostBtn
+            type="button"
+            onClick={onCancel}
+            disabled={status === "sending"}
+          >
+            {isPT ? "Cancelar" : "Cancel"}
+          </GhostBtn>
+          <SuccessBtn
+            type="button"
+            onClick={handleSend}
+            disabled={status === "sending"}
+          >
+            {status === "sending"
+              ? isPT
+                ? "A enviar..."
+                : "Sending..."
+              : isPT
+              ? "Enviar"
+              : "Send"}
+          </SuccessBtn>
+        </div>
+      </div>
+      {errorMsg ? (
+        <div className="mt-2 text-[11px] text-red-700 font-semibold">
+          {errorMsg}
+        </div>
+      ) : null}
+      <div className="mt-2 text-[10px] text-slate-600">
+        {isPT
+          ? "Usamos apenas para lhe enviar o cálculo. Sem spam."
+          : "We'll only use it to send you the calculation. No spam."}
+      </div>
+    </div>
+  );
+};
+
+/* =========================================================
+   CALCULATOR: REAL COSTS (BUYING)
+========================================================= */
+const RealCostsCalculator: React.FC<{ isPT: boolean }> = ({ isPT }) => {
+  const DEFAULTS = {
+    priceStr: "650000",
+    use: "hpp" as PurchaseUse,
+    youngU35: "no" as YesNo,
+    loanStr: "0",
+    termStr: "30",
+    notaryFeesStr: "1200",
+    registryFeesStr: "450",
+    lawyerFeesStr: "800",
+    bankFeesStr: "600",
+    vptStr: "",
+  };
+
+  const [priceStr, setPriceStr] = useState(DEFAULTS.priceStr);
+  const [use, setUse] = useState<PurchaseUse>(DEFAULTS.use);
+  const [youngU35, setYoungU35] = useState<YesNo>(DEFAULTS.youngU35);
+  const [loanStr, setLoanStr] = useState(DEFAULTS.loanStr);
+  const [termStr, setTermStr] = useState(DEFAULTS.termStr);
+  const [notaryFeesStr, setNotaryFeesStr] = useState(DEFAULTS.notaryFeesStr);
+  const [registryFeesStr, setRegistryFeesStr] = useState(
+    DEFAULTS.registryFeesStr
+  );
+  const [lawyerFeesStr, setLawyerFeesStr] = useState(DEFAULTS.lawyerFeesStr);
+  const [bankFeesStr, setBankFeesStr] = useState(DEFAULTS.bankFeesStr);
+  const [vptStr, setVptStr] = useState(DEFAULTS.vptStr);
+
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [sentSummary, setSentSummary] = useState<CalcSummary | null>(null);
+  const [sent, setSent] = useState(false);
+
+  const cascaisIMIRate = 0.0035;
+  const cascaisHPPDiscount = 0.15;
 
   const price = toNumber(priceStr);
   const loan = toNumber(loanStr);
   const termYears = toNumber(termStr);
-
   const notaryFees = toNumber(notaryFeesStr);
   const registryFees = toNumber(registryFeesStr);
   const lawyerFees = toNumber(lawyerFeesStr);
   const bankFees = toNumber(bankFeesStr);
-
   const vpt = toNumber(vptStr);
 
   const imt = calcIMT_2026_continente(price, use, youngU35 === "yes");
   const stampPurchase = calcStampDutyPurchase(price);
   const stampMortgage = calcStampDutyMortgage(loan, termYears);
-
   const imiBase = vpt > 0 ? vpt * cascaisIMIRate : 0;
   const imi =
     vpt > 0
@@ -380,17 +508,84 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
     lawyerFees +
     bankFees;
 
+  const resetAll = () => {
+    setPriceStr(DEFAULTS.priceStr);
+    setUse(DEFAULTS.use);
+    setYoungU35(DEFAULTS.youngU35);
+    setLoanStr(DEFAULTS.loanStr);
+    setTermStr(DEFAULTS.termStr);
+    setNotaryFeesStr(DEFAULTS.notaryFeesStr);
+    setRegistryFeesStr(DEFAULTS.registryFeesStr);
+    setLawyerFeesStr(DEFAULTS.lawyerFeesStr);
+    setBankFeesStr(DEFAULTS.bankFeesStr);
+    setVptStr(DEFAULTS.vptStr);
+  };
+
+  const buildSummary = (): CalcSummary => ({
+    title: isPT
+      ? "Cálculo: custo total de compra"
+      : "Calculation: total cost of purchase",
+    rows: [
+      { label: isPT ? "Preço" : "Price", value: eur(price, isPT) },
+      { label: "IMT", value: eur(imt, isPT) },
+      {
+        label: isPT ? "Imposto do Selo (0,8%)" : "Stamp Duty (0.8%)",
+        value: eur(stampPurchase, isPT),
+      },
+      {
+        label: isPT ? "IS sobre crédito" : "Mortgage stamp duty",
+        value: eur(stampMortgage, isPT),
+      },
+      {
+        label: isPT ? "Escritura/serviços" : "Notary/closing services",
+        value: eur(notaryFees, isPT),
+      },
+      { label: isPT ? "Registos" : "Registry", value: eur(registryFees, isPT) },
+      {
+        label: isPT ? "Solicitador/advogado" : "Solicitor/lawyer",
+        value: eur(lawyerFees, isPT),
+      },
+      {
+        label: isPT ? "Banco/comissões" : "Bank/fees",
+        value: eur(bankFees, isPT),
+      },
+      ...(vpt > 0
+        ? [
+            {
+              label: isPT ? "IMI estimado/ano" : "Estimated IMI/year",
+              value: eur(imi, isPT),
+            },
+          ]
+        : []),
+      {
+        label: isPT ? "Total estimado (1x)" : "Estimated total (one-off)",
+        value: eur(totalOneOff, isPT),
+      },
+    ],
+  });
+
   return (
-    <GlassSurface className="mt-4 overflow-hidden">
-      <div className="px-4 sm:px-5 py-3 border-b border-white/25 bg-white/40 backdrop-blur-md">
-        <div className="text-[11px] font-semibold text-slate-900 uppercase tracking-[0.14em]">
-          {isPT ? "Calculadora de custo total (2026)" : "Total-cost (2026)"}
+    <GlassSurface className="overflow-hidden">
+      <div className="px-4 sm:px-5 py-3 border-b border-white/25 bg-white/40 backdrop-blur-md flex items-start justify-between gap-3">
+        <div>
+          <div className="text-[11px] font-semibold text-slate-900 uppercase tracking-[0.14em]">
+            {isPT ? "Calculadora de custo total (2026)" : "Total-cost (2026)"}
+          </div>
+          <div className="mt-1 text-xs text-slate-700 max-w-lg">
+            {isPT
+              ? "Estimativa educativa com IMT 2026 (Continente), IS 0,8% e IS crédito."
+              : "Educational estimate with 2026 IMT (Mainland), 0.8% stamp duty and mortgage stamp duty."}
+          </div>
         </div>
-        <div className="mt-1 text-xs text-slate-700">
-          {isPT
-            ? "Estimativa educativa com IMT 2026 (Continente), IS 0,8% e IS crédito. Confirme valores finais com solicitador/advogado."
-            : "Educational estimate with 2026 IMT (Mainland), 0.8% stamp duty and mortgage stamp duty. Confirm final values with a solicitor/lawyer."}
-        </div>
+        <button
+          type="button"
+          onClick={resetAll}
+          className="shrink-0 inline-flex items-center gap-1 rounded-full border border-white/45 bg-white/60 px-2.5 py-1 text-[10px] font-semibold text-slate-700 hover:bg-white/85 transition"
+          title={isPT ? "Repor valores" : "Reset"}
+        >
+          <RotateCcw className="w-3 h-3" />
+          {isPT ? "Repor" : "Reset"}
+        </button>
       </div>
 
       <div className="p-4 sm:p-5">
@@ -432,13 +627,6 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
               onChange={(e) => setYoungU35(e.target.value as YesNo)}
               className="rounded-xl border border-white/45 bg-white/70 backdrop-blur-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-400/80 shadow-sm"
               disabled={use !== "hpp"}
-              title={
-                use !== "hpp"
-                  ? isPT
-                    ? "Só se aplica a HPP"
-                    : "Only applies to primary home"
-                  : undefined
-              }
             >
               <option value="no">{isPT ? "Não" : "No"}</option>
               <option value="yes">{isPT ? "Sim" : "Yes"}</option>
@@ -554,21 +742,12 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
                   {eur(price, isPT)}
                 </td>
               </tr>
-
               <tr className="border-t border-white/25">
-                <td className="py-2 text-slate-800">
-                  IMT
-                  <div className="text-[11px] text-slate-700 mt-0.5">
-                    {isPT
-                      ? "Tabela 2026 (Continente)"
-                      : "2026 table (Mainland)"}
-                  </div>
-                </td>
+                <td className="py-2 text-slate-800">IMT</td>
                 <td className="py-2 text-right text-slate-900">
                   {eur(imt, isPT)}
                 </td>
               </tr>
-
               <tr className="border-t border-white/25">
                 <td className="py-2 text-slate-800">
                   {isPT ? "Imposto do Selo (0,8%)" : "Stamp Duty (0.8%)"}
@@ -577,25 +756,14 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
                   {eur(stampPurchase, isPT)}
                 </td>
               </tr>
-
               <tr className="border-t border-white/25">
                 <td className="py-2 text-slate-800">
                   {isPT ? "IS sobre crédito" : "Mortgage stamp duty"}
-                  <div className="text-[11px] text-slate-700 mt-0.5">
-                    {loan > 0
-                      ? `${eur(loan, isPT)} · ${termYears || 0} ${
-                          isPT ? "anos" : "yrs"
-                        }`
-                      : isPT
-                      ? "Sem crédito"
-                      : "No mortgage"}
-                  </div>
                 </td>
                 <td className="py-2 text-right text-slate-900">
                   {eur(stampMortgage, isPT)}
                 </td>
               </tr>
-
               <tr className="border-t border-white/25">
                 <td className="py-2 text-slate-800">
                   {isPT ? "Escritura/serviços" : "Notary/closing services"}
@@ -604,7 +772,6 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
                   {eur(notaryFees, isPT)}
                 </td>
               </tr>
-
               <tr className="border-t border-white/25">
                 <td className="py-2 text-slate-800">
                   {isPT ? "Registos" : "Registry"}
@@ -613,7 +780,6 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
                   {eur(registryFees, isPT)}
                 </td>
               </tr>
-
               <tr className="border-t border-white/25">
                 <td className="py-2 text-slate-800">
                   {isPT ? "Solicitador/advogado" : "Solicitor/lawyer"}
@@ -622,26 +788,17 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
                   {eur(lawyerFees, isPT)}
                 </td>
               </tr>
-
               <tr className="border-t border-white/25">
                 <td className="py-2 text-slate-800">
-                  {isPT ? "Banco/avaliação/comissões" : "Bank/appraisal/fees"}
+                  {isPT ? "Banco/comissões" : "Bank/fees"}
                 </td>
                 <td className="py-2 text-right text-slate-900">
                   {eur(bankFees, isPT)}
                 </td>
               </tr>
-
               <tr className="border-t border-white/25">
                 <td className="py-2 text-slate-900 font-semibold">
-                  {isPT
-                    ? "Total estimado (1x, compra)"
-                    : "Estimated total (one-off, purchase)"}
-                  <div className="text-[11px] text-slate-700 mt-0.5">
-                    {isPT
-                      ? "Não inclui IMI/ano (opcional acima)."
-                      : "Excludes annual IMI (optional above)."}
-                  </div>
+                  {isPT ? "Total estimado (1x)" : "Estimated total (one-off)"}
                 </td>
                 <td className="py-2 text-right text-slate-900 font-semibold">
                   {eur(totalOneOff, isPT)}
@@ -653,27 +810,93 @@ function RealCostsCalculator({ isPT }: { isPT: boolean }) {
 
         <div className="mt-3 text-[11px] text-slate-700">
           {isPT
-            ? "Nota: IMT/IS pagos antes da escritura. Valores finais dependem de VPT, regras em vigor e custos de entidades."
-            : "Note: IMT/stamp duty are paid before closing. Final amounts depend on VPT, current rules and service costs."}
+            ? "Nota: valores finais dependem de VPT, regras em vigor e custos de entidades."
+            : "Note: final amounts depend on VPT, current rules and service costs."}
         </div>
+
+        {!sent ? (
+          <>
+            {!emailOpen ? (
+              <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                <div className="text-[11px] text-slate-700">
+                  {isPT
+                    ? "Quer guardar este cálculo?"
+                    : "Want to save this calculation?"}
+                </div>
+                <SuccessBtn
+                  type="button"
+                  onClick={() => {
+                    setSentSummary(buildSummary());
+                    setEmailOpen(true);
+                  }}
+                  className="shrink-0"
+                >
+                  <Mail className="w-3.5 h-3.5 mr-1" />
+                  {isPT ? "Enviar-me por email" : "Email me this"}
+                </SuccessBtn>
+              </div>
+            ) : sentSummary ? (
+              <EmailCaptureInline
+                isPT={isPT}
+                summary={sentSummary}
+                onCancel={() => setEmailOpen(false)}
+                onSent={() => {
+                  setSent(true);
+                  setEmailOpen(false);
+                }}
+              />
+            ) : null}
+          </>
+        ) : (
+          <div className="mt-4 flex items-center gap-2 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+            <Check className="w-4 h-4" />
+            {isPT
+              ? "Enviámos o cálculo para o seu email."
+              : "We've sent the calculation to your email."}
+          </div>
+        )}
       </div>
     </GlassSurface>
   );
-}
+};
 
-function SellingCalculator({ isPT }: { isPT: boolean }) {
-  const [salePriceStr, setSalePriceStr] = useState("750000");
-  const [agencyPctStr, setAgencyPctStr] = useState("5");
-  const [includeVAT, setIncludeVAT] = useState<YesNo>("yes");
+/* =========================================================
+   CALCULATOR: SELLING
+========================================================= */
+const SellingCalculator: React.FC<{ isPT: boolean }> = ({ isPT }) => {
+  const DEFAULTS = {
+    salePriceStr: "750000",
+    agencyPctStr: "5",
+    includeVAT: "yes" as YesNo,
+    mortgageLeftStr: "0",
+    otherCostsStr: "800",
+    wantCG: "no" as YesNo,
+    purchasePriceStr: "550000",
+    improvementsStr: "0",
+    taxRateStr: "28",
+  };
+
+  const [salePriceStr, setSalePriceStr] = useState(DEFAULTS.salePriceStr);
+  const [agencyPctStr, setAgencyPctStr] = useState(DEFAULTS.agencyPctStr);
+  const [includeVAT, setIncludeVAT] = useState<YesNo>(DEFAULTS.includeVAT);
+  const [mortgageLeftStr, setMortgageLeftStr] = useState(
+    DEFAULTS.mortgageLeftStr
+  );
+  const [otherCostsStr, setOtherCostsStr] = useState(DEFAULTS.otherCostsStr);
+  const [wantCG, setWantCG] = useState<YesNo>(DEFAULTS.wantCG);
+  const [purchasePriceStr, setPurchasePriceStr] = useState(
+    DEFAULTS.purchasePriceStr
+  );
+  const [improvementsStr, setImprovementsStr] = useState(
+    DEFAULTS.improvementsStr
+  );
+  const [taxRateStr, setTaxRateStr] = useState(DEFAULTS.taxRateStr);
+
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [sentSummary, setSentSummary] = useState<CalcSummary | null>(null);
+  const [sent, setSent] = useState(false);
+
   const vatRate = 0.23;
-
-  const [mortgageLeftStr, setMortgageLeftStr] = useState("0");
-  const [otherCostsStr, setOtherCostsStr] = useState("800");
-
-  const [wantCG, setWantCG] = useState<YesNo>("no");
-  const [purchasePriceStr, setPurchasePriceStr] = useState("550000");
-  const [improvementsStr, setImprovementsStr] = useState("0");
-  const [taxRateStr, setTaxRateStr] = useState("28");
 
   const salePrice = toNumber(salePriceStr);
   const agencyPct = toNumber(agencyPctStr) / 100;
@@ -703,17 +926,75 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
     wantCG === "yes" ? grossGain * Math.max(0, Math.min(0.6, userTaxRate)) : 0;
   const netAfterTax = proceedsBeforeTax - estimatedCGTax;
 
+  const resetAll = () => {
+    setSalePriceStr(DEFAULTS.salePriceStr);
+    setAgencyPctStr(DEFAULTS.agencyPctStr);
+    setIncludeVAT(DEFAULTS.includeVAT);
+    setMortgageLeftStr(DEFAULTS.mortgageLeftStr);
+    setOtherCostsStr(DEFAULTS.otherCostsStr);
+    setWantCG(DEFAULTS.wantCG);
+    setPurchasePriceStr(DEFAULTS.purchasePriceStr);
+    setImprovementsStr(DEFAULTS.improvementsStr);
+    setTaxRateStr(DEFAULTS.taxRateStr);
+  };
+
+  const buildSummary = (): CalcSummary => ({
+    title: isPT ? "Cálculo: venda de imóvel" : "Calculation: property sale",
+    rows: [
+      {
+        label: isPT ? "Preço de venda" : "Sale price",
+        value: eur(salePrice, isPT),
+      },
+      {
+        label: isPT ? "Comissão agência" : "Agency fee",
+        value: eur(agencyFee, isPT),
+      },
+      { label: "IVA", value: eur(agencyVAT, isPT) },
+      {
+        label: isPT ? "Crédito por liquidar" : "Mortgage payoff",
+        value: eur(mortgageLeft, isPT),
+      },
+      {
+        label: isPT ? "Outros custos" : "Other costs",
+        value: eur(otherCosts, isPT),
+      },
+      ...(wantCG === "yes"
+        ? [
+            {
+              label: isPT ? "Mais-valias (est.)" : "Capital gains (est.)",
+              value: eur(estimatedCGTax, isPT),
+            },
+          ]
+        : []),
+      {
+        label: isPT ? "Líquido estimado" : "Estimated net",
+        value: eur(netAfterTax, isPT),
+      },
+    ],
+  });
+
   return (
-    <GlassSurface className="mt-4 overflow-hidden">
-      <div className="px-4 sm:px-5 py-3 border-b border-white/25 bg-white/40 backdrop-blur-md">
-        <div className="text-[11px] font-semibold text-slate-900 uppercase tracking-[0.14em]">
-          {isPT ? "Calculadora de venda (proprietários)" : "Selling (owners)"}
+    <GlassSurface className="overflow-hidden">
+      <div className="px-4 sm:px-5 py-3 border-b border-white/25 bg-white/40 backdrop-blur-md flex items-start justify-between gap-3">
+        <div>
+          <div className="text-[11px] font-semibold text-slate-900 uppercase tracking-[0.14em]">
+            {isPT ? "Calculadora de venda" : "Selling"}
+          </div>
+          <div className="mt-1 text-xs text-slate-700 max-w-lg">
+            {isPT
+              ? "Estimativa de custos de venda + líquido. Mais-valias é opcional e aproximado."
+              : "Estimate selling costs + net proceeds. Capital gains is optional and rough."}
+          </div>
         </div>
-        <div className="mt-1 text-xs text-slate-700">
-          {isPT
-            ? "Estimativa de custos de venda + líquido. (Mais-valias é opcional e muito aproximado.)"
-            : "Estimate selling costs + net proceeds. (Capital gains is optional and very rough.)"}
-        </div>
+        <button
+          type="button"
+          onClick={resetAll}
+          className="shrink-0 inline-flex items-center gap-1 rounded-full border border-white/45 bg-white/60 px-2.5 py-1 text-[10px] font-semibold text-slate-700 hover:bg-white/85 transition"
+          title={isPT ? "Repor valores" : "Reset"}
+        >
+          <RotateCcw className="w-3 h-3" />
+          {isPT ? "Repor" : "Reset"}
+        </button>
       </div>
 
       <div className="p-4 sm:p-5">
@@ -775,8 +1056,8 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
               </div>
               <div className="text-[11px] text-slate-700">
                 {isPT
-                  ? "Depende de residência fiscal, reinvestimento, coeficientes, etc. Isto é só uma aproximação."
-                  : "Depends on tax residency, reinvestment, coefficients, etc. This is only a rough estimate."}
+                  ? "Depende de residência fiscal, reinvestimento, etc."
+                  : "Depends on tax residency, reinvestment, etc."}
               </div>
             </div>
 
@@ -855,7 +1136,6 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
                   {eur(salePrice, isPT)}
                 </td>
               </tr>
-
               <tr className="border-t border-white/25">
                 <td className="py-2 text-slate-800">
                   {isPT ? "Comissão agência" : "Agency fee"}{" "}
@@ -867,16 +1147,12 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
                   {eur(agencyFee, isPT)}
                 </td>
               </tr>
-
               <tr className="border-t border-white/25">
-                <td className="py-2 text-slate-800">
-                  {isPT ? "IVA (se aplicável)" : "VAT (if applicable)"}
-                </td>
+                <td className="py-2 text-slate-800">IVA</td>
                 <td className="py-2 text-right text-slate-900">
                   {eur(agencyVAT, isPT)}
                 </td>
               </tr>
-
               <tr className="border-t border-white/25">
                 <td className="py-2 text-slate-800">
                   {isPT ? "Crédito por liquidar" : "Mortgage payoff"}
@@ -885,7 +1161,6 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
                   {eur(mortgageLeft, isPT)}
                 </td>
               </tr>
-
               <tr className="border-t border-white/25">
                 <td className="py-2 text-slate-800">
                   {isPT ? "Outros custos" : "Other costs"}
@@ -894,7 +1169,6 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
                   {eur(otherCosts, isPT)}
                 </td>
               </tr>
-
               {wantCG === "yes" ? (
                 <tr className="border-t border-white/25">
                   <td className="py-2 text-slate-800">
@@ -905,7 +1179,6 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
                   </td>
                 </tr>
               ) : null}
-
               <tr className="border-t border-white/25">
                 <td className="py-2 text-slate-900 font-semibold">
                   {isPT ? "Líquido estimado" : "Estimated net"}
@@ -920,17 +1193,59 @@ function SellingCalculator({ isPT }: { isPT: boolean }) {
 
         <div className="mt-3 text-[11px] text-slate-700">
           {isPT
-            ? "Nota: mais-valias depende do seu caso fiscal. Use como ordem de grandeza e valide com contabilista."
-            : "Note: capital gains depends on your tax situation. Use as a rough magnitude and validate with an accountant."}
+            ? "Nota: use como ordem de grandeza e valide com contabilista."
+            : "Note: use as a rough magnitude and validate with an accountant."}
         </div>
+
+        {!sent ? (
+          <>
+            {!emailOpen ? (
+              <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                <div className="text-[11px] text-slate-700">
+                  {isPT
+                    ? "Quer guardar este cálculo?"
+                    : "Want to save this calculation?"}
+                </div>
+                <SuccessBtn
+                  type="button"
+                  onClick={() => {
+                    setSentSummary(buildSummary());
+                    setEmailOpen(true);
+                  }}
+                  className="shrink-0"
+                >
+                  <Mail className="w-3.5 h-3.5 mr-1" />
+                  {isPT ? "Enviar-me por email" : "Email me this"}
+                </SuccessBtn>
+              </div>
+            ) : sentSummary ? (
+              <EmailCaptureInline
+                isPT={isPT}
+                summary={sentSummary}
+                onCancel={() => setEmailOpen(false)}
+                onSent={() => {
+                  setSent(true);
+                  setEmailOpen(false);
+                }}
+              />
+            ) : null}
+          </>
+        ) : (
+          <div className="mt-4 flex items-center gap-2 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+            <Check className="w-4 h-4" />
+            {isPT
+              ? "Enviámos o cálculo para o seu email."
+              : "We've sent the calculation to your email."}
+          </div>
+        )}
       </div>
     </GlassSurface>
   );
-}
+};
 
-// ----------------------------
-// Page
-// ----------------------------
+/* =========================================================
+   PAGE
+========================================================= */
 const LivingGuidePage: React.FC = () => {
   const { language } = useLanguage();
   const isPT = language === "pt";
@@ -953,27 +1268,7 @@ const LivingGuidePage: React.FC = () => {
 
   const pageUrl = typeof window !== "undefined" ? window.location.href : "";
 
-  // Copy / Share
-  const [copiedMsg, setCopiedMsg] = useState<string | null>(null);
-  const flashCopied = (msg: string) => {
-    setCopiedMsg(msg);
-    setTimeout(() => setCopiedMsg(null), 1800);
-  };
-
-  const shareTitle = guide
-    ? `${isPT ? "Guia:" : "Guide:"} ${t(guide.title)} — AllCascais`
-    : "AllCascais";
-
-  const copyToClipboard = async (text: string, okMsg: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      flashCopied(okMsg);
-    } catch {
-      window.prompt(isPT ? "Copie:" : "Copy:", text);
-    }
-  };
-
-  // Match modal
+  /* ---------- Match modal ---------- */
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [matchType, setMatchType] = useState<MatchType>("buyer");
 
@@ -982,7 +1277,6 @@ const LivingGuidePage: React.FC = () => {
   const [matchPhone, setMatchPhone] = useState("");
   const [matchNotes, setMatchNotes] = useState("");
 
-  // buyer quick-selects
   const buyerTimingOptions: Localized[] = [
     { pt: "Agora", en: "Now" },
     { pt: "1–3 meses", en: "1–3 months" },
@@ -1007,7 +1301,6 @@ const LivingGuidePage: React.FC = () => {
   const [buyerType, setBuyerType] = useState<string>("");
   const [buyerMustHaves, setBuyerMustHaves] = useState<string[]>([]);
 
-  // owner quick-selects
   const ownerGoalOptions: Localized[] = [
     { pt: "Vender", en: "Sell" },
     { pt: "Arrendar", en: "Rent" },
@@ -1061,7 +1354,6 @@ Timeline: ${ownerTimeline || "—"}`;
   };
 
   const submitMatch = async () => {
-    // basic validation
     if (!matchName.trim() || !matchEmail.trim()) {
       alert(isPT ? "Preencha nome e email." : "Please add name and email.");
       return;
@@ -1122,7 +1414,6 @@ Timeline: ${ownerTimeline || "—"}`;
 
       setSubmitStatus("success");
 
-      // clear fields
       setMatchName("");
       setMatchEmail("");
       setMatchPhone("");
@@ -1145,24 +1436,36 @@ Timeline: ${ownerTimeline || "—"}`;
     }
   };
 
-  // Example buying table
+  /* ---------- Copy feedback (Norman) ---------- */
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const copyToClipboard = async (text: string, key: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1800);
+    } catch {
+      window.prompt(isPT ? "Copie:" : "Copy:", text);
+    }
+  };
+
+  /* ---------- Buying example (only buying guide) ---------- */
   const renderBuyingExample = () => {
     const examplePrice = 500000;
     const stampDutyPurchase = Math.round(examplePrice * 0.008);
 
     return (
-      <GlassSurface className="mt-4 overflow-hidden">
+      <GlassSurface className="overflow-hidden">
         <div className="px-4 sm:px-5 py-3 border-b border-white/25 bg-white/40 backdrop-blur-md">
           <div className="text-[11px] font-semibold text-slate-900 uppercase tracking-[0.14em]">
             {isPT ? "Exemplo rápido (estimativa)" : "Quick example (estimate)"}
           </div>
           <div className="mt-1 text-xs text-slate-700">
             {isPT
-              ? "Serve para entender a lógica do custo total. Confirme valores finais com solicitador/advogado."
-              : "This helps you understand total-cost logic. Confirm final amounts with a solicitor/lawyer."}
+              ? "Serve para entender a lógica do custo total."
+              : "This helps you understand total-cost logic."}
           </div>
         </div>
-
         <div className="p-4 sm:p-5">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -1183,7 +1486,6 @@ Timeline: ${ownerTimeline || "—"}`;
                     {eur(examplePrice, isPT)}
                   </td>
                 </tr>
-
                 <tr className="border-t border-white/25">
                   <td className="py-2 text-slate-800">
                     {isPT ? "Imposto de Selo (0,8%)" : "Stamp Duty (0.8%)"}
@@ -1192,19 +1494,12 @@ Timeline: ${ownerTimeline || "—"}`;
                     {eur(stampDutyPurchase, isPT)}
                   </td>
                 </tr>
-
                 <tr className="border-t border-white/25">
                   <td className="py-2 text-slate-800">
                     {isPT ? "IMT (varia)" : "IMT (varies)"}
-                    <div className="text-[11px] text-slate-700 mt-0.5">
-                      {isPT
-                        ? "Depende de escalões, tipo de uso e regras em vigor."
-                        : "Depends on bands, intended use, and current rules."}
-                    </div>
                   </td>
                   <td className="py-2 text-right text-slate-600">—</td>
                 </tr>
-
                 <tr className="border-t border-white/25">
                   <td className="py-2 text-slate-800">
                     {isPT
@@ -1216,11 +1511,10 @@ Timeline: ${ownerTimeline || "—"}`;
               </tbody>
             </table>
           </div>
-
           <div className="mt-3 text-[11px] text-slate-700">
             {isPT
-              ? "Dica: compare imóveis por custo total no 1º ano (não só pelo preço)."
-              : "Tip: compare homes by total first-year cost (not only price)."}
+              ? "Dica: compare imóveis por custo total no 1º ano."
+              : "Tip: compare homes by total first-year cost."}
           </div>
         </div>
       </GlassSurface>
@@ -1234,6 +1528,9 @@ Timeline: ${ownerTimeline || "—"}`;
     if (guide.key === "owners") return <SellingCalculator isPT={isPT} />;
     return null;
   };
+
+  const hasExtraWidget =
+    guide && ["buying", "costs", "owners"].includes(guide.key as string);
 
   if (!guide) {
     return (
@@ -1260,231 +1557,335 @@ Timeline: ${ownerTimeline || "—"}`;
     );
   }
 
-  // CTA logic
   const primaryCta =
     guide.ctas.find((c) => c.kind === "getMatched") ??
     guide.ctas.find((c) => c.kind === "browseHomes") ??
     guide.ctas[0];
 
-  const secondaryCta =
-    guide.ctas.find((c) => c.kind === "browseHomes" && c !== primaryCta) ??
-    guide.ctas.find((c) => c.kind === "viewServices") ??
-    guide.ctas.find((c) => c !== primaryCta);
+  /* Próximo guia recomendado + guias relacionados */
+  const nextGuideKey = NEXT_GUIDE_MAP[guide.key] ?? null;
+  const nextGuide = nextGuideKey
+    ? LIVING_GUIDES.find((g: any) => g.key === nextGuideKey)
+    : null;
+  const otherGuides = LIVING_GUIDES.filter(
+    (g: any) => g.key !== guide.key && g.key !== nextGuideKey
+  ).slice(0, 2);
 
+  /* =========================================================
+     RENDER
+  ========================================================= */
   return (
     <div className="min-h-screen py-3">
-      {/* Veil global por cima da imagem de fundo */}
       <div className="fixed inset-0 -z-10 bg-linear-to-b from-white/35 via-white/15 to-white/30 backdrop-blur-[2px]" />
+
+      {/* Sticky mini-TOC (mobile) — Krug: orientação contínua */}
+      <div className="lg:hidden sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-slate-100">
+        <div className="max-w-6xl mx-auto px-4 py-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            {guide.sections.map((s: any, i: number) => {
+              const short = t(s.heading).split(/[:—–]/)[0].trim();
+              return (
+                <a
+                  key={i}
+                  href={`#section-${i}`}
+                  className="shrink-0 text-[10px] font-semibold text-slate-600 hover:text-[#1F1F3D] px-2.5 py-1 rounded-full hover:bg-slate-100 transition"
+                >
+                  {short}
+                </a>
+              );
+            })}
+          </div>
+        </div>
+      </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8 md:py-10">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
           {/* MAIN */}
           <div className="min-w-0">
-            {/* Header */}
-            <div className="mb-6">
-              <button
-                type="button"
-                onClick={() => navigate(-1)}
-                className="inline-flex items-center gap-2 text-xs font-semibold text-slate-800 hover:text-slate-950"
+            {/* Back */}
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="inline-flex items-center gap-2 text-xs font-semibold text-slate-800 hover:text-slate-950 mb-4"
+            >
+              ← {isPT ? "Voltar" : "Back"}
+            </button>
+
+            {/* Card 1 — Identidade (Weinschenk: less density) */}
+            <GlassSurface className="overflow-hidden">
+              <div
+                className="relative px-5 py-5 sm:px-7 sm:py-6"
+                style={{
+                  background:
+                    "linear-gradient(90deg, rgba(31,111,166,0.18) 0%, rgba(250,248,244,0.92) 55%, rgba(255,255,255,0.96) 100%)",
+                }}
               >
-                ← {isPT ? "Voltar" : "Back"}
-              </button>
+                <div className="pointer-events-none absolute inset-0 bg-white/25" />
+                <div className="relative">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                    {isPT
+                      ? "🏡 Viver em Cascais · Guia"
+                      : "🏡 Living in Cascais · Guide"}
+                  </div>
 
-              <GlassSurface className="mt-4 overflow-hidden">
-                <div
-                  className="relative px-5 py-5 sm:px-7 sm:py-6"
-                  style={{
-                    background:
-                      "linear-gradient(90deg, rgba(31,111,166,0.18) 0%, rgba(250,248,244,0.92) 55%, rgba(255,255,255,0.96) 100%)",
-                  }}
-                >
-                  <div className="pointer-events-none absolute inset-0 bg-white/25" />
-                  <div className="relative">
-                    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-600">
-                      {isPT
-                        ? "🏡 Viver em Cascais · Guia"
-                        : "🏡 Living in Cascais · Guide"}
-                    </div>
+                  <h1
+                    className="mt-2 text-2xl sm:text-3xl font-semibold text-slate-900 tracking-wide"
+                    style={{ fontFamily: "'Playfair Display', serif" }}
+                  >
+                    {t(guide.title)}
+                  </h1>
 
-                    <h1
-                      className="mt-2 text-2xl sm:text-3xl font-semibold text-slate-900 tracking-wide"
-                      style={{ fontFamily: "'Playfair Display', serif" }}
-                    >
-                      {t(guide.title)}
-                    </h1>
+                  <p className="mt-2 text-sm text-slate-700">
+                    {t(guide.subtitle)}
+                  </p>
 
-                    <p className="mt-2 text-sm text-slate-700">
-                      {t(guide.subtitle)}
-                    </p>
-
-                    <div className="mt-4 flex flex-wrap items-center gap-2">
-                      <Pill>⏱ {t(guide.readTime)}</Pill>
-
-                      {guide.updatedAt ? (
-                        <Pill>
-                          🗓 {isPT ? "Atualizado" : "Updated"}{" "}
-                          {new Date(guide.updatedAt).toLocaleDateString(
-                            isPT ? "pt-PT" : "en-US",
-                            { year: "numeric", month: "short", day: "numeric" }
-                          )}
-                        </Pill>
-                      ) : null}
-
-                      {guide.chips.map((c) => (
-                        <Pill key={c.en}>{t(c)}</Pill>
+                  {/* Audience — Cialdini: identity match */}
+                  {guide.audience?.length ? (
+                    <div className="mt-3 space-y-1">
+                      {guide.audience.map((a) => (
+                        <div
+                          key={a.en}
+                          className="flex gap-2 text-[12px] text-slate-700"
+                        >
+                          <span className="text-[#1F1F3D]">→</span>
+                          <span>{t(a)}</span>
+                        </div>
                       ))}
                     </div>
-
-                    {/* Share controls */}
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <GhostBtn
-                        type="button"
-                        onClick={() =>
-                          copyToClipboard(
-                            pageUrl,
-                            isPT ? "✅ Link copiado" : "✅ Link copied"
-                          )
-                        }
-                      >
-                        {isPT ? "Copiar link" : "Copy link"}
-                      </GhostBtn>
-
-                      {"share" in navigator ? (
-                        <GhostBtn
-                          type="button"
-                          onClick={async () => {
-                            try {
-                              // @ts-ignore
-                              await navigator.share({
-                                title: shareTitle,
-                                text: shareTitle,
-                                url: pageUrl,
-                              });
-                            } catch {}
-                          }}
-                        >
-                          {isPT ? "Partilhar" : "Share"}
-                        </GhostBtn>
-                      ) : null}
-
-                      {guide.sharePost ? (
-                        <SuccessBtn
-                          type="button"
-                          onClick={() =>
-                            copyToClipboard(
-                              t(guide.sharePost!),
-                              isPT ? "✅ Post copiado" : "✅ Post copied"
-                            )
-                          }
-                          title={
-                            isPT
-                              ? "Copiar texto pronto para Facebook/WhatsApp"
-                              : "Copy a ready-to-post text for Facebook/WhatsApp"
-                          }
-                        >
-                          {isPT ? "Copiar post" : "Copy post"}
-                        </SuccessBtn>
-                      ) : null}
-                    </div>
-
-                    {copiedMsg ? (
-                      <div className="mt-3 text-[11px] text-emerald-700 font-semibold">
-                        {copiedMsg}
-                      </div>
-                    ) : null}
-                  </div>
+                  ) : null}
                 </div>
-              </GlassSurface>
-            </div>
+              </div>
+            </GlassSurface>
 
-            {/* Sections */}
-            <div className="space-y-4">
-              {guide.sections.map((s: any, idx: number) => (
-                <section
-                  key={idx}
-                  className={cls(
-                    "rounded-3xl border p-5 sm:p-7",
-                    toneStyles(s.tone)
-                  )}
-                >
-                  <h2 className="text-sm sm:text-base font-semibold text-slate-900">
-                    {t(s.heading)}
-                  </h2>
+            {/* Card 2 — Utilitário (chips + takeaways + TOC agrupados) */}
+            <GlassSurface className="mt-4 overflow-hidden">
+              <div className="px-5 py-4 sm:px-7 sm:py-5">
+                {/* Chips */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Pill>⏱ {t(guide.readTime)}</Pill>
 
-                  {s.body && (
-                    <p className="mt-2 text-xs sm:text-sm text-slate-700 leading-relaxed">
-                      {t(s.body)}
-                    </p>
-                  )}
+                  {guide.updatedAt ? (
+                    <Pill>
+                      🗓 {isPT ? "Atualizado" : "Updated"}{" "}
+                      {new Date(guide.updatedAt).toLocaleDateString(
+                        isPT ? "pt-PT" : "en-US",
+                        { year: "numeric", month: "short", day: "numeric" }
+                      )}
+                    </Pill>
+                  ) : null}
 
-                  {s.bullets && s.bullets.length > 0 && (
-                    <ul className="mt-3 space-y-2">
-                      {s.bullets.map((b: any, i: number) => (
+                  {guide.chips.map((c) => (
+                    <Pill key={c.en}>{t(c)}</Pill>
+                  ))}
+                </div>
+
+                {/* Takeaways — Weinschenk: 3 things, sem card pesado */}
+                {guide.takeaways?.length ? (
+                  <div className="mt-4 border-l-2 border-[#1F1F3D]/25 pl-4">
+                    <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600 mb-2">
+                      {isPT ? "Se só levar 3 coisas" : "If you take 3 things"}
+                    </div>
+                    <ol className="space-y-1.5">
+                      {guide.takeaways.map((tk, i) => (
                         <li
                           key={i}
-                          className="flex gap-2 text-xs sm:text-sm text-slate-800"
+                          className="flex gap-2 text-[12px] text-slate-800"
                         >
-                          <span className="mt-1.5 inline-block w-1.5 h-1.5 rounded-full bg-[#1F1F3D]" />
-                          <span>{t(b)}</span>
+                          <span aria-hidden="true">
+                            {TAKEAWAY_ICONS[i] ?? "•"}
+                          </span>
+                          <span>{t(tk)}</span>
                         </li>
                       ))}
-                    </ul>
-                  )}
+                    </ol>
+                  </div>
+                ) : null}
 
-                  {/* Inject calculators / extras under the first section */}
-                  {idx === 0 ? renderGuideExtras() : null}
-                </section>
-              ))}
+                {/* Mini-TOC (desktop) — Krug: orientação */}
+                {guide.sections.length > 2 ? (
+                  <nav
+                    className="mt-4 pt-4 border-t border-white/30 flex flex-wrap gap-1.5"
+                    aria-label="Sections"
+                  >
+                    {guide.sections.map((s: any, i: number) => {
+                      const short = t(s.heading).split(/[:—–]/)[0].trim();
+                      return (
+                        <a
+                          key={i}
+                          href={`#section-${i}`}
+                          className="inline-flex items-center rounded-full border border-white/40 bg-white/60 backdrop-blur-md px-2.5 py-1 text-[10px] font-semibold text-slate-700 hover:bg-white/85 transition"
+                        >
+                          {short}
+                        </a>
+                      );
+                    })}
+                  </nav>
+                ) : null}
+              </div>
+            </GlassSurface>
+
+            {/* Sections — Weinschenk: variar peso por tom */}
+            <div className="mt-6 space-y-6">
+              {guide.sections.map((s: any, idx: number) => {
+                const icon = toneIcon(s.tone);
+                const label = toneLabel(s.tone, isPT);
+                return (
+                  <section
+                    key={idx}
+                    id={`section-${idx}`}
+                    className={cls(
+                      "scroll-mt-20 relative rounded-3xl border",
+                      toneStyles(s.tone),
+                      tonePadding(s.tone)
+                    )}
+                  >
+                    {/* Número discreto — Krug: "onde estou?" */}
+                    <span
+                      className="absolute top-4 right-5 text-[11px] font-bold text-slate-300 select-none"
+                      aria-hidden="true"
+                    >
+                      {String(idx + 1).padStart(2, "0")}
+                    </span>
+
+                    {icon && label ? (
+                      <div className="inline-flex items-center gap-1.5 mb-3 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-700">
+                        <span aria-hidden="true">{icon}</span>
+                        <span>{label}</span>
+                      </div>
+                    ) : null}
+
+                    <h2 className="text-sm sm:text-base font-semibold text-slate-900 pr-10">
+                      {t(s.heading)}
+                    </h2>
+
+                    {s.body && (
+                      <p className="mt-2 text-xs sm:text-sm text-slate-700 leading-relaxed">
+                        {t(s.body)}
+                      </p>
+                    )}
+
+                    {s.bullets && s.bullets.length > 0 && (
+                      <ul className="mt-3 space-y-2">
+                        {s.bullets.map((b: any, i: number) => (
+                          <li
+                            key={i}
+                            className="flex gap-2 text-xs sm:text-sm text-slate-800"
+                          >
+                            <span className="mt-1.5 inline-block w-1.5 h-1.5 rounded-full bg-[#1F1F3D]" />
+                            <span>{t(b)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </section>
+                );
+              })}
             </div>
 
-            {/* Templates */}
+            {/* Ferramenta interativa — Miller: destaque próprio */}
+            {hasExtraWidget ? (
+              <section className="mt-10">
+                {/* Separador visual — Weinschenk: change of rhythm */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-px flex-1 bg-slate-200" />
+                  <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
+                    🧮 {isPT ? "Ferramenta interativa" : "Interactive tool"}
+                  </div>
+                  <div className="h-px flex-1 bg-slate-200" />
+                </div>
+
+                <h2
+                  className="text-xl sm:text-2xl font-semibold text-slate-900 tracking-wide text-center mb-5"
+                  style={{ fontFamily: "'Playfair Display', serif" }}
+                >
+                  {guide.key === "buying" &&
+                    (isPT ? "Exemplo passo-a-passo" : "Step-by-step example")}
+                  {guide.key === "costs" &&
+                    (isPT
+                      ? "Quanto custa, na prática?"
+                      : "What it costs, in practice")}
+                  {guide.key === "owners" &&
+                    (isPT
+                      ? "Quanto recebe, na prática?"
+                      : "What you'll receive")}
+                </h2>
+
+                {renderGuideExtras()}
+              </section>
+            ) : null}
+
+            {/* Templates — Krug: preview colapsado */}
             {guide.templates?.length ? (
-              <GlassSurface className="mt-6 p-5 sm:p-7">
+              <GlassSurface className="mt-8 p-5 sm:p-7">
                 <div className="text-sm font-semibold text-slate-900">
                   {isPT ? "Templates (copiar/colar)" : "Templates (copy/paste)"}
                 </div>
                 <div className="mt-4 space-y-3">
-                  {guide.templates.map((tpl, idx) => (
-                    <div
-                      key={idx}
-                      className="rounded-2xl border border-white/35 bg-white/55 backdrop-blur-md p-4 shadow-sm"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="text-xs font-semibold text-slate-900">
-                            {t(tpl.title)}
-                          </div>
-                          {tpl.description ? (
-                            <div className="mt-1 text-[11px] text-slate-700">
-                              {to(tpl.description)}
+                  {guide.templates.map((tpl, idx) => {
+                    const k = `tpl-${idx}`;
+                    const copied = copiedKey === k;
+                    return (
+                      <div
+                        key={idx}
+                        className="rounded-2xl border border-white/35 bg-white/55 backdrop-blur-md shadow-sm overflow-hidden"
+                      >
+                        <div className="p-4 flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-slate-900">
+                              {t(tpl.title)}
                             </div>
-                          ) : null}
+                            {tpl.description ? (
+                              <div className="mt-1 text-[11px] text-slate-700">
+                                {to(tpl.description)}
+                              </div>
+                            ) : null}
+                          </div>
+                          <GhostBtn
+                            type="button"
+                            onClick={() => copyToClipboard(t(tpl.copyText), k)}
+                            className={cls(
+                              "shrink-0",
+                              copied &&
+                                "border-emerald-400 bg-emerald-50 text-emerald-800"
+                            )}
+                          >
+                            {copied ? (
+                              <>
+                                <Check className="w-3.5 h-3.5 mr-1" />
+                                {isPT ? "Copiado" : "Copied"}
+                              </>
+                            ) : isPT ? (
+                              "Copiar"
+                            ) : (
+                              "Copy"
+                            )}
+                          </GhostBtn>
                         </div>
-                        <GhostBtn
-                          type="button"
-                          onClick={() =>
-                            copyToClipboard(
-                              t(tpl.copyText),
-                              isPT ? "✅ Copiado" : "✅ Copied"
-                            )
-                          }
-                          className="shrink-0"
-                        >
-                          {isPT ? "Copiar" : "Copy"}
-                        </GhostBtn>
+
+                        {/* Preview colapsado */}
+                        <details className="border-t border-white/30 group">
+                          <summary className="px-4 py-2 cursor-pointer list-none flex items-center justify-between text-[11px] text-slate-600 hover:text-slate-900 transition">
+                            <span>
+                              {isPT ? "Ver pré-visualização" : "See preview"}
+                            </span>
+                            <span className="transition-transform group-open:rotate-180">
+                              ⌄
+                            </span>
+                          </summary>
+                          <div className="px-4 pb-4 text-[11px] text-slate-700 whitespace-pre-line">
+                            {t(tpl.copyText)}
+                          </div>
+                        </details>
                       </div>
-                      <div className="mt-3 text-xs text-slate-800 whitespace-pre-line">
-                        {t(tpl.copyText)}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </GlassSurface>
             ) : null}
 
-            {/* FAQs */}
+            {/* FAQs — primeira aberta */}
             {guide.faqs?.length ? (
-              <GlassSurface className="mt-6 p-5 sm:p-7">
+              <GlassSurface className="mt-8 p-5 sm:p-7">
                 <div className="text-sm font-semibold text-slate-900">
                   {isPT ? "Perguntas frequentes" : "FAQs"}
                 </div>
@@ -1492,14 +1893,17 @@ Timeline: ${ownerTimeline || "—"}`;
                   {guide.faqs.map((f, idx) => (
                     <details
                       key={idx}
-                      className="rounded-2xl border border-white/35 bg-white/55 backdrop-blur-md px-4 py-3 shadow-sm"
+                      open={idx === 0}
+                      className="rounded-2xl border border-white/35 bg-white/55 backdrop-blur-md px-4 py-3 shadow-sm group"
                     >
                       <summary className="cursor-pointer list-none">
                         <div className="flex items-center justify-between gap-3">
                           <div className="text-xs font-semibold text-slate-900">
                             {t(f.q)}
                           </div>
-                          <span className="text-slate-600">⌄</span>
+                          <span className="text-slate-600 transition-transform group-open:rotate-180">
+                            ⌄
+                          </span>
                         </div>
                       </summary>
                       <div className="mt-2 text-xs sm:text-sm text-slate-700">
@@ -1511,43 +1915,121 @@ Timeline: ${ownerTimeline || "—"}`;
               </GlassSurface>
             ) : null}
 
-            {/* Bottom CTA card */}
-            <GlassSurface className="mt-6 p-5 sm:p-7">
+            {/* Share — Cialdini: dar antes de pedir */}
+            <GlassSurface className="mt-8 p-5 sm:p-7">
               <div className="text-sm font-semibold text-slate-900">
-                {isPT ? "Próximo passo" : "Next step"}
+                {isPT ? "Partilhar este guia" : "Share this guide"}
               </div>
               <div className="mt-1 text-xs text-slate-700">
                 {isPT
-                  ? "Se quiser, ajudamos a escolher opções e a planear o próximo passo."
-                  : "If you want, we’ll help you shortlist options and plan your next step."}
+                  ? "Ajuda alguém que está a mudar-se para Cascais."
+                  : "Help someone moving to Cascais."}
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                {guide.ctas.map((c: any, i: number) => (
-                  <React.Fragment key={i}>
-                    {c.kind === "browseHomes" ? (
-                      <PrimaryBtn
-                        type="button"
-                        onClick={() => handleCta(c.kind)}
-                      >
-                        {t(c.label)}
-                      </PrimaryBtn>
-                    ) : c.kind === "getMatched" ? (
-                      <SuccessBtn
-                        type="button"
-                        onClick={() => handleCta(c.kind)}
-                      >
-                        {t(c.label)}
-                      </SuccessBtn>
-                    ) : (
-                      <GhostBtn type="button" onClick={() => handleCta(c.kind)}>
-                        {t(c.label)}
-                      </GhostBtn>
+                <GhostBtn
+                  type="button"
+                  onClick={() => copyToClipboard(pageUrl, "copy-link")}
+                  className={cls(
+                    copiedKey === "copy-link" &&
+                      "border-emerald-400 bg-emerald-50 text-emerald-800"
+                  )}
+                >
+                  {copiedKey === "copy-link" ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 mr-1" />
+                      {isPT ? "Copiado" : "Copied"}
+                    </>
+                  ) : isPT ? (
+                    "Copiar link"
+                  ) : (
+                    "Copy link"
+                  )}
+                </GhostBtn>
+
+                {guide.sharePost ? (
+                  <SuccessBtn
+                    type="button"
+                    onClick={() =>
+                      copyToClipboard(t(guide.sharePost!), "copy-post")
+                    }
+                    className={cls(
+                      copiedKey === "copy-post" && "bg-emerald-700"
                     )}
-                  </React.Fragment>
-                ))}
+                  >
+                    {copiedKey === "copy-post" ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 mr-1" />
+                        {isPT ? "Copiado" : "Copied"}
+                      </>
+                    ) : (
+                      <>{isPT ? "Copiar post" : "Copy post"}</>
+                    )}
+                  </SuccessBtn>
+                ) : null}
               </div>
             </GlassSurface>
+
+            {/* CTA final — Weinschenk: contraste escuro */}
+            <section className="mt-8 rounded-3xl overflow-hidden bg-slate-950 px-6 py-8 sm:px-10 sm:py-10 relative">
+              <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full bg-emerald-500/15 blur-3xl" />
+              <div className="absolute -left-20 -bottom-20 w-64 h-64 rounded-full bg-sky-500/10 blur-3xl" />
+
+              <div className="relative">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-300 mb-2">
+                  {isPT ? "Próximo passo" : "Next step"}
+                </div>
+                <h2 className="text-xl sm:text-2xl font-semibold text-white">
+                  {isPT
+                    ? "Se quiser, ajudamos em 24h."
+                    : "If you want, we’ll help in 24h."}
+                </h2>
+                <p className="mt-2 text-sm text-white/70 max-w-lg">
+                  {isPT
+                    ? "Shortlist personalizada + contexto local. Sem spam, sem pressão."
+                    : "Curated shortlist + local context. No spam, no pressure."}
+                </p>
+
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {guide.ctas.map((c: any, i: number) => (
+                    <React.Fragment key={i}>
+                      {c.kind === "browseHomes" ? (
+                        <button
+                          type="button"
+                          onClick={() => handleCta(c.kind)}
+                          className="inline-flex items-center justify-center rounded-full bg-white text-slate-900 px-5 py-2.5 text-xs font-semibold shadow-lg hover:bg-slate-100 transition"
+                        >
+                          {t(c.label)}
+                        </button>
+                      ) : c.kind === "getMatched" ? (
+                        <button
+                          type="button"
+                          onClick={() => handleCta(c.kind)}
+                          className="inline-flex items-center justify-center rounded-full bg-emerald-500 text-white px-5 py-2.5 text-xs font-semibold shadow-lg hover:bg-emerald-600 transition"
+                        >
+                          {t(c.label)}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleCta(c.kind)}
+                          className="inline-flex items-center justify-center rounded-full bg-white/10 border border-white/25 text-white px-5 py-2.5 text-xs font-semibold hover:bg-white/20 transition backdrop-blur"
+                        >
+                          {t(c.label)}
+                        </button>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* Nota legal — fora de card, discreta (Weinschenk) */}
+            <p className="mt-6 text-[10px] text-slate-500 leading-relaxed max-w-2xl mx-auto text-center">
+              {isPT
+                ? "Nota: informação prática e educativa. Regras e impostos podem mudar. Para decisões finais, confirme com solicitador/advogado e fontes oficiais."
+                : "Note: practical, educational guidance. Rules and taxes can change. For final decisions, confirm with a solicitor/lawyer and official sources."}
+            </p>
 
             <div className="h-20 lg:hidden" />
           </div>
@@ -1576,7 +2058,6 @@ Timeline: ${ownerTimeline || "—"}`;
                   >
                     {isPT ? "Receber recomendações" : "Get recommendations"}
                   </SuccessBtn>
-
                   <GhostBtn
                     type="button"
                     onClick={() => openMatch("owner")}
@@ -1584,28 +2065,45 @@ Timeline: ${ownerTimeline || "—"}`;
                   >
                     {isPT ? "Sou proprietário" : "I'm an owner"}
                   </GhostBtn>
-
-                  {secondaryCta ? (
-                    <GhostBtn
-                      type="button"
-                      onClick={() => handleCta(secondaryCta.kind)}
-                      className="text-sm py-2.5"
-                    >
-                      {t(secondaryCta.label)}
-                    </GhostBtn>
-                  ) : null}
                 </div>
               </GlassSurface>
 
-              <GlassSurface className="p-5">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
-                  {isPT ? "Mais guias" : "More guides"}
-                </div>
+              {/* Próximo guia recomendado — Weinschenk: jornada */}
+              {nextGuide ? (
+                <GlassSurface className="p-5">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                    {isPT ? "Próximo recomendado" : "Recommended next"}
+                  </div>
 
-                <div className="mt-3 flex flex-col gap-2">
-                  {LIVING_GUIDES.filter((g: any) => g.key !== guide.key)
-                    .slice(0, 6)
-                    .map((g: any) => (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/living/guides/${nextGuide.key}`)}
+                    className="mt-3 w-full text-left rounded-2xl border border-[#1F1F3D]/25 bg-gradient-to-br from-sky-50/70 to-white px-4 py-3 hover:from-sky-50 hover:to-white shadow-sm transition group"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-slate-900">
+                          {t(nextGuide.title)}
+                        </div>
+                        <div className="mt-1 text-[11px] text-slate-700 line-clamp-2">
+                          {t(nextGuide.subtitle)}
+                        </div>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-[#1F1F3D] shrink-0 mt-0.5 group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </button>
+                </GlassSurface>
+              ) : null}
+
+              {/* Outros guias — discretos */}
+              {otherGuides.length > 0 ? (
+                <GlassSurface className="p-5">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
+                    {isPT ? "Outros guias" : "Other guides"}
+                  </div>
+
+                  <div className="mt-3 flex flex-col gap-2">
+                    {otherGuides.map((g: any) => (
                       <button
                         key={g.key}
                         type="button"
@@ -1618,50 +2116,52 @@ Timeline: ${ownerTimeline || "—"}`;
                         </div>
                       </button>
                     ))}
-                </div>
-              </GlassSurface>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate("/living")}
+                    className="mt-3 inline-flex items-center gap-1 text-[11px] font-semibold text-[#1F1F3D] hover:text-[#15152E] underline underline-offset-2"
+                  >
+                    {isPT ? "Ver todos os guias" : "See all guides"}
+                    <span>→</span>
+                  </button>
+                </GlassSurface>
+              ) : null}
             </div>
           </aside>
         </div>
       </div>
 
-      {/* MOBILE STICKY CTA BAR */}
+      {/* MOBILE STICKY CTA */}
       <div className="lg:hidden fixed left-0 right-0 bottom-0 z-50 px-3 pb-3">
-        <div className="rounded-3xl border border-white/35 bg-white/75 backdrop-blur-xl shadow-lg px-3 py-3 ring-1 ring-slate-900/10">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
+        <div className="rounded-3xl border border-white/35 bg-white/80 backdrop-blur-xl shadow-lg px-3 py-3 ring-1 ring-slate-900/10">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 flex-1">
               <div className="text-[11px] text-slate-700">
                 {isPT ? "Próximo passo" : "Next step"}
               </div>
               <div className="text-xs font-semibold text-slate-900 line-clamp-1">
-                {t(guide.title)}
+                {isPT
+                  ? "Fala connosco — resposta em 24h"
+                  : "Talk to us — reply in 24h"}
               </div>
             </div>
 
-            <div className="flex gap-2 shrink-0">
-              {secondaryCta ? (
-                <GhostBtn
-                  type="button"
-                  onClick={() => handleCta(secondaryCta.kind)}
-                >
-                  {isPT ? "Ver" : "View"}
-                </GhostBtn>
-              ) : null}
-
-              {primaryCta ? (
-                <SuccessBtn
-                  type="button"
-                  onClick={() => handleCta(primaryCta.kind)}
-                >
-                  {isPT ? "Quero ajuda" : "Get help"}
-                </SuccessBtn>
-              ) : null}
-            </div>
+            {primaryCta ? (
+              <SuccessBtn
+                type="button"
+                onClick={() => handleCta(primaryCta.kind)}
+                className="shrink-0"
+              >
+                {isPT ? "Quero ajuda" : "Get help"}
+              </SuccessBtn>
+            ) : null}
           </div>
         </div>
       </div>
 
-      {/* MATCH MODAL (buyer/owner) */}
+      {/* MATCH MODAL */}
       {showMatchModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-2 sm:px-4">
           <div
@@ -1729,7 +2229,6 @@ Timeline: ${ownerTimeline || "—"}`;
                         {CONTACT_PHONE}
                       </div>
                     </a>
-
                     <a
                       href={`mailto:${CONTACT_EMAIL}`}
                       className="block rounded-2xl border border-white/35 bg-white/60 backdrop-blur-md px-4 py-3 hover:bg-white/75 transition shadow-sm"
@@ -1748,7 +2247,6 @@ Timeline: ${ownerTimeline || "—"}`;
                     >
                       {isPT ? "Continuar no site" : "Continue on website"}
                     </PrimaryBtn>
-
                     <GhostBtn type="button" onClick={closeMatch}>
                       {isPT ? "Fechar" : "Close"}
                     </GhostBtn>
@@ -1783,7 +2281,6 @@ Timeline: ${ownerTimeline || "—"}`;
                     </button>
                   </div>
 
-                  {/* Quick selectors */}
                   {matchType === "buyer" ? (
                     <div className="mb-4">
                       <div className="text-[11px] font-semibold text-slate-800">
@@ -1791,7 +2288,6 @@ Timeline: ${ownerTimeline || "—"}`;
                           ? "Detalhes rápidos (1 clique)"
                           : "Quick details (1 click)"}
                       </div>
-
                       <div className="mt-2">
                         <div className="text-[11px] text-slate-700 mb-1">
                           {isPT ? "Timing" : "Timing"}
@@ -1810,7 +2306,6 @@ Timeline: ${ownerTimeline || "—"}`;
                           })}
                         </div>
                       </div>
-
                       <div className="mt-3">
                         <div className="text-[11px] text-slate-700 mb-1">
                           {isPT ? "Tipo" : "Type"}
@@ -1829,7 +2324,6 @@ Timeline: ${ownerTimeline || "—"}`;
                           })}
                         </div>
                       </div>
-
                       <div className="mt-3">
                         <div className="text-[11px] text-slate-700 mb-1">
                           {isPT ? "Must-haves" : "Must-haves"}
@@ -1863,7 +2357,6 @@ Timeline: ${ownerTimeline || "—"}`;
                           ? "Detalhes rápidos (1 clique)"
                           : "Quick details (1 click)"}
                       </div>
-
                       <div className="mt-2">
                         <div className="text-[11px] text-slate-700 mb-1">
                           {isPT ? "Objetivo" : "Goal"}
@@ -1882,7 +2375,6 @@ Timeline: ${ownerTimeline || "—"}`;
                           })}
                         </div>
                       </div>
-
                       <div className="mt-3">
                         <div className="text-[11px] text-slate-700 mb-1">
                           {isPT ? "Estado" : "Condition"}
@@ -1901,7 +2393,6 @@ Timeline: ${ownerTimeline || "—"}`;
                           })}
                         </div>
                       </div>
-
                       <div className="mt-3">
                         <div className="text-[11px] text-slate-700 mb-1">
                           {isPT ? "Prazo" : "Timeline"}
@@ -1935,7 +2426,6 @@ Timeline: ${ownerTimeline || "—"}`;
                         placeholder={isPT ? "O seu nome" : "Your name"}
                       />
                     </div>
-
                     <div className="flex flex-col gap-1">
                       <label className="text-[11px] font-semibold text-slate-800">
                         Email
@@ -1947,7 +2437,6 @@ Timeline: ${ownerTimeline || "—"}`;
                         placeholder="email@exemplo.com"
                       />
                     </div>
-
                     <div className="flex flex-col gap-1 sm:col-span-2">
                       <label className="text-[11px] font-semibold text-slate-800">
                         {isPT ? "Telefone (opcional)" : "Phone (optional)"}
@@ -1959,7 +2448,6 @@ Timeline: ${ownerTimeline || "—"}`;
                         placeholder={isPT ? "+351 ..." : "+351 ..."}
                       />
                     </div>
-
                     <div className="flex flex-col gap-1 sm:col-span-2">
                       <label className="text-[11px] font-semibold text-slate-800">
                         {matchType === "owner"
@@ -1984,12 +2472,10 @@ Timeline: ${ownerTimeline || "—"}`;
                         ? "Ao enviar, o pedido é enviado automaticamente. Se falhar, abrimos o seu email como alternativa."
                         : "Submitting sends your request automatically. If it fails, we’ll open your email as a fallback."}
                     </div>
-
                     <div className="flex gap-2">
                       <GhostBtn type="button" onClick={closeMatch}>
                         {isPT ? "Cancelar" : "Cancel"}
                       </GhostBtn>
-
                       <PrimaryBtn type="button" onClick={submitMatch}>
                         {isPT ? "Enviar pedido" : "Send request"}
                       </PrimaryBtn>
