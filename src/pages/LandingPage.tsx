@@ -89,8 +89,8 @@ const ContactModal: React.FC<{
 
   const SUBJECTS: { id: ContactSubject; pt: string; en: string }[] = [
     { id: "question", pt: "Dúvida", en: "Question" },
-    { id: "feedback", pt: "Sugestão", en: "Feedback" },
-    { id: "partnership", pt: "Parceria", en: "Partnership" },
+    { id: "feedback", pt: "Sugerir melhoria", en: "Feedback" },
+    { id: "partnership", pt: "Quero ser parceiro", en: "Partnership" },
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -545,7 +545,7 @@ const LandingPage: React.FC = () => {
     },
     {
       icon: CheckCircle2,
-      title: isPT ? "Avalia" : "Review",
+      title: isPT ? "Resolve" : "Solve",
       desc: isPT
         ? "Partilha a tua experiência e ajuda outros residentes a escolher bem."
         : "Share your experience and help other residents choose well.",
@@ -557,8 +557,8 @@ const LandingPage: React.FC = () => {
      Diz o que é, não como usar.
   --------------------------------------------------------- */
   const benefits = isPT
-    ? ["Grátis", "Sem intermediários", "PT / EN"]
-    : ["Free", "No middlemen", "EN / PT"];
+    ? ["Grátis para residentes", "Sem comissões", "PT / EN"]
+    : ["Free for residents", "No middlemen", "EN / PT"];
 
   return (
     <div className="min-h-screen bg-[#fafcfb] text-slate-900">
@@ -585,13 +585,15 @@ const LandingPage: React.FC = () => {
               {isPT ? (
                 <>
                   Em Cascais,
-                  <span className="block text-indigo-200">tudo resolvido.</span>
+                  <span className="block text-indigo-200">
+                    tudo mais perto.
+                  </span>
                 </>
               ) : (
                 <>
                   In Cascais,
-                  <span className="block text-slate-100">
-                    everything handled.
+                  <span className="block text-indigo-200">
+                    everything closer.
                   </span>
                 </>
               )}

@@ -15,6 +15,7 @@ import {
   Globe,
   Search,
   X,
+  Plus,
   ChevronDown,
   ArrowUpDown,
   CheckCircle2,
@@ -1097,6 +1098,7 @@ const ServiceSkeleton: React.FC = () => (
 const HomePage: React.FC = () => {
   const { language } = useLanguage();
   const isPT = language === "pt";
+  const navigate = useNavigate();
 
   const [selectedCategory, setSelectedCategory] = useState<CategoryId>("all");
   const [selectedSubcategory, setSelectedSubcategory] = useState<
@@ -1557,10 +1559,11 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* =========================================================
-          RESULTS BAR
-      ========================================================== */}
+    RESULTS BAR + PROVIDER CTA
+========================================================== */}
       <section className="max-w-7xl mx-auto px-4 pt-4 pb-3">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          {/* Lado esquerdo: contagem */}
           <div className="text-xs text-slate-600">
             <span className="font-semibold text-slate-900">
               {filteredServices.length}
@@ -1573,7 +1576,9 @@ const HomePage: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Lado direito: filtros + CTA */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Filtro de avaliação */}
             <div className="inline-flex items-center gap-1.5">
               <span className="text-[11px] font-semibold text-slate-500 hidden sm:inline">
                 {isPT ? "Filtrar:" : "Filter:"}
@@ -1600,6 +1605,7 @@ const HomePage: React.FC = () => {
               </div>
             </div>
 
+            {/* Sort */}
             <div className="relative">
               <ArrowUpDown className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               <select
@@ -1628,6 +1634,23 @@ const HomePage: React.FC = () => {
                 {isPT ? "Limpar" : "Clear"}
               </button>
             )}
+
+            {/* CTA PRESTADOR */}
+            <button
+              type="button"
+              onClick={() => navigate("/service-listing")}
+              className="inline-flex items-center justify-center gap-1.5 rounded-full text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow-sm transition"
+              style={{ backgroundColor: BRAND }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = BRAND_HOVER)
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = BRAND)
+              }
+            >
+              <Plus className="w-4 h-4" />
+              {isPT ? "Oferecer serviço" : "Offer service"}
+            </button>
           </div>
         </div>
       </section>

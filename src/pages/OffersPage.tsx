@@ -11,6 +11,7 @@ import {
   Globe,
   Search,
   X,
+  Plus,
   ChevronDown,
   ArrowUpDown,
   Sparkles,
@@ -1263,10 +1264,11 @@ const OffersPage: React.FC = () => {
       </section>
 
       {/* =========================================================
-          RESULTS BAR
-      ========================================================== */}
+    RESULTS BAR + PROVIDER CTA
+========================================================== */}
       <section className="max-w-7xl mx-auto px-4 pt-4 pb-3">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          {/* Lado esquerdo: contagem */}
           <div className="text-xs text-slate-600">
             <span className="font-semibold text-slate-900">
               {filteredOffers.length}
@@ -1279,7 +1281,9 @@ const OffersPage: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          {/* Lado direito: filtros + CTA */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Filtro highlight */}
             <div className="inline-flex items-center gap-1.5">
               <span className="text-[11px] font-semibold text-slate-500 hidden sm:inline">
                 {isPT ? "Filtrar:" : "Filter:"}
@@ -1318,6 +1322,7 @@ const OffersPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Sort */}
             <div className="relative">
               <ArrowUpDown className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
               <select
@@ -1348,6 +1353,23 @@ const OffersPage: React.FC = () => {
                 {isPT ? "Limpar" : "Clear"}
               </button>
             )}
+
+            {/* CTA PRESTADOR — âmbar, para reforçar identidade das ofertas */}
+            <button
+              type="button"
+              onClick={() => navigate("/offers/new")}
+              className="inline-flex items-center justify-center gap-1.5 rounded-full text-white text-xs sm:text-sm font-semibold px-4 py-2 shadow-sm transition"
+              style={{ backgroundColor: OFFER_ACCENT }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.backgroundColor = OFFER_ACCENT_HOVER)
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.backgroundColor = OFFER_ACCENT)
+              }
+            >
+              <Plus className="w-4 h-4" />
+              {isPT ? "Criar oferta" : "Create offer"}
+            </button>
           </div>
         </div>
       </section>
