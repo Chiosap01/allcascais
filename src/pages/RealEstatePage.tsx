@@ -1557,7 +1557,7 @@ const RealEstatePage: React.FC = () => {
           <div className="relative overflow-hidden rounded-3xl border border-slate-200 shadow-sm bg-slate-900">
             <div
               className="absolute inset-0 bg-cover bg-center"
-              style={{ backgroundImage: "url('/cascais-coast.png')" }}
+              style={{ backgroundImage: "url('/cascais-coast.jpg')" }}
               aria-hidden="true"
             />
             <div
