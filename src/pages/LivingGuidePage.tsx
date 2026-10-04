@@ -4,14 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useLanguage } from "../layouts/MainLayout";
 import { getLivingGuide, LIVING_GUIDES } from "../content/livingGuides";
 import { supabase } from "../supabase";
-import {
-  RotateCcw,
-  Mail,
-  Check,
-  ArrowRight,
-  MessageCircle,
-  ShieldCheck,
-} from "lucide-react";
+import { RotateCcw, Check, ArrowRight, ShieldCheck } from "lucide-react";
 
 /* =========================================================
    TYPES
@@ -37,11 +30,6 @@ type LivingGuideExtras = {
 type MatchType = "buyer" | "owner";
 type PurchaseUse = "hpp" | "hab";
 type YesNo = "yes" | "no";
-
-type CalcSummary = {
-  title: string;
-  rows: Array<{ label: string; value: string }>;
-};
 
 /* Qualification enums (para match modal) */
 type BuyerFinancing =
@@ -386,10 +374,6 @@ const RealCostsCalculator: React.FC<{ isPT: boolean }> = ({ isPT }) => {
   const [bankFeesStr, setBankFeesStr] = useState(DEFAULTS.bankFeesStr);
   const [vptStr, setVptStr] = useState(DEFAULTS.vptStr);
 
-  const [emailOpen, setEmailOpen] = useState(false);
-  const [sentSummary, setSentSummary] = useState<CalcSummary | null>(null);
-  const [sent, setSent] = useState(false);
-
   const cascaisIMIRate = 0.0035;
   const cascaisHPPDiscount = 0.15;
 
@@ -435,49 +419,6 @@ const RealCostsCalculator: React.FC<{ isPT: boolean }> = ({ isPT }) => {
     setBankFeesStr(DEFAULTS.bankFeesStr);
     setVptStr(DEFAULTS.vptStr);
   };
-
-  const buildSummary = (): CalcSummary => ({
-    title: isPT
-      ? "Cálculo: custo total de compra"
-      : "Calculation: total cost of purchase",
-    rows: [
-      { label: isPT ? "Preço" : "Price", value: eur(price, isPT) },
-      { label: "IMT", value: eur(imt, isPT) },
-      {
-        label: isPT ? "Imposto do Selo (0,8%)" : "Stamp Duty (0.8%)",
-        value: eur(stampPurchase, isPT),
-      },
-      {
-        label: isPT ? "IS sobre crédito" : "Mortgage stamp duty",
-        value: eur(stampMortgage, isPT),
-      },
-      {
-        label: isPT ? "Escritura/serviços" : "Notary/closing services",
-        value: eur(notaryFees, isPT),
-      },
-      { label: isPT ? "Registos" : "Registry", value: eur(registryFees, isPT) },
-      {
-        label: isPT ? "Solicitador/advogado" : "Solicitor/lawyer",
-        value: eur(lawyerFees, isPT),
-      },
-      {
-        label: isPT ? "Banco/comissões" : "Bank/fees",
-        value: eur(bankFees, isPT),
-      },
-      ...(vpt > 0
-        ? [
-            {
-              label: isPT ? "IMI estimado/ano" : "Estimated IMI/year",
-              value: eur(imi, isPT),
-            },
-          ]
-        : []),
-      {
-        label: isPT ? "Total estimado (1x)" : "Estimated total (one-off)",
-        value: eur(totalOneOff, isPT),
-      },
-    ],
-  });
 
   return (
     <GlassSurface className="overflow-hidden">
@@ -765,10 +706,6 @@ const SellingCalculator: React.FC<{ isPT: boolean }> = ({ isPT }) => {
   );
   const [taxRateStr, setTaxRateStr] = useState(DEFAULTS.taxRateStr);
 
-  const [emailOpen, setEmailOpen] = useState(false);
-  const [sentSummary, setSentSummary] = useState<CalcSummary | null>(null);
-  const [sent, setSent] = useState(false);
-
   const vatRate = 0.23;
 
   const salePrice = toNumber(salePriceStr);
@@ -810,41 +747,6 @@ const SellingCalculator: React.FC<{ isPT: boolean }> = ({ isPT }) => {
     setImprovementsStr(DEFAULTS.improvementsStr);
     setTaxRateStr(DEFAULTS.taxRateStr);
   };
-
-  const buildSummary = (): CalcSummary => ({
-    title: isPT ? "Cálculo: venda de imóvel" : "Calculation: property sale",
-    rows: [
-      {
-        label: isPT ? "Preço de venda" : "Sale price",
-        value: eur(salePrice, isPT),
-      },
-      {
-        label: isPT ? "Comissão agência" : "Agency fee",
-        value: eur(agencyFee, isPT),
-      },
-      { label: "IVA", value: eur(agencyVAT, isPT) },
-      {
-        label: isPT ? "Crédito por liquidar" : "Mortgage payoff",
-        value: eur(mortgageLeft, isPT),
-      },
-      {
-        label: isPT ? "Outros custos" : "Other costs",
-        value: eur(otherCosts, isPT),
-      },
-      ...(wantCG === "yes"
-        ? [
-            {
-              label: isPT ? "Mais-valias (est.)" : "Capital gains (est.)",
-              value: eur(estimatedCGTax, isPT),
-            },
-          ]
-        : []),
-      {
-        label: isPT ? "Líquido estimado" : "Estimated net",
-        value: eur(netAfterTax, isPT),
-      },
-    ],
-  });
 
   return (
     <GlassSurface className="overflow-hidden">

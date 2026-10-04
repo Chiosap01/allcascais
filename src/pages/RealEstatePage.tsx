@@ -35,7 +35,6 @@ import {
   KeyRound,
   Wallet,
   Truck,
-  MessageCircle,
   ShieldCheck,
 } from "lucide-react";
 
