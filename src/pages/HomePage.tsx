@@ -741,7 +741,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
 
   return (
     <>
-      <article className="relative h-full flex flex-col bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow duration-200">
+      <article className="relative flex flex-col bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow duration-200">
         {/* HEADER */}
         <div className="p-4 pb-3 flex items-start gap-3 border-b border-slate-100">
           <button
