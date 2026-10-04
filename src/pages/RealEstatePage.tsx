@@ -35,6 +35,8 @@ import {
   KeyRound,
   Wallet,
   Truck,
+  MessageCircle,
+  ShieldCheck,
 } from "lucide-react";
 
 /* ---------------------------------------------------------
@@ -43,6 +45,10 @@ import {
 const BRAND = "#1F1F3D";
 const BRAND_HOVER = "#15152E";
 const SUCCESS = "#10B981";
+
+/* Contacto Chioss Realty (usado no modal + fallbacks) */
+
+const CONTACT_EMAIL = "info@allcascais.com";
 
 /* ---------------------------------------------------------
    TYPES
@@ -139,13 +145,23 @@ type PropertyRow = {
   created_at?: string | null;
 };
 
-/**
- * Guide keys must match the ones used in `livingGuides.ts` and the
- * LivingGuidePage route (/living/guides/:key).
- */
 type GuideKey = "areas" | "buying" | "renting" | "costs" | "owners" | "moving";
 
 type Overlay = "none" | "property" | "match" | "delete";
+
+/* Qualification enums */
+type BuyerFinancing =
+  | ""
+  | "cash"
+  | "pre-approved"
+  | "need-mortgage"
+  | "not-yet";
+type OwnerStatus =
+  | ""
+  | "not-listed"
+  | "with-agency"
+  | "selling-myself"
+  | "just-evaluating";
 
 /* ---------------------------------------------------------
    CONSTANTS
@@ -255,10 +271,6 @@ const isValidEmail = (value: string) =>
 
 /* ---------------------------------------------------------
    GUIDES CONTENT
-   - "tools" = calculadoras interativas (destaque visual)
-   - "guides" = guias de leitura (grid compacto)
-   Cada key tem de existir em livingGuides.ts e ter rota
-   /living/guides/:key.
 --------------------------------------------------------- */
 type GuideCategory = "tools" | "guides";
 
@@ -277,7 +289,6 @@ type GuideMeta = {
 };
 
 const GUIDES: GuideMeta[] = [
-  /* ---------- Tools (calculadoras) ---------- */
   {
     key: "costs",
     category: "tools",
@@ -316,8 +327,6 @@ const GUIDES: GuideMeta[] = [
       "See your net proceeds before you decide.",
     ],
   },
-
-  /* ---------- Guides (leitura) ---------- */
   {
     key: "areas",
     category: "guides",
@@ -509,7 +518,7 @@ const ConfirmDeleteModal: React.FC<{
 };
 
 /* ---------------------------------------------------------
-   MATCH MODAL
+   MATCH MODAL (com RGPD, Chioss Realty, WhatsApp, qualificação)
 --------------------------------------------------------- */
 const MatchModal: React.FC<{
   open: boolean;
@@ -523,6 +532,14 @@ const MatchModal: React.FC<{
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
+  const [gdprConsent, setGdprConsent] = useState(false);
+
+  // Qualificação — comprador
+  const [buyerFinancing, setBuyerFinancing] = useState<BuyerFinancing>("");
+
+  // Qualificação — proprietário
+  const [ownerStatus, setOwnerStatus] = useState<OwnerStatus>("");
+
   const [status, setStatus] = useState<
     "idle" | "submitting" | "success" | "error"
   >("idle");
@@ -531,6 +548,7 @@ const MatchModal: React.FC<{
 
   const firstInputRef = useRef<HTMLInputElement | null>(null);
 
+  /* Reset ao fechar */
   useEffect(() => {
     if (!open) {
       const t = setTimeout(() => {
@@ -538,6 +556,9 @@ const MatchModal: React.FC<{
         setEmail("");
         setPhone("");
         setNotes("");
+        setGdprConsent(false);
+        setBuyerFinancing("");
+        setOwnerStatus("");
         setStatus("idle");
         setErrorMsg(null);
         setMailtoUrl(null);
@@ -547,6 +568,7 @@ const MatchModal: React.FC<{
     }
   }, [open, initialType]);
 
+  /* Foco + ESC */
   useEffect(() => {
     if (!open) return;
     const t = setTimeout(() => firstInputRef.current?.focus(), 100);
@@ -591,7 +613,7 @@ const MatchModal: React.FC<{
       window.location.href,
     ];
 
-    return `mailto:info@allcascais.com?subject=${encodeURIComponent(
+    return `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
       subject
     )}&body=${encodeURIComponent(bodyLines.join("\n"))}`;
   };
@@ -609,7 +631,29 @@ const MatchModal: React.FC<{
       return;
     }
 
+    if (!gdprConsent) {
+      setErrorMsg(
+        isPT
+          ? "Precisa de autorizar o contacto para continuar."
+          : "You need to authorize contact to continue."
+      );
+      return;
+    }
+
     setStatus("submitting");
+
+    /* Intent define a pipeline: acquisition (compradores) ou listing (proprietários) */
+    const intent = matchType === "buyer" ? "acquisition" : "listing";
+
+    const meta = {
+      intent,
+      filters: filtersSnapshot,
+      qualification:
+        matchType === "buyer"
+          ? { financing: buyerFinancing || null }
+          : { owner_status: ownerStatus || null },
+      partner: "chioss-realty",
+    };
 
     const payload = {
       source: "real-estate",
@@ -620,14 +664,14 @@ const MatchModal: React.FC<{
       email: email.trim(),
       phone: phone.trim() || null,
       notes: notes.trim() || null,
-      meta: { filters: filtersSnapshot },
+      meta,
     };
 
     try {
       const { error } = await supabase.from("leads").insert(payload);
       if (error) throw error;
       setStatus("success");
-      setTimeout(() => onClose(), 1600);
+      /* Não fechar automaticamente — deixar o user ver a mensagem Chioss + WhatsApp */
     } catch (err) {
       console.error("Lead insert failed:", err);
       setMailtoUrl(buildMailto());
@@ -640,6 +684,33 @@ const MatchModal: React.FC<{
     }
   };
 
+  /* Opções de qualificação */
+  const buyerFinancingOptions: Array<{
+    id: Exclude<BuyerFinancing, "">;
+    pt: string;
+    en: string;
+  }> = [
+    { id: "cash", pt: "Tenho capital", en: "Cash buyer" },
+    { id: "pre-approved", pt: "Crédito pré-aprovado", en: "Pre-approved" },
+    { id: "need-mortgage", pt: "Preciso de crédito", en: "Need mortgage" },
+    { id: "not-yet", pt: "Ainda a explorar", en: "Still exploring" },
+  ];
+
+  const ownerStatusOptions: Array<{
+    id: Exclude<OwnerStatus, "">;
+    pt: string;
+    en: string;
+  }> = [
+    { id: "not-listed", pt: "Ainda não anunciei", en: "Not listed yet" },
+    { id: "with-agency", pt: "Já com agência", en: "Already with agency" },
+    {
+      id: "selling-myself",
+      pt: "Estou a vender sozinho",
+      en: "Selling myself",
+    },
+    { id: "just-evaluating", pt: "Só a avaliar", en: "Just evaluating" },
+  ];
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-2 sm:px-4"
@@ -649,7 +720,7 @@ const MatchModal: React.FC<{
       onClick={status === "submitting" ? undefined : onClose}
     >
       <div
-        className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 sm:px-7 py-4 border-b border-slate-100 bg-slate-50/80 sticky top-0 z-10">
@@ -669,8 +740,8 @@ const MatchModal: React.FC<{
             >
               {matchType === "owner"
                 ? isPT
-                  ? "Quer destacar o seu imóvel?"
-                  : "Want to feature your home?"
+                  ? "Quer vender ou arrendar o seu imóvel?"
+                  : "Want to sell or rent your home?"
                 : isPT
                 ? "Diga-nos o que procura"
                 : "Tell us what you need"}
@@ -687,22 +758,41 @@ const MatchModal: React.FC<{
           </button>
         </div>
 
+        {/* ---------- SUCCESS STATE (com Chioss Realty + WhatsApp) ---------- */}
         {status === "success" && (
-          <div className="px-5 sm:px-7 py-12 text-center">
-            <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+          <div className="px-5 sm:px-7 py-10">
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-7 h-7 text-emerald-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-1">
+                {isPT ? "Pedido recebido ✅" : "Request received ✅"}
+              </h3>
+              <p className="text-sm text-slate-600 max-w-md mx-auto">
+                {isPT
+                  ? "Obrigado! A sua mensagem foi entregue à equipa AllCascais. Respondemos em até 24h."
+                  : "Thank you! Your message was delivered to the AllCascais team. We reply within 24h."}
+              </p>
             </div>
-            <h3 className="text-base font-semibold text-slate-900 mb-1">
-              {isPT ? "Pedido recebido!" : "Request received!"}
-            </h3>
-            <p className="text-sm text-slate-600">
-              {isPT ? "Respondemos em até 24h." : "We'll reply within 24h."}
-            </p>
+
+            <div className="mt-6 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-center">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                }}
+                className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-5 py-2.5 hover:bg-slate-50 transition"
+              >
+                {isPT ? "Fechar" : "Close"}
+              </button>
+            </div>
           </div>
         )}
 
+        {/* ---------- FORM STATE ---------- */}
         {status !== "success" && (
           <form onSubmit={handleSubmit} className="p-5 sm:p-7" noValidate>
+            {/* Toggle buyer / owner */}
             <div className="flex gap-2 mb-4">
               <button
                 type="button"
@@ -733,6 +823,65 @@ const MatchModal: React.FC<{
               </button>
             </div>
 
+            {/* Qualificação específica por tipo */}
+            <div className="mb-4">
+              <div className="text-[11px] font-semibold text-slate-700 mb-2">
+                {matchType === "buyer"
+                  ? isPT
+                    ? "Como pretende financiar?"
+                    : "How do you plan to finance?"
+                  : isPT
+                  ? "Em que fase está?"
+                  : "What stage are you at?"}
+              </div>
+
+              {matchType === "buyer" ? (
+                <div className="flex flex-wrap gap-2">
+                  {buyerFinancingOptions.map((o) => {
+                    const active = buyerFinancing === o.id;
+                    return (
+                      <button
+                        key={o.id}
+                        type="button"
+                        onClick={() => setBuyerFinancing(active ? "" : o.id)}
+                        className={[
+                          "rounded-full border px-3 py-1.5 text-[11px] font-semibold transition",
+                          active
+                            ? "border-emerald-500 bg-emerald-50 text-emerald-800 shadow-sm"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                        ].join(" ")}
+                      >
+                        {isPT ? o.pt : o.en}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {ownerStatusOptions.map((o) => {
+                    const active = ownerStatus === o.id;
+                    return (
+                      <button
+                        key={o.id}
+                        type="button"
+                        onClick={() => setOwnerStatus(active ? "" : o.id)}
+                        className={[
+                          "rounded-full border px-3 py-1.5 text-[11px] font-semibold transition",
+                          active
+                            ? "bg-slate-50 text-[#1F1F3D] shadow-sm"
+                            : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
+                        ].join(" ")}
+                        style={active ? { borderColor: BRAND } : undefined}
+                      >
+                        {isPT ? o.pt : o.en}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Contacto */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
                 <label className="text-[11px] font-semibold text-slate-600">
@@ -782,11 +931,11 @@ const MatchModal: React.FC<{
                 <label className="text-[11px] font-semibold text-slate-600">
                   {matchType === "owner"
                     ? isPT
-                      ? "Sobre o imóvel"
-                      : "About the home"
+                      ? "Sobre o imóvel (zona, tipologia, objetivo)"
+                      : "About the home (area, type, goal)"
                     : isPT
-                    ? "O que procura?"
-                    : "What are you looking for?"}
+                    ? "O que procura? (zona, orçamento, tipologia, timing)"
+                    : "What are you looking for? (area, budget, type, timing)"}
                 </label>
                 <textarea
                   value={notes}
@@ -804,6 +953,33 @@ const MatchModal: React.FC<{
                   }
                 />
               </div>
+            </div>
+
+            {/* RGPD */}
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-3.5">
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={gdprConsent}
+                  onChange={(e) => setGdprConsent(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#1F1F3D] focus:ring-[#1F1F3D]/30"
+                  required
+                />
+                <span className="text-[11px] text-slate-700 leading-relaxed">
+                  <ShieldCheck className="inline w-3.5 h-3.5 mr-1 text-[#1F1F3D]" />
+                  {isPT
+                    ? "Autorizo o contacto por email/telefone sobre imóveis em Cascais, feito pela equipa AllCascais. Posso pedir a eliminação dos meus dados a qualquer momento."
+                    : "I authorize email/phone contact about Cascais properties, made by the AllCascais team. I can request deletion of my data at any time."}{" "}
+                  <a
+                    href="/privacy"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-semibold text-[#1F1F3D] underline underline-offset-2"
+                  >
+                    {isPT ? "Política de privacidade" : "Privacy policy"}
+                  </a>
+                </span>
+              </label>
             </div>
 
             {errorMsg && (
@@ -824,41 +1000,44 @@ const MatchModal: React.FC<{
               </div>
             )}
 
-            <div className="mt-5 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-              <div className="text-[11px] text-slate-500">
-                {isPT
-                  ? "Ao enviar, iremos contactá-lo em até 24h."
-                  : "Submitting will get you a reply within 24h."}
-              </div>
+            {/* Footer: submissão + WhatsApp fallback */}
+            <div className="mt-5 flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                <div className="text-[11px] text-slate-500">
+                  {isPT
+                    ? "Respondemos em até 24h. Sem spam, sem pressão."
+                    : "We reply within 24h. No spam, no pressure."}
+                </div>
 
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  disabled={status === "submitting"}
-                  className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 hover:bg-slate-50 disabled:opacity-60 transition"
-                >
-                  {isPT ? "Cancelar" : "Cancel"}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={status === "submitting"}
+                    className="inline-flex items-center justify-center rounded-full bg-white border border-slate-200 text-slate-700 text-xs font-semibold px-4 py-2 hover:bg-slate-50 disabled:opacity-60 transition"
+                  >
+                    {isPT ? "Cancelar" : "Cancel"}
+                  </button>
 
-                <button
-                  type="submit"
-                  disabled={status === "submitting"}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-full text-white text-xs font-semibold px-5 py-2 shadow transition disabled:opacity-60"
-                  style={{ backgroundColor: BRAND }}
-                >
-                  {status === "submitting" ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      {isPT ? "A enviar..." : "Sending..."}
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      {isPT ? "Enviar pedido" : "Send request"}
-                    </>
-                  )}
-                </button>
+                  <button
+                    type="submit"
+                    disabled={status === "submitting"}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-full text-white text-xs font-semibold px-5 py-2 shadow transition disabled:opacity-60"
+                    style={{ backgroundColor: BRAND }}
+                  >
+                    {status === "submitting" ? (
+                      <>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        {isPT ? "A enviar..." : "Sending..."}
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        {isPT ? "Enviar pedido" : "Send request"}
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </form>
@@ -2213,12 +2392,8 @@ const RealEstatePage: React.FC = () => {
 
         {/* =========================================================
             DECISION TOOLS + GUIDES
-            Weinschenk: hierarquia por função
-            Krug: 6 itens visíveis sem "ver todos"
-            Miller: título promete valor
         ========================================================== */}
         <section className="pb-10 pt-2">
-          {/* Section header */}
           <div className="max-w-2xl mb-6">
             <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#1F1F3D] mb-2">
               <Sparkles className="w-3.5 h-3.5" />
@@ -2236,7 +2411,6 @@ const RealEstatePage: React.FC = () => {
             </p>
           </div>
 
-          {/* Tools (calculadoras) — destaque */}
           <div className="mb-6">
             <div className="flex items-center gap-3 mb-3">
               <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-700">
@@ -2257,7 +2431,6 @@ const RealEstatePage: React.FC = () => {
             </div>
           </div>
 
-          {/* Guides (leitura) — grid compacto */}
           <div>
             <div className="flex items-center gap-3 mb-3">
               <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600">

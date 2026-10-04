@@ -4,7 +4,14 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useLanguage } from "../layouts/MainLayout";
 import { getLivingGuide, LIVING_GUIDES } from "../content/livingGuides";
 import { supabase } from "../supabase";
-import { RotateCcw, Mail, Check, ArrowRight } from "lucide-react";
+import {
+  RotateCcw,
+  Mail,
+  Check,
+  ArrowRight,
+  MessageCircle,
+  ShieldCheck,
+} from "lucide-react";
 
 /* =========================================================
    TYPES
@@ -36,6 +43,25 @@ type CalcSummary = {
   rows: Array<{ label: string; value: string }>;
 };
 
+/* Qualification enums (para match modal) */
+type BuyerFinancing =
+  | ""
+  | "cash"
+  | "pre-approved"
+  | "need-mortgage"
+  | "not-yet";
+type OwnerStatus =
+  | ""
+  | "not-listed"
+  | "with-agency"
+  | "selling-myself"
+  | "just-evaluating";
+
+/* =========================================================
+   CONSTANTS
+========================================================= */
+const CONTACT_EMAIL = "info@allcascais.com";
+
 /* =========================================================
    HELPERS
 ========================================================= */
@@ -55,7 +81,7 @@ const pct = (n: number) => (n * 100).toFixed(2).replace(/\.00$/, "") + "%";
 const cls = (...a: Array<string | undefined | false | null>) =>
   a.filter(Boolean).join(" ");
 
-/* Próximo guia recomendado — cria uma jornada lógica (Weinschenk) */
+/* Próximo guia recomendado — jornada */
 const NEXT_GUIDE_MAP: Record<string, string> = {
   areas: "costs",
   buying: "costs",
@@ -65,7 +91,7 @@ const NEXT_GUIDE_MAP: Record<string, string> = {
   owners: "costs",
 };
 
-/* Ícones das takeaways — dual coding (Weinschenk) */
+/* Ícones das takeaways */
 const TAKEAWAY_ICONS = ["🎯", "🔍", "✅"];
 
 /* =========================================================
@@ -176,7 +202,6 @@ function toneStyles(tone?: GuideTone) {
   return "border-white/35 bg-white/86 backdrop-blur-md shadow-[0_10px_32px_-20px_rgba(2,6,23,0.50)] ring-1 ring-slate-900/5";
 }
 
-/* Hierarquia visual por tom (Weinschenk) */
 function tonePadding(tone?: GuideTone) {
   if (tone === "checklist" || tone === "warning") return "p-6 sm:p-8";
   return "p-5 sm:p-6";
@@ -330,116 +355,6 @@ const ToggleChip = ({
     {label}
   </button>
 );
-
-/* =========================================================
-   EMAIL CAPTURE
-========================================================= */
-const EmailCaptureInline: React.FC<{
-  isPT: boolean;
-  summary: CalcSummary;
-  onCancel: () => void;
-  onSent: () => void;
-}> = ({ isPT, summary, onCancel, onSent }) => {
-  const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "error">("idle");
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const handleSend = async () => {
-    setErrorMsg(null);
-
-    const trimmed = email.trim();
-    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      setErrorMsg(
-        isPT ? "Introduza um email válido." : "Please enter a valid email."
-      );
-      return;
-    }
-
-    setStatus("sending");
-
-    try {
-      const { error } = await supabase.from("leads").insert({
-        source: "living-guides",
-        page_url: window.location.href,
-        language: isPT ? "pt" : "en",
-        name: "",
-        email: trimmed,
-        phone: null,
-        notes: summary.title,
-        meta: {
-          kind: "calculator",
-          title: summary.title,
-          rows: summary.rows,
-        },
-      });
-
-      if (error) throw error;
-
-      onSent();
-    } catch (err) {
-      console.error(err);
-      setStatus("error");
-      setErrorMsg(
-        isPT
-          ? "Não conseguimos registar. Tente novamente."
-          : "We couldn't save it. Please try again."
-      );
-    }
-  };
-
-  return (
-    <div className="mt-3 rounded-2xl border border-emerald-200/70 bg-emerald-50/70 backdrop-blur-md p-3 shadow-sm">
-      <div className="text-[11px] font-semibold text-slate-800 mb-2">
-        {isPT
-          ? "Para onde enviamos este cálculo?"
-          : "Where should we send this calculation?"}
-      </div>
-      <div className="flex flex-col sm:flex-row gap-2">
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="email@exemplo.com"
-          autoComplete="email"
-          className="flex-1 rounded-xl border border-white/60 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/60 shadow-sm"
-          disabled={status === "sending"}
-        />
-        <div className="flex gap-2">
-          <GhostBtn
-            type="button"
-            onClick={onCancel}
-            disabled={status === "sending"}
-          >
-            {isPT ? "Cancelar" : "Cancel"}
-          </GhostBtn>
-          <SuccessBtn
-            type="button"
-            onClick={handleSend}
-            disabled={status === "sending"}
-          >
-            {status === "sending"
-              ? isPT
-                ? "A enviar..."
-                : "Sending..."
-              : isPT
-              ? "Enviar"
-              : "Send"}
-          </SuccessBtn>
-        </div>
-      </div>
-      {errorMsg ? (
-        <div className="mt-2 text-[11px] text-red-700 font-semibold">
-          {errorMsg}
-        </div>
-      ) : null}
-      <div className="mt-2 text-[10px] text-slate-600">
-        {isPT
-          ? "Usamos apenas para lhe enviar o cálculo. Sem spam."
-          : "We'll only use it to send you the calculation. No spam."}
-      </div>
-    </div>
-  );
-};
 
 /* =========================================================
    CALCULATOR: REAL COSTS (BUYING)
@@ -813,48 +728,6 @@ const RealCostsCalculator: React.FC<{ isPT: boolean }> = ({ isPT }) => {
             ? "Nota: valores finais dependem de VPT, regras em vigor e custos de entidades."
             : "Note: final amounts depend on VPT, current rules and service costs."}
         </div>
-
-        {!sent ? (
-          <>
-            {!emailOpen ? (
-              <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-                <div className="text-[11px] text-slate-700">
-                  {isPT
-                    ? "Quer guardar este cálculo?"
-                    : "Want to save this calculation?"}
-                </div>
-                <SuccessBtn
-                  type="button"
-                  onClick={() => {
-                    setSentSummary(buildSummary());
-                    setEmailOpen(true);
-                  }}
-                  className="shrink-0"
-                >
-                  <Mail className="w-3.5 h-3.5 mr-1" />
-                  {isPT ? "Enviar-me por email" : "Email me this"}
-                </SuccessBtn>
-              </div>
-            ) : sentSummary ? (
-              <EmailCaptureInline
-                isPT={isPT}
-                summary={sentSummary}
-                onCancel={() => setEmailOpen(false)}
-                onSent={() => {
-                  setSent(true);
-                  setEmailOpen(false);
-                }}
-              />
-            ) : null}
-          </>
-        ) : (
-          <div className="mt-4 flex items-center gap-2 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
-            <Check className="w-4 h-4" />
-            {isPT
-              ? "Enviámos o cálculo para o seu email."
-              : "We've sent the calculation to your email."}
-          </div>
-        )}
       </div>
     </GlassSurface>
   );
@@ -1196,48 +1069,6 @@ const SellingCalculator: React.FC<{ isPT: boolean }> = ({ isPT }) => {
             ? "Nota: use como ordem de grandeza e valide com contabilista."
             : "Note: use as a rough magnitude and validate with an accountant."}
         </div>
-
-        {!sent ? (
-          <>
-            {!emailOpen ? (
-              <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-                <div className="text-[11px] text-slate-700">
-                  {isPT
-                    ? "Quer guardar este cálculo?"
-                    : "Want to save this calculation?"}
-                </div>
-                <SuccessBtn
-                  type="button"
-                  onClick={() => {
-                    setSentSummary(buildSummary());
-                    setEmailOpen(true);
-                  }}
-                  className="shrink-0"
-                >
-                  <Mail className="w-3.5 h-3.5 mr-1" />
-                  {isPT ? "Enviar-me por email" : "Email me this"}
-                </SuccessBtn>
-              </div>
-            ) : sentSummary ? (
-              <EmailCaptureInline
-                isPT={isPT}
-                summary={sentSummary}
-                onCancel={() => setEmailOpen(false)}
-                onSent={() => {
-                  setSent(true);
-                  setEmailOpen(false);
-                }}
-              />
-            ) : null}
-          </>
-        ) : (
-          <div className="mt-4 flex items-center gap-2 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
-            <Check className="w-4 h-4" />
-            {isPT
-              ? "Enviámos o cálculo para o seu email."
-              : "We've sent the calculation to your email."}
-          </div>
-        )}
       </div>
     </GlassSurface>
   );
@@ -1256,9 +1087,6 @@ const LivingGuidePage: React.FC = () => {
     "idle" | "success" | "error"
   >("idle");
 
-  const CONTACT_PHONE = "+351 930 630 880";
-  const CONTACT_EMAIL = "info@allcascais.com";
-
   const rawGuide = useMemo(() => getLivingGuide(key), [key]);
   const guide = (rawGuide as typeof rawGuide & LivingGuideExtras) || undefined;
 
@@ -1276,6 +1104,11 @@ const LivingGuidePage: React.FC = () => {
   const [matchEmail, setMatchEmail] = useState("");
   const [matchPhone, setMatchPhone] = useState("");
   const [matchNotes, setMatchNotes] = useState("");
+  const [matchGdpr, setMatchGdpr] = useState(false);
+
+  /* Qualificação */
+  const [buyerFinancing, setBuyerFinancing] = useState<BuyerFinancing>("");
+  const [ownerStatus, setOwnerStatus] = useState<OwnerStatus>("");
 
   const buyerTimingOptions: Localized[] = [
     { pt: "Agora", en: "Now" },
@@ -1321,6 +1154,32 @@ const LivingGuidePage: React.FC = () => {
   const [ownerCondition, setOwnerCondition] = useState<string>("");
   const [ownerTimeline, setOwnerTimeline] = useState<string>("");
 
+  const buyerFinancingOptions: Array<{
+    id: Exclude<BuyerFinancing, "">;
+    pt: string;
+    en: string;
+  }> = [
+    { id: "cash", pt: "Tenho capital", en: "Cash buyer" },
+    { id: "pre-approved", pt: "Crédito pré-aprovado", en: "Pre-approved" },
+    { id: "need-mortgage", pt: "Preciso de crédito", en: "Need mortgage" },
+    { id: "not-yet", pt: "Ainda a explorar", en: "Still exploring" },
+  ];
+
+  const ownerStatusOptions: Array<{
+    id: Exclude<OwnerStatus, "">;
+    pt: string;
+    en: string;
+  }> = [
+    { id: "not-listed", pt: "Ainda não anunciei", en: "Not listed yet" },
+    { id: "with-agency", pt: "Já com agência", en: "Already with agency" },
+    {
+      id: "selling-myself",
+      pt: "Estou a vender sozinho",
+      en: "Selling myself",
+    },
+    { id: "just-evaluating", pt: "Só a avaliar", en: "Just evaluating" },
+  ];
+
   const openMatch = (type: MatchType) => {
     setMatchType(type);
     setSubmitStatus("idle");
@@ -1345,12 +1204,14 @@ const LivingGuidePage: React.FC = () => {
       return `Match type: Buyer
 Timing: ${buyerTiming || "—"}
 Property type: ${buyerType || "—"}
-Must-haves: ${must}`;
+Must-haves: ${must}
+Financing: ${buyerFinancing || "—"}`;
     }
     return `Match type: Owner
 Goal: ${ownerGoal || "—"}
 Condition: ${ownerCondition || "—"}
-Timeline: ${ownerTimeline || "—"}`;
+Timeline: ${ownerTimeline || "—"}
+Status: ${ownerStatus || "—"}`;
   };
 
   const submitMatch = async () => {
@@ -1359,17 +1220,36 @@ Timeline: ${ownerTimeline || "—"}`;
       return;
     }
 
+    if (!matchGdpr) {
+      alert(
+        isPT
+          ? "Precisa de autorizar o contacto para continuar."
+          : "You need to authorize contact to continue."
+      );
+      return;
+    }
+
+    const intent = matchType === "buyer" ? "acquisition" : "listing";
+
     const meta =
       matchType === "buyer"
         ? {
+            kind: "match",
+            intent,
+            partner: "chioss-realty",
             timing: buyerTiming || null,
             propertyType: buyerType || null,
             mustHaves: buyerMustHaves || [],
+            qualification: { financing: buyerFinancing || null },
           }
         : {
+            kind: "match",
+            intent,
+            partner: "chioss-realty",
             goal: ownerGoal || null,
             condition: ownerCondition || null,
             timeline: ownerTimeline || null,
+            qualification: { owner_status: ownerStatus || null },
           };
 
     const payload = {
@@ -1405,7 +1285,7 @@ Timeline: ${ownerTimeline || "—"}`;
           `Page: ${pageUrl}\n`
       );
 
-      window.location.href = `mailto:info@allcascais.com?subject=${subject}&body=${body}`;
+      window.location.href = `mailto:${CONTACT_EMAIL}?subject=${subject}&body=${body}`;
     };
 
     try {
@@ -1418,12 +1298,15 @@ Timeline: ${ownerTimeline || "—"}`;
       setMatchEmail("");
       setMatchPhone("");
       setMatchNotes("");
+      setMatchGdpr(false);
       setBuyerTiming("");
       setBuyerType("");
       setBuyerMustHaves([]);
+      setBuyerFinancing("");
       setOwnerGoal("");
       setOwnerCondition("");
       setOwnerTimeline("");
+      setOwnerStatus("");
     } catch (err) {
       console.error(err);
       alert(
@@ -1436,7 +1319,7 @@ Timeline: ${ownerTimeline || "—"}`;
     }
   };
 
-  /* ---------- Copy feedback (Norman) ---------- */
+  /* ---------- Copy feedback ---------- */
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const copyToClipboard = async (text: string, key: string) => {
@@ -1449,7 +1332,7 @@ Timeline: ${ownerTimeline || "—"}`;
     }
   };
 
-  /* ---------- Buying example (only buying guide) ---------- */
+  /* ---------- Buying example ---------- */
   const renderBuyingExample = () => {
     const examplePrice = 500000;
     const stampDutyPurchase = Math.round(examplePrice * 0.008);
@@ -1562,7 +1445,6 @@ Timeline: ${ownerTimeline || "—"}`;
     guide.ctas.find((c) => c.kind === "browseHomes") ??
     guide.ctas[0];
 
-  /* Próximo guia recomendado + guias relacionados */
   const nextGuideKey = NEXT_GUIDE_MAP[guide.key] ?? null;
   const nextGuide = nextGuideKey
     ? LIVING_GUIDES.find((g: any) => g.key === nextGuideKey)
@@ -1578,7 +1460,7 @@ Timeline: ${ownerTimeline || "—"}`;
     <div className="min-h-screen py-3">
       <div className="fixed inset-0 -z-10 bg-linear-to-b from-white/35 via-white/15 to-white/30 backdrop-blur-[2px]" />
 
-      {/* Sticky mini-TOC (mobile) — Krug: orientação contínua */}
+      {/* Sticky mini-TOC (mobile) */}
       <div className="lg:hidden sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-4 py-2">
           <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
@@ -1611,7 +1493,7 @@ Timeline: ${ownerTimeline || "—"}`;
               ← {isPT ? "Voltar" : "Back"}
             </button>
 
-            {/* Card 1 — Identidade (Weinschenk: less density) */}
+            {/* Card 1 — Identidade */}
             <GlassSurface className="overflow-hidden">
               <div
                 className="relative px-5 py-5 sm:px-7 sm:py-6"
@@ -1639,7 +1521,6 @@ Timeline: ${ownerTimeline || "—"}`;
                     {t(guide.subtitle)}
                   </p>
 
-                  {/* Audience — Cialdini: identity match */}
                   {guide.audience?.length ? (
                     <div className="mt-3 space-y-1">
                       {guide.audience.map((a) => (
@@ -1657,10 +1538,9 @@ Timeline: ${ownerTimeline || "—"}`;
               </div>
             </GlassSurface>
 
-            {/* Card 2 — Utilitário (chips + takeaways + TOC agrupados) */}
+            {/* Card 2 — Utilitário */}
             <GlassSurface className="mt-4 overflow-hidden">
               <div className="px-5 py-4 sm:px-7 sm:py-5">
-                {/* Chips */}
                 <div className="flex flex-wrap items-center gap-2">
                   <Pill>⏱ {t(guide.readTime)}</Pill>
 
@@ -1679,7 +1559,6 @@ Timeline: ${ownerTimeline || "—"}`;
                   ))}
                 </div>
 
-                {/* Takeaways — Weinschenk: 3 things, sem card pesado */}
                 {guide.takeaways?.length ? (
                   <div className="mt-4 border-l-2 border-[#1F1F3D]/25 pl-4">
                     <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-600 mb-2">
@@ -1701,7 +1580,6 @@ Timeline: ${ownerTimeline || "—"}`;
                   </div>
                 ) : null}
 
-                {/* Mini-TOC (desktop) — Krug: orientação */}
                 {guide.sections.length > 2 ? (
                   <nav
                     className="mt-4 pt-4 border-t border-white/30 flex flex-wrap gap-1.5"
@@ -1724,7 +1602,7 @@ Timeline: ${ownerTimeline || "—"}`;
               </div>
             </GlassSurface>
 
-            {/* Sections — Weinschenk: variar peso por tom */}
+            {/* Sections */}
             <div className="mt-6 space-y-6">
               {guide.sections.map((s: any, idx: number) => {
                 const icon = toneIcon(s.tone);
@@ -1739,7 +1617,6 @@ Timeline: ${ownerTimeline || "—"}`;
                       tonePadding(s.tone)
                     )}
                   >
-                    {/* Número discreto — Krug: "onde estou?" */}
                     <span
                       className="absolute top-4 right-5 text-[11px] font-bold text-slate-300 select-none"
                       aria-hidden="true"
@@ -1782,10 +1659,9 @@ Timeline: ${ownerTimeline || "—"}`;
               })}
             </div>
 
-            {/* Ferramenta interativa — Miller: destaque próprio */}
+            {/* Ferramenta interativa */}
             {hasExtraWidget ? (
               <section className="mt-10">
-                {/* Separador visual — Weinschenk: change of rhythm */}
                 <div className="flex items-center gap-3 mb-4">
                   <div className="h-px flex-1 bg-slate-200" />
                   <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
@@ -1814,7 +1690,7 @@ Timeline: ${ownerTimeline || "—"}`;
               </section>
             ) : null}
 
-            {/* Templates — Krug: preview colapsado */}
+            {/* Templates */}
             {guide.templates?.length ? (
               <GlassSurface className="mt-8 p-5 sm:p-7">
                 <div className="text-sm font-semibold text-slate-900">
@@ -1862,7 +1738,6 @@ Timeline: ${ownerTimeline || "—"}`;
                           </GhostBtn>
                         </div>
 
-                        {/* Preview colapsado */}
                         <details className="border-t border-white/30 group">
                           <summary className="px-4 py-2 cursor-pointer list-none flex items-center justify-between text-[11px] text-slate-600 hover:text-slate-900 transition">
                             <span>
@@ -1883,7 +1758,7 @@ Timeline: ${ownerTimeline || "—"}`;
               </GlassSurface>
             ) : null}
 
-            {/* FAQs — primeira aberta */}
+            {/* FAQs */}
             {guide.faqs?.length ? (
               <GlassSurface className="mt-8 p-5 sm:p-7">
                 <div className="text-sm font-semibold text-slate-900">
@@ -1915,7 +1790,7 @@ Timeline: ${ownerTimeline || "—"}`;
               </GlassSurface>
             ) : null}
 
-            {/* Share — Cialdini: dar antes de pedir */}
+            {/* Share */}
             <GlassSurface className="mt-8 p-5 sm:p-7">
               <div className="text-sm font-semibold text-slate-900">
                 {isPT ? "Partilhar este guia" : "Share this guide"}
@@ -1970,7 +1845,7 @@ Timeline: ${ownerTimeline || "—"}`;
               </div>
             </GlassSurface>
 
-            {/* CTA final — Weinschenk: contraste escuro */}
+            {/* CTA final */}
             <section className="mt-8 rounded-3xl overflow-hidden bg-slate-950 px-6 py-8 sm:px-10 sm:py-10 relative">
               <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full bg-emerald-500/15 blur-3xl" />
               <div className="absolute -left-20 -bottom-20 w-64 h-64 rounded-full bg-sky-500/10 blur-3xl" />
@@ -2024,7 +1899,7 @@ Timeline: ${ownerTimeline || "—"}`;
               </div>
             </section>
 
-            {/* Nota legal — fora de card, discreta (Weinschenk) */}
+            {/* Nota legal */}
             <p className="mt-6 text-[10px] text-slate-500 leading-relaxed max-w-2xl mx-auto text-center">
               {isPT
                 ? "Nota: informação prática e educativa. Regras e impostos podem mudar. Para decisões finais, confirme com solicitador/advogado e fontes oficiais."
@@ -2068,7 +1943,6 @@ Timeline: ${ownerTimeline || "—"}`;
                 </div>
               </GlassSurface>
 
-              {/* Próximo guia recomendado — Weinschenk: jornada */}
               {nextGuide ? (
                 <GlassSurface className="p-5">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
@@ -2095,7 +1969,6 @@ Timeline: ${ownerTimeline || "—"}`;
                 </GlassSurface>
               ) : null}
 
-              {/* Outros guias — discretos */}
               {otherGuides.length > 0 ? (
                 <GlassSurface className="p-5">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600">
@@ -2167,7 +2040,7 @@ Timeline: ${ownerTimeline || "—"}`;
           <div
             role="dialog"
             aria-modal="true"
-            className="bg-white/88 backdrop-blur-xl rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden border border-white/35 ring-1 ring-slate-900/10"
+            className="bg-white/88 backdrop-blur-xl rounded-3xl shadow-2xl max-w-2xl w-full max-h-[92vh] overflow-hidden border border-white/35 ring-1 ring-slate-900/10"
           >
             <div className="flex items-center justify-between px-5 sm:px-7 py-4 border-b border-white/25 bg-white/45 backdrop-blur-lg">
               <div>
@@ -2183,11 +2056,11 @@ Timeline: ${ownerTimeline || "—"}`;
                 <div className="text-sm sm:text-base font-semibold text-slate-900">
                   {matchType === "owner"
                     ? isPT
-                      ? "Quer destacar o seu imóvel em Cascais?"
-                      : "Want to feature your home in Cascais?"
+                      ? "Quer vender ou arrendar o seu imóvel?"
+                      : "Want to sell or rent your home?"
                     : isPT
-                    ? "Diga-nos o que procura (resposta em 24h)"
-                    : "Tell us what you need (reply in 24h)"}
+                    ? "Diga-nos o que procura"
+                    : "Tell us what you need"}
                 </div>
                 <div className="mt-2 text-[11px] text-slate-700">
                   ✅ {isPT ? "Resposta em 24h" : "Reply in 24h"} • ✅{" "}
@@ -2213,40 +2086,21 @@ Timeline: ${ownerTimeline || "—"}`;
                   </div>
                   <div className="mt-2 text-xs sm:text-sm text-slate-800">
                     {isPT
-                      ? "Obrigado! Vamos responder em 24h. Se preferir, pode falar connosco já:"
-                      : "Thanks! We’ll reply within 24h. If you prefer, you can reach us directly:"}
+                      ? "Obrigado! A sua mensagem foi entregue à nossa equipa. Respondemos em até 24h."
+                      : "Thank you! Your message was delivered to our team. We reply within 24h."}
                   </div>
 
-                  <div className="mt-4 space-y-2 text-sm">
-                    <a
-                      href={`tel:${CONTACT_PHONE.replace(/\s+/g, "")}`}
-                      className="block rounded-2xl border border-white/35 bg-white/60 backdrop-blur-md px-4 py-3 hover:bg-white/75 transition shadow-sm"
-                    >
-                      <div className="text-[11px] text-slate-700">
-                        {isPT ? "Telefone" : "Phone"}
-                      </div>
-                      <div className="font-semibold text-slate-900">
-                        {CONTACT_PHONE}
-                      </div>
-                    </a>
+                  <div className="mt-3 text-center text-[11px] text-slate-500">
+                    {isPT ? "ou envie email para " : "or email "}
                     <a
                       href={`mailto:${CONTACT_EMAIL}`}
-                      className="block rounded-2xl border border-white/35 bg-white/60 backdrop-blur-md px-4 py-3 hover:bg-white/75 transition shadow-sm"
+                      className="font-semibold text-slate-700 hover:underline"
                     >
-                      <div className="text-[11px] text-slate-700">Email</div>
-                      <div className="font-semibold text-slate-900">
-                        {CONTACT_EMAIL}
-                      </div>
+                      {CONTACT_EMAIL}
                     </a>
                   </div>
 
-                  <div className="mt-5 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-end">
-                    <PrimaryBtn
-                      type="button"
-                      onClick={() => navigate("/real-estate")}
-                    >
-                      {isPT ? "Continuar no site" : "Continue on website"}
-                    </PrimaryBtn>
+                  <div className="mt-5 flex sm:justify-center">
                     <GhostBtn type="button" onClick={closeMatch}>
                       {isPT ? "Fechar" : "Close"}
                     </GhostBtn>
@@ -2349,6 +2203,28 @@ Timeline: ${ownerTimeline || "—"}`;
                           })}
                         </div>
                       </div>
+                      <div className="mt-3">
+                        <div className="text-[11px] text-slate-700 mb-1">
+                          {isPT
+                            ? "Como pretende financiar?"
+                            : "How do you plan to finance?"}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {buyerFinancingOptions.map((o) => {
+                            const active = buyerFinancing === o.id;
+                            return (
+                              <ToggleChip
+                                key={o.id}
+                                active={active}
+                                label={isPT ? o.pt : o.en}
+                                onClick={() =>
+                                  setBuyerFinancing(active ? "" : o.id)
+                                }
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <div className="mb-4">
@@ -2411,6 +2287,28 @@ Timeline: ${ownerTimeline || "—"}`;
                           })}
                         </div>
                       </div>
+                      <div className="mt-3">
+                        <div className="text-[11px] text-slate-700 mb-1">
+                          {isPT
+                            ? "Em que fase está?"
+                            : "What stage are you at?"}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {ownerStatusOptions.map((o) => {
+                            const active = ownerStatus === o.id;
+                            return (
+                              <ToggleChip
+                                key={o.id}
+                                active={active}
+                                label={isPT ? o.pt : o.en}
+                                onClick={() =>
+                                  setOwnerStatus(active ? "" : o.id)
+                                }
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -2466,19 +2364,47 @@ Timeline: ${ownerTimeline || "—"}`;
                     </div>
                   </div>
 
-                  <div className="mt-5 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-                    <div className="text-[11px] text-slate-700">
-                      {isPT
-                        ? "Ao enviar, o pedido é enviado automaticamente. Se falhar, abrimos o seu email como alternativa."
-                        : "Submitting sends your request automatically. If it fails, we’ll open your email as a fallback."}
-                    </div>
-                    <div className="flex gap-2">
-                      <GhostBtn type="button" onClick={closeMatch}>
-                        {isPT ? "Cancelar" : "Cancel"}
-                      </GhostBtn>
-                      <PrimaryBtn type="button" onClick={submitMatch}>
-                        {isPT ? "Enviar pedido" : "Send request"}
-                      </PrimaryBtn>
+                  {/* RGPD */}
+                  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/60 p-3.5">
+                    <label className="flex items-start gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={matchGdpr}
+                        onChange={(e) => setMatchGdpr(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#1F1F3D] focus:ring-[#1F1F3D]/30"
+                      />
+                      <span className="text-[11px] text-slate-700 leading-relaxed">
+                        <ShieldCheck className="inline w-3.5 h-3.5 mr-1 text-[#1F1F3D]" />
+                        {isPT
+                          ? "Autorizo o contacto por email/telefone sobre imóveis em Cascais, feito pela equipa AllCascais. Posso pedir a eliminação dos meus dados a qualquer momento."
+                          : "I authorize email/phone contact about Cascais properties, made by the AllCascais team. I can request deletion of my data at any time."}{" "}
+                        <a
+                          href="/privacy"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-semibold text-[#1F1F3D] underline underline-offset-2"
+                        >
+                          {isPT ? "Política de privacidade" : "Privacy policy"}
+                        </a>
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="mt-5 flex flex-col gap-3">
+                    <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+                      <div className="text-[11px] text-slate-500">
+                        {isPT
+                          ? "Respondemos em até 24h. Sem spam, sem pressão."
+                          : "We reply within 24h. No spam, no pressure."}
+                      </div>
+                      <div className="flex gap-2">
+                        <GhostBtn type="button" onClick={closeMatch}>
+                          {isPT ? "Cancelar" : "Cancel"}
+                        </GhostBtn>
+                        <PrimaryBtn type="button" onClick={submitMatch}>
+                          {isPT ? "Enviar pedido" : "Send request"}
+                        </PrimaryBtn>
+                      </div>
                     </div>
                   </div>
                 </>
