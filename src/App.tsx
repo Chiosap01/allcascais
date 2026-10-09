@@ -2,6 +2,7 @@ import React from "react";
 import { Routes, Route } from "react-router-dom";
 import MainLayout from "./layouts/MainLayout";
 import { AuthProvider } from "./context/AuthContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 import NewHomePage from "./pages/LandingPage";
 import HomePage from "./pages/HomePage";
 import AboutPage from "./pages/AboutPage";
@@ -21,27 +22,29 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <MainLayout>
-        <Routes>
-          <Route path="/" element={<NewHomePage />} />
-          <Route path="/services" element={<HomePage />} />
-          <Route path="/offers" element={<OffersPage />} />
-          <Route path="/real-estate" element={<RealEstatePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/service-listing" element={<ServiceListingPage />} />
-          <Route path="/offers/new" element={<CreateOfferPage />} />
-          <Route path="/offers/edit/:offerId" element={<CreateOfferPage />} />
-          <Route path="/properties/new" element={<PropertyListingPage />} />
-          <Route
-            path="/properties/:id/edit"
-            element={<PropertyListingPage />}
-          />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/cookies" element={<CookiesPolicy />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/living/guides/:key" element={<LivingGuidePage />} />
-        </Routes>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<NewHomePage />} />
+            <Route path="/services" element={<HomePage />} />
+            <Route path="/offers" element={<OffersPage />} />
+            <Route path="/real-estate" element={<RealEstatePage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/service-listing" element={<ServiceListingPage />} />
+            <Route path="/offers/new" element={<CreateOfferPage />} />
+            <Route path="/offers/edit/:offerId" element={<CreateOfferPage />} />
+            <Route path="/properties/new" element={<PropertyListingPage />} />
+            <Route
+              path="/properties/:id/edit"
+              element={<PropertyListingPage />}
+            />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/cookies" element={<CookiesPolicy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/living/guides/:key" element={<LivingGuidePage />} />
+          </Routes>
+        </ErrorBoundary>
       </MainLayout>
     </AuthProvider>
   );
